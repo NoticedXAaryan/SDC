@@ -30,17 +30,27 @@ const ownerRole = defaultAc.newRole({
 });
 
 const leadRole = defaultAc.newRole({
-    user: ["list", "get"],
+    user: ["create", "list", "set-role", "ban", "impersonate", "delete", "set-password", "set-email", "get", "update"],
+    session: ["list", "revoke", "delete"],
+});
+
+const viceLeadRole = defaultAc.newRole({
+    user: ["list", "get", "set-role", "update"], // Handles recruitment
+    session: [],
+});
+
+const domainLeadRole = defaultAc.newRole({
+    user: ["list", "get"], // Major Leads can view members
     session: [],
 });
 
 const coLeadRole = defaultAc.newRole({
-    user: ["list", "get"],
+    user: ["list", "get"], // Draft only by default
     session: [],
 });
 
-const financeLeadRole = defaultAc.newRole({
-    user: ["list", "get"],
+const facultyCoordinatorRole = defaultAc.newRole({
+    user: ["list", "get"], // Oversight only
     session: [],
 });
 
@@ -94,13 +104,20 @@ export const auth = betterAuth({
         }),
         admin({
             defaultRole: "member",
-            adminRoles: ["owner", "admin"],
+            adminRoles: ["owner", "admin", "lead"],
             roles: {
                 owner: ownerRole,
-                admin: adminAc,           // Full admin access (Better Auth built-in)
+                admin: adminAc,
                 lead: leadRole,
+                vice_lead: viceLeadRole,
+                event_lead: domainLeadRole,
+                content_lead: domainLeadRole,
+                marketing_lead: domainLeadRole,
+                tech_lead: domainLeadRole,
+                finance_lead: domainLeadRole,
+                volunteer_lead: domainLeadRole,
                 co_lead: coLeadRole,
-                finance_lead: financeLeadRole,
+                faculty_coordinator: facultyCoordinatorRole,
                 member: memberRole,
                 alumni: alumniRole,
             },

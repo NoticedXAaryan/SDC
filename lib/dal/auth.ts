@@ -10,17 +10,45 @@ export class AuthorizationError extends Error {
 }
 
 /**
- * STC OS role hierarchy. Higher index = more privilege.
+ * STC OS role hierarchy.
  * Used for comparison and display throughout the app.
  */
-export const STC_ROLES = ["alumni", "member", "co_lead", "finance_lead", "lead", "admin", "owner"] as const;
+export const STC_ROLES = [
+  "alumni", 
+  "member", 
+  "faculty_coordinator",
+  "co_lead", 
+  "volunteer_lead",
+  "finance_lead", 
+  "tech_lead",
+  "marketing_lead",
+  "content_lead",
+  "event_lead",
+  "vice_lead",
+  "lead", 
+  "admin", 
+  "owner"
+] as const;
 export type STCRole = (typeof STC_ROLES)[number];
 
 /** Roles that can access management features (scanner, certificates, finance, audit) */
-export const MANAGEMENT_ROLES: STCRole[] = ["co_lead", "finance_lead", "lead", "admin", "owner"];
+export const MANAGEMENT_ROLES: STCRole[] = [
+  "co_lead", 
+  "volunteer_lead",
+  "finance_lead", 
+  "tech_lead",
+  "marketing_lead",
+  "content_lead",
+  "event_lead",
+  "faculty_coordinator",
+  "vice_lead",
+  "lead", 
+  "admin", 
+  "owner"
+];
 
 /** Roles that can perform admin operations (member management, role changes) */
-export const ADMIN_ROLES: STCRole[] = ["admin", "owner"];
+export const ADMIN_ROLES: STCRole[] = ["vice_lead", "lead", "admin", "owner"];
 
 /**
  * Extended session user type that includes our custom fields.
