@@ -50,7 +50,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
-  const userRole = (session.user.role || "member") as string;
+  const userRole = (session.user.role || "user") as string;
   const showManagement = isManagementRole(userRole);
   
   // Extract initials for fallback

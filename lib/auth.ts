@@ -54,6 +54,11 @@ const facultyCoordinatorRole = defaultAc.newRole({
     session: [],
 });
 
+const userRole = defaultAc.newRole({
+    user: [],
+    session: [],
+});
+
 const memberRole = defaultAc.newRole({
     user: [],
     session: [],
@@ -109,7 +114,7 @@ export const auth = betterAuth({
             // SDC domains/teams as organizations/roles
         }),
         admin({
-            defaultRole: "member",
+            defaultRole: "user",
             adminRoles: ["owner", "admin", "lead"],
             roles: {
                 owner: ownerRole,
@@ -126,6 +131,7 @@ export const auth = betterAuth({
                 faculty_coordinator: facultyCoordinatorRole,
                 member: memberRole,
                 alumni: alumniRole,
+                user: userRole,
             },
         }),
     ],
