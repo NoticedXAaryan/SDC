@@ -19,6 +19,13 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Dummy build-time env vars — Better Auth and DB connection are validated
+# even during static page generation. Real values are injected at runtime
+# via docker-compose.yml environment section.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV BETTER_AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime"
+ENV BETTER_AUTH_URL="http://localhost:3000"
+
 # Build Next.js app
 RUN npm run build
 

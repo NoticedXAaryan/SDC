@@ -6,6 +6,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Globe } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProjectsPage() {
   const allProjects = await db.select().from(projects);
 

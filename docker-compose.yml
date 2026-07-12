@@ -1,17 +1,4 @@
-version: '3.8'
 services:
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: stc_os_user
-      POSTGRES_PASSWORD: stc_os_password
-      POSTGRES_DB: stc_os
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: always
-
   redis:
     image: redis:7-alpine
     ports:
@@ -27,15 +14,14 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - DATABASE_URL=postgres://stc_os_user:stc_os_password@db:5432/stc_os
+      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_t3nUwPCRyIO7@ep-long-feather-aopa7d1t-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
       - REDIS_URL=redis://redis:6379
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-      - BETTER_AUTH_SECRET=changeme123
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-stc_os_super_secret_key_1234567890}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3001}
+      - PASS_SECRET=${PASS_SECRET:-stc_os_pass_secret_key_0987654321}
     depends_on:
-      - db
       - redis
     restart: always
 
 volumes:
-  pgdata:
   redisdata:
