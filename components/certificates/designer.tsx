@@ -98,6 +98,22 @@ export function CertificateDesigner({
     }
   };
 
+  const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !designerInstance.current) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        designerInstance.current.updateTemplate(
+          Object.assign(designerInstance.current.getTemplate(), { basePdf: base64 })
+        );
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   if (loadError) {
     return (
       <div className="p-8 text-center border rounded-lg border-dashed text-muted-foreground">
@@ -116,9 +132,20 @@ export function CertificateDesigner({
             Drag and drop fields onto the certificate.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={isSaving || !isLoaded}>
-          {isSaving ? "Saving..." : "Save Template"}
-        </Button>
+        <div className="flex gap-2">
+          <div className="relative">
+            <input 
+              type="file" 
+              accept="application/pdf,image/png,image/jpeg" 
+              onChange={handleBackgroundUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <Button variant="outline" disabled={!isLoaded}>Upload Background</Button>
+          </div>
+          <Button onClick={handleSave} disabled={isSaving || !isLoaded}>
+            {isSaving ? "Saving..." : "Save Template"}
+          </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg overflow-hidden h-[800px] relative">
