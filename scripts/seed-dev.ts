@@ -26,8 +26,8 @@ async function seed() {
   const dummyEvents = [
     {
       id: crypto.randomUUID(),
-      title: "Intro to Open Source",
-      slug: "intro-to-os-2026",
+      title: "[DUMMY] Intro to Open Source",
+      slug: "dummy-intro-to-os-2026",
       type: "workshop" as const,
       domain: "Technical",
       description: "Learn how to contribute to open source projects.",
@@ -42,8 +42,8 @@ async function seed() {
     },
     {
       id: crypto.randomUUID(),
-      title: "Hack The Future",
-      slug: "hack-the-future",
+      title: "[DUMMY] Hack The Future",
+      slug: "dummy-hack-the-future",
       type: "hackathon" as const,
       domain: "Technical",
       description: "48-hour hackathon to build the next big thing.",
@@ -79,10 +79,10 @@ async function seed() {
 
   // 3. Seed Inventory
   const dummyInventory = [
-    { name: "Arduino Uno", qtyTotal: 20 },
-    { name: "Raspberry Pi 4", qtyTotal: 10 },
-    { name: "Club T-Shirt (M)", qtyTotal: 50 },
-    { name: "Club Banner", qtyTotal: 2 },
+    { name: "[DUMMY] Arduino Uno", qtyTotal: 20 },
+    { name: "[DUMMY] Raspberry Pi 4", qtyTotal: 10 },
+    { name: "[DUMMY] Club T-Shirt (M)", qtyTotal: 50 },
+    { name: "[DUMMY] Club Banner", qtyTotal: 2 },
   ];
 
   for (const item of dummyInventory) {
