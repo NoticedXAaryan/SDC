@@ -11,22 +11,30 @@ const navItems = [
 ];
 
 const managementNavItems = [
-  { href: "/scanner", label: "QR Scanner", roles: ["co_lead", "lead", "admin", "owner"] },
-  { href: "/lead/certificates", label: "Certificates", roles: ["lead", "admin", "owner"] },
-  { href: "/recruitment/interviews", label: "Interviews", roles: ["lead", "admin", "owner"] },
-  { href: "/inventory", label: "Inventory", roles: ["co_lead", "finance_lead", "lead", "admin", "owner"] },
-  { href: "/finance/budget", label: "Finance", roles: ["finance_lead", "admin", "owner"] },
-  { href: "/admin/audit", label: "Audit Logs", roles: ["admin", "owner"] },
-  { href: "/admin/members", label: "Members", roles: ["admin", "owner"] },
+  { href: "/applications", label: "Applications", roles: ["vice_lead", "lead", "admin", "owner"] },
+  { href: "/scanner", label: "QR Scanner", roles: ["event_lead", "volunteer_lead", "co_lead", "lead", "admin", "owner"] },
+  { href: "/lead/certificates", label: "Certificates", roles: ["event_lead", "lead", "admin", "owner"] },
+  { href: "/recruitment/interviews", label: "Interviews", roles: ["vice_lead", "lead", "admin", "owner"] },
+  { href: "/inventory", label: "Inventory", roles: ["tech_lead", "co_lead", "finance_lead", "lead", "admin", "owner"] },
+  { href: "/finance/budget", label: "Finance", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
+  { href: "/admin/audit", label: "Audit Logs", roles: ["admin", "owner", "faculty_coordinator"] },
+  { href: "/admin/members", label: "Members", roles: ["lead", "admin", "owner"] },
 ];
 
 function getRoleLabel(role: string): string {
   const labels: Record<string, string> = {
     owner: "Owner",
     admin: "Admin",
-    lead: "Lead",
-    co_lead: "Co-Lead",
+    lead: "President",
+    vice_lead: "Vice President",
+    event_lead: "Event Lead",
+    content_lead: "Content Lead",
+    marketing_lead: "Marketing Lead",
+    tech_lead: "Tech Lead",
     finance_lead: "Finance Lead",
+    volunteer_lead: "Volunteer Lead",
+    co_lead: "Co-Lead",
+    faculty_coordinator: "Faculty Coordinator",
     member: "Member",
     alumni: "Alumni",
     user: "Member",

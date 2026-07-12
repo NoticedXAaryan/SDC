@@ -227,13 +227,15 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
-export const applicationStatusEnum = pgEnum("application_status", ["applied", "interviewed", "accepted", "rejected"]);
+export const applicationStatusEnum = pgEnum("application_status", ["applied", "ai_graded", "interviewing", "accepted", "rejected"]);
 
 export const applications = pgTable("applications", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull().references(() => user.id),
   status: applicationStatusEnum("status").default("applied"),
   answers: jsonb("answers"),
+  aiScore: integer("aiScore"),
+  aiFeedback: text("aiFeedback"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
