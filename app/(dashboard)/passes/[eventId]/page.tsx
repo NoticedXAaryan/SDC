@@ -7,7 +7,8 @@ import { generateSignedPass } from "@/lib/passes/qr";
 import { RotatingQR } from "@/components/passes/rotating-qr";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function PassPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
@@ -38,9 +39,7 @@ export default async function PassPage({ params }: { params: Promise<{ eventId: 
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <h2 className="text-2xl font-bold">Registration not confirmed</h2>
         <p className="text-muted-foreground">Your status is currently: {registration.status}</p>
-        <Button asChild>
-          <Link href={`/events/${event.slug}`}>Back to Event</Link>
-        </Button>
+        <Link href={`/events/${event.slug}`} className={cn(buttonVariants())}>Back to Event</Link>
       </div>
     );
   }
@@ -76,9 +75,7 @@ export default async function PassPage({ params }: { params: Promise<{ eventId: 
       </Card>
       
       <div className="flex justify-center">
-        <Button variant="outline" asChild>
-          <Link href={`/events/${event.slug}`}>← Back to Event</Link>
-        </Button>
+        <Link href={`/events/${event.slug}`} className={cn(buttonVariants({ variant: "outline" }))}>← Back to Event</Link>
       </div>
     </div>
   );

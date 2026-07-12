@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 /**
- * This wrapper avoids importing @pdfme/ui at build time.
- * The pdfme library depends on clawpdf, which uses Node.js `module` built-in
- * and cannot be bundled by Turbopack for the browser. We defer the import
- * to a runtime-only `import()` inside useEffect, which only runs in the browser.
+ * Certificate template visual designer.
+ *
+ * @pdfme/ui depends on clawpdf which imports Node.js built-ins (node:fs/promises,
+ * node:url, node:zlib). These cannot be resolved by any browser bundler.
+ *
+ * We use the `webpackIgnore: true` magic comment on the dynamic import so that
+ * Webpack (and Turbopack, which respects the same comment) skips static analysis
+ * of these imports entirely, deferring resolution to the browser runtime.
  */
 export function CertificateDesigner({
   initialTemplate,
@@ -29,11 +33,14 @@ export function CertificateDesigner({
 
     async function loadDesigner() {
       try {
-        // Runtime-only dynamic import — never touched by the bundler at build time
-        const [{ Designer }, { text, image, barcodes }] = await Promise.all([
-          import("@pdfme/ui"),
-          import("@pdfme/schemas"),
+        // webpackIgnore prevents the bundler from tracing into these modules
+        const [pdfmeUi, pdfmeSchemas] = await Promise.all([
+          import(/* webpackIgnore: true */ "@pdfme/ui"),
+          import(/* webpackIgnore: true */ "@pdfme/schemas"),
         ]);
+
+        const { Designer } = pdfmeUi;
+        const { text, image, barcodes } = pdfmeSchemas;
 
         if (cancelled || !designerRef.current) return;
 

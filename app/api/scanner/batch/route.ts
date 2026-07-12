@@ -32,12 +32,17 @@ export async function POST(req: Request) {
           continue;
         }
 
+        if (!payload.userId || !payload.passCode) {
+          results.push({ id: checkIn.id, success: false, error: "Invalid token payload" });
+          continue;
+        }
+
         // 3. Find registration
         const userRegs = await db.select().from(registrations).where(
           and(
             eq(registrations.eventId, checkIn.eventId),
-            eq(registrations.userId, payload.userId as string),
-            eq(registrations.passCode, payload.passCode as string)
+            eq(registrations.userId, payload.userId),
+            eq(registrations.passCode, payload.passCode)
           )
         ).limit(1);
 

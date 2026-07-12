@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
@@ -19,12 +20,8 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button asChild size="lg">
-              <Link href="/login">Access Dashboard</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/projects">View Project Showcase</Link>
-            </Button>
+            <Link href="/login" className={cn(buttonVariants({ size: "lg" }))}>Access Dashboard</Link>
+            <Link href="/projects" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>View Project Showcase</Link>
           </div>
         </div>
       </main>

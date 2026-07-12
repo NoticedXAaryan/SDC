@@ -4,7 +4,8 @@ import { certificateTemplates } from "@/lib/db/schema";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function CertificatesDashboardPage() {
   const session = await requireSession();
@@ -20,7 +21,6 @@ export default async function CertificatesDashboardPage() {
     <div className="space-y-6 max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Certificates & Templates</h1>
-        {/* We would have a dialog here to create a new template, simplified for now to a button that links to a new template page or action */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -31,11 +31,12 @@ export default async function CertificatesDashboardPage() {
               <CardDescription>Created by {template.createdBy}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild variant="outline" className="w-full">
-                <Link href={`/lead/certificates/templates/${template.id}/edit`}>
-                  Edit Design
-                </Link>
-              </Button>
+              <Link 
+                href={`/lead/certificates/templates/${template.id}/edit`} 
+                className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+              >
+                Edit Design
+              </Link>
             </CardContent>
           </Card>
         ))}

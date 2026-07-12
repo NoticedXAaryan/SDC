@@ -12,6 +12,22 @@ export class AuthorizationError extends Error {
   }
 }
 
+/**
+ * Extended session user type that includes our custom `role` column.
+ * Better Auth's default session type doesn't include custom fields
+ * we added to the user table, so we extend it here.
+ */
+export type SessionUser = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  image?: string | null;
+  role?: string | null;
+};
+
 export async function requireSession() {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
@@ -20,7 +36,9 @@ export async function requireSession() {
     redirect("/login");
   }
   
-  return session;
+  // Better Auth returns the full user row (including our custom `role` column),
+  // but its TypeScript type doesn't reflect custom schema fields.
+  return session as typeof session & { user: SessionUser };
 }
 
 export async function requireRole(roles: string[]) {

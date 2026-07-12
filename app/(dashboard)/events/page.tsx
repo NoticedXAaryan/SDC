@@ -2,7 +2,8 @@ import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 
@@ -45,9 +46,7 @@ export default async function EventsPage() {
                 </CardDescription>
               </CardHeader>
               <CardFooter className="mt-auto pt-6">
-                <Button asChild className="w-full">
-                  <Link href={`/events/${event.slug}`}>View Details</Link>
-                </Button>
+                <Link href={`/events/${event.slug}`} className={cn(buttonVariants(), "w-full")}>View Details</Link>
               </CardFooter>
             </Card>
           ))}

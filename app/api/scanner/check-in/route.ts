@@ -40,6 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Pass is for a different event" }, { status: 400 });
     }
 
+    if (!payload.userId || !payload.passCode) {
+      return NextResponse.json({ success: false, error: "Invalid token payload" }, { status: 400 });
+    }
+
     // 3. Find the registration
     const userRegs = await db.select().from(registrations).where(
       and(

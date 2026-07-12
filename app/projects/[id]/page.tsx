@@ -3,9 +3,11 @@ import { projects } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Globe, User } from "lucide-react";
+import { Globe, User, ExternalLink } from "lucide-react";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,15 +29,15 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <p className="text-xl text-muted-foreground">{project.description}</p>
         
         <div className="flex justify-center gap-4 pt-4">
-          {project.repoUrl && (
-            <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
+          {project.githubUrl && (
+            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline"><Globe className="mr-2 h-4 w-4" /> Repository</Button>
             </a>
           )}
           {project.liveUrl && (
-            <Button variant="outline" asChild>
-              <Link href={project.liveUrl} target="_blank"><Globe className="mr-2 w-4 h-4" /> Live Demo</Link>
-            </Button>
+            <Link href={project.liveUrl} target="_blank" className={cn(buttonVariants({ variant: "outline" }))}>
+              <ExternalLink className="mr-2 w-4 h-4" /> Live Demo
+            </Link>
           )}
         </div>
       </div>
@@ -64,13 +66,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="flex gap-2">
                   {member.github && (
-                    <Link href={`https://github/${member.github}`} target="_blank" className="text-muted-foreground hover:text-foreground">
-                      <Github className="w-4 h-4" />
-                    </Link>
-                  )}
-                  {member.twitter && (
-                    <Link href={`https://twitter.com/${member.twitter}`} target="_blank" className="text-muted-foreground hover:text-blue-500">
-                      <Twitter className="w-4 h-4" />
+                    <Link href={`https://github.com/${member.github}`} target="_blank" className="text-muted-foreground hover:text-foreground">
+                      <ExternalLink className="w-4 h-4" />
                     </Link>
                   )}
                 </div>

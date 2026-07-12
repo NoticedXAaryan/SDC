@@ -35,7 +35,7 @@ export function generateSignedPass(payload: PassPayload): string {
 export class HMACPassValidator implements IPassValidator {
   constructor(private secret: string = PASS_SECRET) {}
 
-  async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; iat?: number }> {
+  async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
     try {
       const [base64Payload, signature] = payload.split(".");
       if (!base64Payload || !signature) return { valid: false };
@@ -54,6 +54,7 @@ export class HMACPassValidator implements IPassValidator {
           valid: true,
           userId: parsed.u,
           eventId: parsed.e,
+          passCode: parsed.p,
           iat: parsed.i
         };
       }

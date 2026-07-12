@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Globe, ThumbsUp } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Globe } from "lucide-react";
 
 export default async function ProjectsPage() {
   const allProjects = await db.select().from(projects);
@@ -39,14 +40,12 @@ export default async function ProjectsPage() {
               <CardFooter className="flex justify-between border-t p-4 bg-gray-50/50">
                 <div className="flex gap-2">
                   {project.liveUrl && (
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={project.liveUrl} target="_blank"><Globe className="w-4 h-4" /></Link>
-                    </Button>
+                    <Link href={project.liveUrl} target="_blank" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+                      <Globe className="w-4 h-4" />
+                    </Link>
                   )}
                 </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/projects/${project.id}`}>View Details</Link>
-                </Button>
+                <Link href={`/projects/${project.id}`} className={cn(buttonVariants({ variant: "outline" }))}>View Details</Link>
               </CardFooter>
             </Card>
           );

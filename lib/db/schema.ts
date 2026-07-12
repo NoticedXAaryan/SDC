@@ -93,7 +93,7 @@ export const invitation = pgTable("invitation", {
 export const eventTypeEnum = pgEnum("event_type", ["hackathon", "workshop", "seminar", "social", "competition"]);
 export const eventStatusEnum = pgEnum("event_status", ["draft", "published", "cancelled", "completed"]);
 export const eventVisibilityEnum = pgEnum("event_visibility", ["public", "private", "unlisted"]);
-export const registrationStatusEnum = pgEnum("registration_status", ["confirmed", "waitlist", "checked_in", "cancelled"]);
+export const registrationStatusEnum = pgEnum("registration_status", ["confirmed", "waitlist", "checked_in", "cancelled", "no_show"]);
 
 export const events = pgTable("events", {
   id: text("id").primaryKey(),
