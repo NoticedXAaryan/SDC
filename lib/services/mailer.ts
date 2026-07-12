@@ -13,9 +13,12 @@ export const Mailer = {
       return;
     }
 
+    const fromName = process.env.EMAIL_FROM_NAME || "STC Team";
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || "noreply@your-domain.com";
+
     try {
       const { data, error } = await resend.emails.send({
-        from: "STC OS <noreply@your-domain.com>", // You must configure a verified domain in Resend
+        from: `${fromName} <${fromAddress}>`,
         to,
         subject,
         html,
