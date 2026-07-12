@@ -29,6 +29,13 @@
       "when": 1783857944179,
       "tag": "0003_ai_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783860687361,
+      "tag": "0004_tan_infant_terrible",
+      "breakpoints": true
     }
   ]
 }
