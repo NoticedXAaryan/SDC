@@ -197,3 +197,18 @@ export async function checkEmergencyFreeze(role?: string) {
   }
 }
 
+/**
+ * Returns the domain of the user based on their role or member record.
+ */
+export async function getUserDomain(userId: string, role: string): Promise<string | null> {
+  if (role.endsWith("_lead") && !["co_lead", "vice_lead", "lead", "volunteer_lead"].includes(role)) {
+    return role.split("_")[0]; // e.g. tech_lead -> tech
+  }
+  
+  const { db } = await import("@/lib/db");
+  const { member } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const [userMember] = await db.select().from(member).where(eq(member.userId, userId)).limit(1);
+  return userMember?.domain || null;
+}

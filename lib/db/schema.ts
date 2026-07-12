@@ -253,6 +253,8 @@ export const inventoryLogs = pgTable("inventoryLogs", {
   timestamp: timestamp("timestamp").defaultNow().notNull()
 });
 
+export const submissionStatusEnum = pgEnum("submission_status", ["pending", "approved", "rejected"]);
+
 export const projects = pgTable("projects", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -262,6 +264,7 @@ export const projects = pgTable("projects", {
   teamMembers: jsonb("teamMembers"), // array of { name, role, github, twitter }
   images: jsonb("images"), // array of urls
   upvotes: integer("upvotes").default(0),
+  status: submissionStatusEnum("status").default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
@@ -302,7 +305,6 @@ export const pointLogs = pgTable("pointLogs", {
   index: index("point_logs_user_id_idx").on(t.userId)
 }));
 
-export const submissionStatusEnum = pgEnum("submission_status", ["pending", "approved", "rejected"]);
 
 export const achievementSubmissions = pgTable("achievement_submissions", {
   id: text("id").primaryKey(),
@@ -369,6 +371,7 @@ export const researchPapers = pgTable("researchPapers", {
   title: text("title").notNull(),
   authors: text("authors").notNull(),
   url: text("url"),
+  status: submissionStatusEnum("status").default("pending"),
   publishedAt: timestamp("publishedAt", { withTimezone: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });

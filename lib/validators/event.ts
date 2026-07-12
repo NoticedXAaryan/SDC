@@ -16,6 +16,7 @@ export const createEventBaseSchema = z.object({
   visibility: z.enum(["public", "private", "unlisted"]).default("public"),
   coverImage: z.string().url().optional(),
   tags: z.array(z.string().max(50)).max(10).optional(),
+  attendanceEstimates: z.number().int().min(1).max(100000).optional(),
 });
 
 export const createEventSchema = createEventBaseSchema.refine(

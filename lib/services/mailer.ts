@@ -1,17 +1,15 @@
-import sgMail from "@sendgrid/mail";
+import { Resend } from "resend";
 import { env } from "../env";
 
-if (env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(env.SENDGRID_API_KEY);
-}
+const resend = new Resend(env.RESEND_API_KEY || "dummy-key");
 
 export const Mailer = {
   /**
-   * Sends an email using SendGrid.
+   * Sends an email using Resend.
    */
   async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-    if (!env.SENDGRID_API_KEY || !env.EMAIL_FROM_ADDRESS) {
-      console.warn("⚠️ SENDGRID_API_KEY or EMAIL_FROM_ADDRESS is not set. Email not sent.");
+    if (!env.RESEND_API_KEY || !env.EMAIL_FROM_ADDRESS) {
+      console.warn("⚠️ RESEND_API_KEY or EMAIL_FROM_ADDRESS is not set. Email not sent.");
       console.log(`[Email to ${to}] Subject: ${subject}`);
       return;
     }
@@ -19,22 +17,23 @@ export const Mailer = {
     const fromName = env.EMAIL_FROM_NAME || "SDC Team";
     const fromAddress = env.EMAIL_FROM_ADDRESS;
 
-    const msg = {
-      to,
-      from: {
-        name: fromName,
-        email: fromAddress
-      },
-      subject,
-      html,
-    };
-
     try {
-      const response = await sgMail.send(msg);
-      console.log(`✅ Email sent to ${to}`);
-      return response;
-    } catch (err: any) {
-      console.error("❌ Failed to send email:", err.response ? err.response.body : err);
+      const { data, error } = await resend.emails.send({
+        from: `${fromName} <${fromAddress}>`,
+        to,
+        subject,
+        html,
+      });
+
+      if (error) {
+        console.error("❌ Resend API Error:", error);
+        throw new Error(error.message);
+      }
+
+      console.log(`✅ Email sent to ${to} (ID: ${data?.id})`);
+      return data;
+    } catch (err) {
+      console.error("❌ Failed to send email:", err);
       throw err;
     }
   },

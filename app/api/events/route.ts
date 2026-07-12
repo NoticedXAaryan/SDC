@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession, requireRole, isManagementRole } from "@/lib/dal/auth";
+import { requireSession, requireRole, isManagementRole, getUserDomain } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations, user } from "@/lib/db/schema";
 import { eq, ilike, desc, asc, sql, and, gte, lte } from "drizzle-orm";
@@ -17,6 +17,13 @@ export async function GET(req: NextRequest) {
   try {
     const session = await requireSession();
     const isManagement = isManagementRole(session.user.role as string);
+    const isAdmin = ["admin", "owner"].includes(session.user.role as string);
+
+    // Get user domain if they are a siloed lead
+    let userDomain: string | null = null;
+    if (isManagement && !isAdmin) {
+      userDomain = await getUserDomain(session.user.id, session.user.role as string);
+    }
 
     const url = new URL(req.url);
     const params = eventSearchSchema.safeParse({
@@ -52,7 +59,9 @@ export async function GET(req: NextRequest) {
     } else if (status) {
       conditions.push(eq(events.status, status));
     }
-    if (domain) {
+    if (userDomain) {
+      conditions.push(eq(events.domain, userDomain));
+    } else if (domain) {
       conditions.push(eq(events.domain, domain));
     }
     if (upcoming) {
@@ -138,7 +147,11 @@ export async function POST(req: NextRequest) {
       visibility: data.visibility,
       coverImage: data.coverImage || null,
       isInternal: data.isInternal || false,
-      status: "draft",
+      status: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "draft" : "published",
+      metadata: {
+        approvalStatus: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "pending" : "approved",
+        attendanceEstimates: data.attendanceEstimates || null,
+      },
       createdBy: session.user.id,
     });
 

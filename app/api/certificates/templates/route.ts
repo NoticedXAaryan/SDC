@@ -1,9 +1,27 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { certificateTemplates } from "@/lib/db/schema";
 
-export async function POST(req: Request) {
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await requireSession();
+    const userRole = session.user.role || "member";
+    if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    }
+    const templates = await db.query.certificateTemplates.findMany({
+      orderBy: (templates, { desc }) => [desc(templates.createdAt)]
+    });
+    return NextResponse.json({ success: true, templates });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
   try {
     const session = await requireSession();
     const userRole = session.user.role || "member";
@@ -12,16 +30,15 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name } = body;
+    const { name, basePdf, schemas } = body;
 
     if (!name) {
       return NextResponse.json({ success: false, error: "Missing name" }, { status: 400 });
     }
 
-    // Basic empty template
     const defaultTemplate = {
-      basePdf: "https://pdfme.com/blank.pdf", // A simple blank pdf URL
-      schemas: [
+      basePdf: basePdf || "https://pdfme.com/blank.pdf",
+      schemas: schemas || [
         {
           name: {
             type: "text",

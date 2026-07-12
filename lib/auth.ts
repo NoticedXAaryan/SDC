@@ -69,11 +69,31 @@ const alumniRole = defaultAc.newRole({
     session: [],
 });
 
+const outsiderRole = defaultAc.newRole({
+    user: [],
+    session: [],
+});
+
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
         provider: "pg",
         schema,
     }),
+    databaseHooks: {
+        user: {
+            create: {
+                before: (user) => {
+                    const isUni = user.email.endsWith('@goa.paruluniversity.ac.in') || user.email.endsWith('@paruluniversity.ac.in');
+                    return {
+                        data: {
+                            ...user,
+                            role: isUni ? "applicant" : "outsider"
+                        }
+                    };
+                }
+            }
+        }
+    },
     emailAndPassword: {
         enabled: true,
         sendResetPassword: async ({ user, url }, request) => {
@@ -132,6 +152,7 @@ export const auth = betterAuth({
                 member: memberRole,
                 alumni: alumniRole,
                 applicant: applicantRole,
+                outsider: outsiderRole,
             },
         }),
     ],
