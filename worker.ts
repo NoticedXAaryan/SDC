@@ -9,6 +9,7 @@ Sentry.init({
 import { certificateWorker } from "./lib/workers/certificates";
 import { emailWorker } from "./lib/workers/email";
 import { gradingWorker } from "./lib/workers/grading";
+import { aiWorker } from "./lib/workers/ai";
 
 import { logger } from "./lib/logger";
 
@@ -20,5 +21,6 @@ process.on("SIGTERM", async () => {
   await certificateWorker.close();
   await emailWorker.close();
   await gradingWorker.close();
+  await aiWorker.close();
   process.exit(0);
 });

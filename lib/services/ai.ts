@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { generateObject, generateText } from "ai";
+import { defaultModel } from "../ai";
+import { db } from "../db";
+import { aiLogs } from "../db/schema";
+import { logger } from "../logger";
 
 export interface AIGradingResult {
   score: number;
@@ -10,13 +15,22 @@ const gradingSchema = z.object({
   feedback: z.string().min(10),
 });
 
-export async function gradeApplication(answers: any): Promise<AIGradingResult> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    console.warn("OPENROUTER_API_KEY is not set. Throwing error for queue retry.");
-    throw new Error("OPENROUTER_API_KEY missing");
+async function logAIOperation(prompt: string, response: string, latencyMs: number, status: "success" | "failed", entityId?: string, entityType?: string) {
+  try {
+    await db.insert(aiLogs).values({
+      prompt,
+      response,
+      latencyMs,
+      status,
+      entityId,
+      entityType,
+    });
+  } catch (error) {
+    logger.error("Failed to insert AI log: " + (error as any).message);
   }
+}
 
+export async function gradeApplication(answers: any, entityId?: string): Promise<AIGradingResult> {
   const prompt = `
   You are an expert HR recruiter for a top-tier technical student club. 
   Please evaluate the following application answers and provide a score out of 100, 
@@ -28,73 +42,78 @@ export async function gradeApplication(answers: any): Promise<AIGradingResult> {
   === APPLICANT ANSWERS START ===
   ${JSON.stringify(answers, null, 2)}
   === APPLICANT ANSWERS END ===
-  
-  Return your response strictly in the following JSON format:
+  `;
+
+  const start = Date.now();
+  try {
+    const { object } = await generateObject({
+      model: defaultModel,
+      schema: gradingSchema,
+      prompt,
+    });
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, JSON.stringify(object), latency, "success", entityId, "application");
+    return object;
+  } catch (error: any) {
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, error.message, latency, "failed", entityId, "application");
+    throw new Error("AI grading failed");
+  }
+}
+
+export async function draftCommsForEvent(eventDetails: any, entityId?: string) {
+  const prompt = `
+  You are the PR Lead for a top-tier student tech club.
+  Draft two pieces of content based on the following event details:
+  1. A casual, hype WhatsApp broadcast message (including emojis).
+  2. A formal, engaging Email invitation (HTML format not needed, just plain text with line breaks).
+
+  Event Details:
+  ${JSON.stringify(eventDetails, null, 2)}
+
+  Return strictly in the following JSON format:
   {
-    "score": <integer from 0 to 100>,
-    "feedback": "<string summary>"
+    "whatsappMessage": "<string>",
+    "emailMessage": "<string>"
   }
   `;
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "SDC OS",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash-free",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" }
-    }),
+  const schema = z.object({
+    whatsappMessage: z.string(),
+    emailMessage: z.string(),
   });
 
-  if (!response.ok) {
-    throw new Error(`OpenRouter API error: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0].message.content;
-  
+  const start = Date.now();
   try {
-    const parsed = JSON.parse(content);
-    return gradingSchema.parse(parsed);
-  } catch (error) {
-    console.error("AI response validation failed:", content);
-    throw new Error("Malformed AI response");
+    const { object } = await generateObject({
+      model: defaultModel,
+      schema,
+      prompt,
+    });
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, JSON.stringify(object), latency, "success", entityId, "event");
+    return object;
+  } catch (error: any) {
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, error.message, latency, "failed", entityId, "event");
+    throw new Error("AI comms drafting failed");
   }
 }
 
 export async function callAI(prompt: string, schema: z.ZodTypeAny): Promise<any> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY missing");
-
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "SDC OS",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash-free",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" }
-    }),
-  });
-
-  if (!response.ok) throw new Error(`OpenRouter API error: ${response.statusText}`);
-
-  const data = await response.json();
-  const content = data.choices[0].message.content;
-  
+  const start = Date.now();
   try {
-    const parsed = JSON.parse(content);
-    return schema.parse(parsed);
-  } catch (error) {
-    throw new Error("Malformed AI response");
+    const { object } = await generateObject({
+      model: defaultModel,
+      schema,
+      prompt,
+    });
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, JSON.stringify(object), latency, "success", undefined, "general");
+    return object;
+  } catch (error: any) {
+    const latency = Date.now() - start;
+    await logAIOperation(prompt, error.message, latency, "failed", undefined, "general");
+    throw new Error("AI generic call failed");
   }
 }

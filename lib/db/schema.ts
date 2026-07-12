@@ -127,7 +127,11 @@ export const events = pgTable("events", {
   isPaid: boolean("isPaid").default(false),
   price: numeric("price").default("0"),
   hasLimitedSeating: boolean("hasLimitedSeating").default(true),
-  seatMap: jsonb("seatMap")
+  seatMap: jsonb("seatMap"),
+  
+  // AI fields
+  aiDraftMessage: text("aiDraftMessage"),
+  aiDraftEmail: text("aiDraftEmail"),
 });
 
 export const registrations = pgTable("registrations", {
@@ -414,4 +418,18 @@ export const clubSettings = pgTable("club_settings", {
   isFrozen: boolean("isFrozen").default(false).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   updatedBy: text("updatedBy").references(() => user.id),
+});
+
+export const aiLogStatusEnum = pgEnum("ai_log_status", ["success", "failed"]);
+
+export const aiLogs = pgTable("ai_logs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  prompt: text("prompt").notNull(),
+  response: text("response"),
+  latencyMs: integer("latencyMs"),
+  modelUsed: text("modelUsed").default("openrouter/free"),
+  status: aiLogStatusEnum("status").default("success"),
+  entityId: text("entityId"),
+  entityType: text("entityType"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

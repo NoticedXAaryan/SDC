@@ -16,6 +16,7 @@
     "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.11",
     "@base-ui/react": "^1.6.0",
     "@pdfme/generator": "^6.1.11",
     "@pdfme/schemas": "^6.1.11",
@@ -25,6 +26,7 @@
     "@sentry/nextjs": "^10.65.0",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@types/papaparse": "^5.5.2",
+    "ai": "^7.0.22",
     "better-auth": "^1.6.23",
     "bullmq": "^5.80.2",
     "class-variance-authority": "^0.7.1",

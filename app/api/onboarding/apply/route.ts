@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== "applicant") {
+    if ((session.user as any).role !== "applicant") {
       return NextResponse.json({ error: "Only applicants can apply" }, { status: 403 });
     }
 

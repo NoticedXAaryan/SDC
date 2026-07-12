@@ -5,6 +5,7 @@ import { events, registrations, user } from "@/lib/db/schema";
 import { eq, ilike, desc, asc, sql, and, gte, lte } from "drizzle-orm";
 import { createEventSchema, eventSearchSchema } from "@/lib/validators/event";
 import { logAuditEvent } from "@/lib/services/audit";
+import { aiQueue } from "@/lib/queues/ai";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -165,6 +166,19 @@ export async function POST(req: NextRequest) {
       entity: "event",
       entityId: eventId,
       details: `Created event: ${data.title}`,
+    });
+
+    // Enqueue AI job to draft comms (WhatsApp & Email)
+    await aiQueue.add("draft_event_comms", {
+      eventId,
+      eventDetails: {
+        title: data.title,
+        type: data.type,
+        description: data.description,
+        startsAt: data.startsAt,
+        location: data.location,
+        isInternal: data.isInternal,
+      }
     });
 
     return NextResponse.json({ success: true, id: eventId, slug }, { status: 201 });

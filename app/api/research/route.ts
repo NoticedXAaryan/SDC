@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = ["admin", "owner"].includes(session.user.role as string);
     
     // Content Lead or Admin can view all, otherwise only approved
-    const isContentLead = session.user.role === "content_lead" || session.user.role === "content_co_lead";
+    const isContentLead = (session.user.role as string) === "content_lead" || (session.user.role as string) === "content_co_lead";
     const canViewAll = isAdmin || isContentLead;
 
     let conditions = undefined;

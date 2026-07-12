@@ -57,7 +57,7 @@ export async function PATCH(
     }
 
     // Co-leads can only edit events they created
-    if (session.user.role === "co_lead" && event.createdBy !== session.user.id) {
+    if ((session.user.role as string) === "co_lead" && event.createdBy !== session.user.id) {
       return NextResponse.json({ error: "You can only edit events you created" }, { status: 403 });
     }
 

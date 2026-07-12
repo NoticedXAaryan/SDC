@@ -24,9 +24,22 @@ export type AuditAction =
   | "income_create"
   | "file_upload"
   | "data_export"
-  | "data_delete";
+  | "data_delete"
+  | "certificate_blast"
+  | "certificate_template_create"
+  | "certificate_template_update"
+  | "certificate_template_delete"
+  | "certificate_revoke"
+  | "event_session_create"
+  | "event_approve"
+  | "event_post_event_update"
+  | "event_meeting_schedule"
+  | "event_inventory_allocation"
+  | "guest_register"
+  | "event_deregister"
+  | "whatsapp_template_generate";
 
-export type AuditEntity = "user" | "event" | "registration" | "budget" | "expense" | "certificate" | "inventory" | "system" | "income" | "file";
+export type AuditEntity = "user" | "event" | "registration" | "budget" | "expense" | "certificate" | "inventory" | "system" | "income" | "file" | "certificateTemplates" | "eventSessions" | "clubSettings";
 
 /**
  * Log an action to the audit trail.

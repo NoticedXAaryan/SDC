@@ -26,7 +26,7 @@ export const gradingWorker = new Worker(
     logger.info({ jobId: job.id, applicationId }, "Processing application");
 
     try {
-      const result = await gradeApplication(answers);
+      const result = await gradeApplication(answers, applicationId);
       
       await db.update(applications)
         .set({

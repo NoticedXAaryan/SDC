@@ -41,20 +41,37 @@ const PUBLIC_PATHS = [
 ];
 
 export function proxy(request: NextRequest) {
+  const url = request.nextUrl.clone();
   const { pathname } = request.nextUrl;
+  
+  // 1. Subdomain routing logic
+  const hostname = request.headers.get('host') || '';
+  const currentHost = process.env.NODE_ENV === 'production' 
+    ? hostname.replace(`.yourdomain.com`, '') 
+    : hostname.replace(`.localhost:3000`, '');
 
+  // If the host is not the main domain (e.g., 'techfest' instead of 'localhost:3000')
+  let isSubdomain = false;
+  if (
+    currentHost !== 'localhost:3000' && 
+    currentHost !== 'yourdomain.com' &&
+    currentHost !== 'www.yourdomain.com' &&
+    currentHost !== hostname
+  ) {
+    isSubdomain = true;
+    url.pathname = `/events/${currentHost}${url.pathname}`;
+  }
+
+  // 2. Auth Protection Logic
   // Allow public paths
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
-    return NextResponse.next();
+    return isSubdomain ? NextResponse.rewrite(url) : NextResponse.next();
   }
 
   // Check if route is protected
   const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
   if (isProtected) {
-    // Better Auth stores its session token in a cookie.
-    // We check for the cookie's existence as a fast gate.
-    // The actual session validation happens in the DAL (requireSession).
     const sessionCookie = request.cookies.get("better-auth.session_token")
       || request.cookies.get("__Secure-better-auth.session_token");
 
@@ -65,7 +82,7 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return isSubdomain ? NextResponse.rewrite(url) : NextResponse.next();
 }
 
 export const config = {

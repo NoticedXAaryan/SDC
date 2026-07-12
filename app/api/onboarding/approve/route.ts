@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     // Only leads, admins, owners can approve
     const allowedRoles = ["lead", "admin", "owner"];
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!allowedRoles.includes((session.user as any).role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (parsed.approve) {
       // Using better-auth admin plugin to set role
-      await auth.api.setRole({
+      await (auth.api as any).setRole({
         body: {
           userId: parsed.userId,
           role: "member",

@@ -82,7 +82,7 @@ export const auth = betterAuth({
     databaseHooks: {
         user: {
             create: {
-                before: (user) => {
+                before: async (user) => {
                     const isUni = user.email.endsWith('@goa.paruluniversity.ac.in') || user.email.endsWith('@paruluniversity.ac.in');
                     return {
                         data: {

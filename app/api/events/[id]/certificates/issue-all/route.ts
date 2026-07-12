@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, getUserDomain, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events, registrations, certificates, certificateTemplates } from "@/lib/db/schema";
+import { events, registrations, certificates, certificateTemplates, user } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { certificateQueue } from "@/lib/queues/certificates";
 
@@ -46,16 +46,21 @@ export async function POST(
       return NextResponse.json({ error: "Template not found" }, { status: 404 });
     }
 
-    // Fetch all checked_in attendees
-    const attendees = await db.query.registrations.findMany({
-      where: and(
-        eq(registrations.eventId, eventId),
-        eq(registrations.status, "checked_in")
-      ),
-      with: {
-        user: true,
-      }
-    });
+    // Fetch all checked_in attendees with user data via manual join
+    const attendees = await db
+      .select({
+        userId: registrations.userId,
+        userName: user.name,
+        userEmail: user.email,
+      })
+      .from(registrations)
+      .innerJoin(user, eq(registrations.userId, user.id))
+      .where(
+        and(
+          eq(registrations.eventId, eventId),
+          eq(registrations.status, "checked_in")
+        )
+      );
 
     if (attendees.length === 0) {
       return NextResponse.json({ message: "No checked-in attendees found to issue certificates to." }, { status: 200 });
@@ -69,8 +74,8 @@ export async function POST(
         eventId,
         templateId,
         issuedBy: session.user.id,
-        userName: reg.user?.name,
-        userEmail: reg.user?.email,
+        userName: reg.userName,
+        userEmail: reg.userEmail,
       },
     }));
 

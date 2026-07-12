@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/dal/auth";
 import { emailQueue } from "@/lib/queues/email";
+import { aiQueue } from "@/lib/queues/ai";
 import { gradingQueue } from "@/lib/workers/grading";
 import { certificateQueue } from "@/lib/queues/certificates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ export default async function AdminJobsPage() {
 
   const queues = [
     { name: "Email", queue: emailQueue },
+    { name: "AI Processing", queue: aiQueue },
     { name: "Grading", queue: gradingQueue },
     { name: "Certificates", queue: certificateQueue },
   ];

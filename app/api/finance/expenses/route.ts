@@ -88,8 +88,8 @@ export async function POST(req: NextRequest) {
       details: `Submitted expense of ₹${amount} for category ${category}`,
     });
 
-    const { notifyLeads } = await import("@/lib/services/notifications");
-    await notifyLeads("finance_lead", {
+    const { NotificationService } = await import("@/lib/services/notifications");
+    await NotificationService.notifyLeads("finance_lead", {
       type: "approval_needed",
       title: "New Expense Approval",
       message: `A new expense of ${amount} requires your approval.`,

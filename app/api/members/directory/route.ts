@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
 
-    const isManagement = isManagementRole(session.user.role as string);
+    const isManagement = isManagementRole((session.user as any).role);
 
     // Filter to only approved members or leads, exclude outsiders and applicants
     const roleFilters = ne(user.role, "applicant");
