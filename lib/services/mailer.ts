@@ -1,20 +1,21 @@
 import { Resend } from "resend";
+import { env } from "../env";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "dummy-key");
+const resend = new Resend(env.RESEND_API_KEY || "dummy-key");
 
 export const Mailer = {
   /**
    * Sends an email using Resend.
    */
   async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-    if (!process.env.RESEND_API_KEY) {
-      console.warn("⚠️ RESEND_API_KEY is not set. Email not sent.");
+    if (!env.RESEND_API_KEY || !env.EMAIL_FROM_ADDRESS) {
+      console.warn("⚠️ RESEND_API_KEY or EMAIL_FROM_ADDRESS is not set. Email not sent.");
       console.log(`[Email to ${to}] Subject: ${subject}`);
       return;
     }
 
-    const fromName = process.env.EMAIL_FROM_NAME || "STC Team";
-    const fromAddress = process.env.EMAIL_FROM_ADDRESS || "noreply@your-domain.com";
+    const fromName = env.EMAIL_FROM_NAME || "STC Team";
+    const fromAddress = env.EMAIL_FROM_ADDRESS;
 
     try {
       const { data, error } = await resend.emails.send({

@@ -5,7 +5,12 @@ import path from "path";
 import crypto from "crypto";
 import { logAuditEvent } from "@/lib/services/audit";
 
+import { fileTypeFromBuffer } from "file-type";
+
 export const dynamic = "force-dynamic";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 /**
  * POST /api/upload
@@ -23,7 +28,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "File exceeds 10MB limit" }, { status: 400 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
+    
+    const type = await fileTypeFromBuffer(buffer);
+    if (!type || !ALLOWED_MIME_TYPES.includes(type.mime)) {
+      return NextResponse.json({ error: "Invalid file type. Allowed: JPG, PNG, WEBP, PDF" }, { status: 400 });
+    }
     
     // Create uploads directory if it doesn't exist
     const uploadDir = path.join(process.cwd(), "public", "uploads");

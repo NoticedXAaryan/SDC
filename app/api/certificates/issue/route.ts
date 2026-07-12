@@ -5,12 +5,14 @@ import { events, registrations, certificateTemplates } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logAuditEvent } from "@/lib/services/audit";
 
+import { certificateQueue } from "@/lib/queues/certificates";
+
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/certificates/issue
  * Bulk issue certificates for an event.
- * In a real environment, this adds jobs to a BullMQ queue.
+ * Adds jobs to a BullMQ queue.
  * Requires lead, co_lead, admin, or owner.
  */
 export async function POST(req: NextRequest) {
@@ -49,8 +51,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No checked-in attendees found for this event" }, { status: 400 });
     }
 
-    // Here we would typically enqueue a bulk job to BullMQ:
-    // await certificateQueue.addBulk(attendees.map(a => ({ name: 'issue', data: { userId: a.userId, eventId, templateId } })));
+    // Enqueue a bulk job to BullMQ
+    await certificateQueue.addBulk(attendees.map(a => ({ 
+      name: 'issue', 
+      data: { userId: a.userId, eventId, templateId, issuedBy: session.user.id } 
+    })));
     
     await logAuditEvent({
       actorId: session.user.id,

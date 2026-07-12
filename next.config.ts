@@ -1,4 +1,6 @@
+import "./lib/env";
 import type { NextConfig } from "next";
+
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.159.148', 'localhost'],

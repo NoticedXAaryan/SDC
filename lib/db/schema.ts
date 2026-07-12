@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique } from "drizzle-orm/pg-core";
 
 
 export const user = pgTable("user", {
@@ -121,6 +121,7 @@ export const events = pgTable("events", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   deletedAt: timestamp("deletedAt"),
+  isInternal: boolean("isInternal").default(false),
   
   // v2 fields
   isPaid: boolean("isPaid").default(false),
@@ -143,7 +144,30 @@ export const registrations = pgTable("registrations", {
   attendanceMethod: text("attendanceMethod").default("qr"), // qr, qr+face, manual
   faceMatchDistance: real("faceMatchDistance"),
   needsFaceEnrollment: boolean("needsFaceEnrollment").default(false)
+}, (t) => [
+  index("registrations_event_id_idx").on(t.eventId),
+  index("registrations_user_id_idx").on(t.userId),
+  unique("registrations_event_user_unq").on(t.eventId, t.userId)
+]);
+
+export const eventSessions = pgTable("event_sessions", {
+  id: text("id").primaryKey(),
+  eventId: text("eventId").notNull().references(() => events.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  startTime: timestamp("startTime", { withTimezone: true }).notNull(),
+  endTime: timestamp("endTime", { withTimezone: true }).notNull(),
+  location: text("location"),
+  createdAt: timestamp("createdAt").defaultNow().notNull()
 });
+
+export const sessionAttendance = pgTable("session_attendance", {
+  sessionId: text("sessionId").notNull().references(() => eventSessions.id),
+  userId: text("userId").notNull().references(() => user.id),
+  checkedInAt: timestamp("checkedInAt", { withTimezone: true }).defaultNow().notNull()
+}, (t) => ({
+  unique: unique("session_attendance_unq").on(t.sessionId, t.userId)
+}));
 
 export const certificateTemplates = pgTable("certificateTemplates", {
   id: text("id").primaryKey(),
@@ -171,6 +195,19 @@ export const certificates = pgTable("certificates", {
 
 export const expenseStatusEnum = pgEnum("expense_status", ["pending", "approved", "rejected"]);
 export const inventoryActionEnum = pgEnum("inventory_action", ["check_out", "check_in"]);
+export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done", "blocked"]);
+
+export const tasks = pgTable("tasks", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").default("todo"),
+  eventId: text("eventId").references(() => events.id),
+  assigneeId: text("assigneeId").references(() => user.id),
+  dueDate: timestamp("dueDate", { withTimezone: true }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
 
 export const budgets = pgTable("budgets", {
   id: text("id").primaryKey(),
@@ -186,6 +223,7 @@ export const expenses = pgTable("expenses", {
   category: text("category").notNull(),
   receiptUrl: text("receiptUrl"),
   status: expenseStatusEnum("status").default("pending"),
+  createdBy: text("createdBy").references(() => user.id),
   approvedBy: text("approvedBy").references(() => user.id),
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
@@ -227,18 +265,22 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
-export const applicationStatusEnum = pgEnum("application_status", ["applied", "ai_graded", "interviewing", "accepted", "rejected"]);
+export const applicationStatusEnum = pgEnum("application_status", ["applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]);
 
 export const applications = pgTable("applications", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull().references(() => user.id),
+  applicationCycle: text("applicationCycle").notNull(),
   status: applicationStatusEnum("status").default("applied"),
   answers: jsonb("answers"),
   aiScore: integer("aiScore"),
   aiFeedback: text("aiFeedback"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
-});
+}, (t) => [
+  index("applications_status_idx").on(t.status),
+  unique("applications_user_cycle_unique").on(t.userId, t.applicationCycle)
+]);
 
 export const interviews = pgTable("interviews", {
   id: text("id").primaryKey(),
@@ -253,9 +295,72 @@ export const interviews = pgTable("interviews", {
 export const pointLogs = pgTable("pointLogs", {
   id: text("id").primaryKey(),
   userId: text("userId").notNull().references(() => user.id),
-  amount: integer("amount").notNull(),
+  points: integer("points").notNull(),
   reason: text("reason").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull()
+}, (t) => ({
+  index: index("point_logs_user_id_idx").on(t.userId)
+}));
+
+export const submissionStatusEnum = pgEnum("submission_status", ["pending", "approved", "rejected"]);
+
+export const achievementSubmissions = pgTable("achievement_submissions", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull().references(() => user.id),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  proofUrl: text("proofUrl"),
+  status: submissionStatusEnum("status").default("pending"),
+  pointsAwarded: integer("pointsAwarded").default(0),
+  reviewedBy: text("reviewedBy").references(() => user.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const contentStatusEnum = pgEnum("content_status", ["idea", "drafting", "review", "scheduled", "published"]);
+
+export const contentItems = pgTable("content_items", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  platform: text("platform"), 
+  status: contentStatusEnum("status").default("idea"),
+  authorId: text("authorId").references(() => user.id),
+  scheduledFor: timestamp("scheduledFor", { withTimezone: true }),
+  publishedAt: timestamp("publishedAt", { withTimezone: true }),
+  mediaUrls: jsonb("mediaUrls"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const vendors = pgTable("vendors", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  contactName: text("contactName"),
+  email: text("email"),
+  phone: text("phone"),
+  category: text("category"),
+  rating: integer("rating").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export const procurementStatusEnum = pgEnum("procurement_status", ["draft", "pending_quotes", "approval", "approved", "rejected", "completed"]);
+
+export const procurementRequests = pgTable("procurement_requests", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: procurementStatusEnum("status").default("draft"),
+  requestedBy: text("requestedBy").notNull().references(() => user.id),
+  eventId: text("eventId").references(() => events.id),
+  estimatedCost: integer("estimatedCost"),
+  selectedVendorId: text("selectedVendorId").references(() => vendors.id),
+  financeTransactionId: text("financeTransactionId"),
+  quotesUrl: text("quotesUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export const researchPapers = pgTable("researchPapers", {
@@ -286,4 +391,24 @@ export const auditLogs = pgTable("auditLogs", {
   entityId: text("entityId"),
   details: text("details"),
   timestamp: timestamp("timestamp").defaultNow().notNull()
+}, (t) => [
+  index("audit_logs_actor_time_idx").on(t.actorId, t.timestamp)
+]);
+
+export const notifications = pgTable("notifications", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").default(false).notNull(),
+  link: text("link"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const clubSettings = pgTable("club_settings", {
+  id: text("id").primaryKey().default("default"),
+  isFrozen: boolean("isFrozen").default(false).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  updatedBy: text("updatedBy").references(() => user.id),
 });

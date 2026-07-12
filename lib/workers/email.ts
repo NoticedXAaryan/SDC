@@ -1,5 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { Mailer } from "@/lib/services/mailer";
+import { logger } from "@/lib/logger";
 
 const connection = {
   host: process.env.REDIS_HOST || "localhost",
@@ -14,14 +15,14 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
       await Mailer.sendEventQRPass(payload.email, payload.eventTitle, payload.qrCodeDataUrl);
       break;
     default:
-      console.warn("Unknown email job type:", type);
+      logger.warn({ type }, "Unknown email job type");
   }
 }, { connection });
 
 emailWorker.on('completed', job => {
-  console.log(`Email job ${job.id} completed successfully`);
+  logger.info({ jobId: job.id, type: job.data?.type }, "Email job completed successfully");
 });
 
 emailWorker.on('failed', (job, err) => {
-  console.error(`Email job ${job?.id} failed:`, err);
+  logger.error({ jobId: job?.id, type: job?.data?.type, err }, "Email job failed");
 });

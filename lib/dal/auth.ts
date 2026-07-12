@@ -149,3 +149,50 @@ export function isManagementRole(role: string): boolean {
   return MANAGEMENT_ROLES.includes(role as STCRole);
 }
 
+/**
+ * State machine guard for entity status transitions.
+ * Evaluates whether a role can transition an entity from one status to another.
+ */
+export function canTransition(
+  role: STCRole,
+  entityType: "event" | "expense" | "resourceRequest" | "contentItem" | "application",
+  fromStatus: string,
+  toStatus: string
+): boolean {
+  // Admins and owners can do anything
+  if (ADMIN_ROLES.includes(role)) return true;
+
+  const isCoLead = role === "co_lead";
+
+  // "Executed" statuses that a co-lead can NEVER transition an entity to
+  const executedStatuses = ["published", "approved", "fulfilled", "posted"];
+  if (isCoLead && executedStatuses.includes(toStatus)) {
+    return false;
+  }
+
+  // Domain leads can generally transition things (they are in MANAGEMENT_ROLES but not ADMIN_ROLES)
+  // For specific sub-rules (like finance_lead vs event_lead), we could expand this logic.
+  // Currently, the primary requirement is blocking co_leads from final approval.
+  return true;
+}
+
+/**
+ * Checks if the club operations are currently frozen by faculty.
+ * If frozen, throws AuthorizationError (403 Club Operations Frozen) 
+ * unless the user is an admin, owner, or faculty_coordinator.
+ */
+export async function checkEmergencyFreeze(role?: string) {
+  if (role && ["admin", "owner", "faculty_coordinator"].includes(role)) {
+    return;
+  }
+
+  const { db } = await import("@/lib/db");
+  const { clubSettings } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const [settings] = await db.select().from(clubSettings).where(eq(clubSettings.id, "default")).limit(1);
+  if (settings?.isFrozen) {
+    throw new AuthorizationError("Club Operations Frozen");
+  }
+}
+

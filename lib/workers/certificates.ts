@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { PdfmeRenderer } from "@/lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "@/lib/services/storage";
 import crypto from "crypto";
+import { logger } from "@/lib/logger";
 
 const connection = {
   host: process.env.REDIS_HOST || "localhost",
@@ -66,9 +67,9 @@ export const certificateWorker = new Worker("certificate-generation", async (job
 }, { connection });
 
 certificateWorker.on('completed', job => {
-  console.log(`Certificate job ${job.id} has completed!`);
+  logger.info({ jobId: job.id, entityId: job.data?.eventId || job.data?.userId }, "Certificate job completed!");
 });
 
 certificateWorker.on('failed', (job, err) => {
-  console.error(`Certificate job ${job?.id} has failed with ${err.message}`);
+  logger.error({ jobId: job?.id, entityId: job?.data?.eventId || job?.data?.userId, err }, `Certificate job failed with ${err.message}`);
 });

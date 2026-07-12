@@ -7,6 +7,7 @@ export const createEventBaseSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters").max(5000),
   location: z.string().max(200).optional(),
   capacity: z.number().int().min(1).max(10000).optional(),
+  isInternal: z.boolean().default(false),
   startsAt: z.string().datetime({ message: "Invalid start date" }),
   endsAt: z.string().datetime({ message: "Invalid end date" }),
   registrationDeadline: z.string().datetime().optional(),

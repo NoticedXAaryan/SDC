@@ -47,6 +47,8 @@ export async function PATCH(
 ) {
   try {
     const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
+    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+    await checkEmergencyFreeze(session.user.role as string);
     const { id } = await params;
 
     const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);
@@ -84,7 +86,13 @@ export async function PATCH(
     if (data.price !== undefined) updateData.price = String(data.price);
     if (data.visibility !== undefined) updateData.visibility = data.visibility;
     if (data.coverImage !== undefined) updateData.coverImage = data.coverImage;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.status !== undefined) {
+      const { canTransition } = await import("@/lib/dal/auth");
+      if (!canTransition(session.user.role, "event", event.status || "draft", data.status)) {
+        return NextResponse.json({ error: "Your role cannot transition the event to this status" }, { status: 403 });
+      }
+      updateData.status = data.status;
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
@@ -120,6 +128,8 @@ export async function DELETE(
 ) {
   try {
     const session = await requireRole(["admin", "owner"]);
+    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+    await checkEmergencyFreeze(session.user.role as string);
     const { id } = await params;
 
     const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);

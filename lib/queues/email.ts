@@ -1,8 +1,15 @@
 import { Queue } from "bullmq";
+import { env } from "@/lib/env";
 
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
+const connection = env.REDIS_URL 
+  ? { url: env.REDIS_URL }
+  : { host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT) };
 
-export const emailQueue = new Queue("email-queue", { connection });
+export const emailQueue = new Queue("email-queue", { 
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+  }
+});

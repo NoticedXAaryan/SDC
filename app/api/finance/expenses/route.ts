@@ -47,7 +47,9 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
+    const session = await requireRole(["co_lead", "lead", "finance_lead", "admin", "owner"]);
+    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+    await checkEmergencyFreeze(session.user.role as string);
     const body = await req.json();
     const parsed = createExpenseSchema.safeParse(body);
 
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
       category,
       receiptUrl: receiptUrl || null,
       status: "pending",
+      createdBy: session.user.id,
     });
 
     await logAuditEvent({
@@ -83,6 +86,14 @@ export async function POST(req: NextRequest) {
       entity: "expense",
       entityId: expenseId,
       details: `Submitted expense of ₹${amount} for category ${category}`,
+    });
+
+    const { notifyLeads } = await import("@/lib/services/notifications");
+    await notifyLeads("finance_lead", {
+      type: "approval_needed",
+      title: "New Expense Approval",
+      message: `A new expense of ${amount} requires your approval.`,
+      link: `/dashboard/finance/expenses/${expenseId}`
     });
 
     return NextResponse.json({ success: true, id: expenseId }, { status: 201 });

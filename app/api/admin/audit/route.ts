@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
     await requireRole(["admin", "owner"]);
     
     const url = new URL(req.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+    const offset = (page - 1) * limit;
     const search = url.searchParams.get("search");
 
     const conditions = [];
@@ -44,12 +46,31 @@ export async function GET(req: NextRequest) {
     })
     .from(auditLogs)
     .leftJoin(user, eq(auditLogs.actorId, user.id))
-    .orderBy(desc(auditLogs.timestamp))
-    .limit(limit);
+    .orderBy(desc(auditLogs.timestamp));
 
-    const logs = await (conditions.length > 0 ? query.where(conditions[0]) : query);
+    if (conditions.length > 0) {
+      query.where(conditions[0]);
+    }
 
-    return NextResponse.json(logs);
+    const { sql } = await import("drizzle-orm");
+    const countQuery = db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+    if (conditions.length > 0) {
+      countQuery.where(conditions[0]);
+    }
+    const countResult = await countQuery;
+    const total = Number(countResult[0]?.count ?? 0);
+
+    const logs = await query.limit(limit).offset(offset);
+
+    return NextResponse.json({
+      logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error: any) {
     if (error.name === "AuthorizationError") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });

@@ -19,6 +19,8 @@ export async function PATCH(
 ) {
   try {
     const session = await requireRole(["finance_lead", "admin", "owner"]);
+    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+    await checkEmergencyFreeze(session.user.role as string);
     const { id } = await params;
 
     const [expense] = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
@@ -37,6 +39,15 @@ export async function PATCH(
     }
 
     const { status } = parsed.data;
+
+    const { canTransition } = await import("@/lib/dal/auth");
+    if (!canTransition(session.user.role, "expense", expense.status || "pending", status)) {
+      return NextResponse.json({ error: "Your role cannot transition the expense to this status" }, { status: 403 });
+    }
+
+    if (status === "approved" && expense.createdBy === session.user.id) {
+      return NextResponse.json({ error: "You cannot approve your own expense." }, { status: 403 });
+    }
 
     await db.update(expenses)
       .set({

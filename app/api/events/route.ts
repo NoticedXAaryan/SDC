@@ -96,6 +96,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
+    
+    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+    await checkEmergencyFreeze(session.user.role as string);
 
     const body = await req.json();
     const parsed = createEventSchema.safeParse(body);
@@ -134,9 +137,14 @@ export async function POST(req: NextRequest) {
       price: data.price ? String(data.price) : null,
       visibility: data.visibility,
       coverImage: data.coverImage || null,
+      isInternal: data.isInternal || false,
       status: "draft",
       createdBy: session.user.id,
     });
+
+    // Trigger default tasks generation
+    const { createDefaultEventTasks } = await import("@/lib/services/tasks");
+    await createDefaultEventTasks(eventId, data.type || "workshop", data.isInternal || false);
 
     await logAuditEvent({
       actorId: session.user.id,

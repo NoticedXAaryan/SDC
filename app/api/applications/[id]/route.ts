@@ -3,7 +3,9 @@ import { db } from "@/lib/db";
 import { applications, user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireLead } from "@/lib/dal/auth";
-import { emailQueue } from "@/lib/workers/email";
+import { emailQueue } from "@/lib/queues/email";
+
+import crypto from "crypto";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -37,7 +39,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           to: applicant.email,
           subject: "Invitation to Interview - STC OS",
           html: `<p>Hi ${applicant.name},</p><p>Congratulations! We have reviewed your application and would like to invite you to an interview.</p><p>Please check your student portal for scheduling details.</p>`,
-        });
+        }, { jobId: crypto.createHash("sha256").update(`interview:${id}`).digest("hex") });
       }
     }
 
