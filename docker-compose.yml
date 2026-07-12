@@ -25,7 +25,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: node server.js # Adjust this once worker script is compiled, or use tsx for dev
+    command: npx tsx worker.ts
     env_file:
       - .env
     environment:

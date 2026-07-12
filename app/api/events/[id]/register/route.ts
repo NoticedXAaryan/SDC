@@ -5,6 +5,7 @@ import { events, registrations } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateSignedPass } from "@/lib/passes/qr";
 import { logAuditEvent } from "@/lib/services/audit";
+import { emailQueue } from "@/lib/queues/email";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -115,6 +116,18 @@ export async function POST(
       entityId: regId,
       details: `Registered for event "${event.title}" with status: ${regStatus}`,
     });
+
+    if (regStatus === "confirmed" && passToken) {
+      // Fire and forget - background queue
+      void emailQueue.add("send-qr-pass", {
+        type: "event_registration",
+        payload: {
+          email: session.user.email,
+          eventTitle: event.title,
+          qrCodeDataUrl: passToken, // The token acts as the QR pass data
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

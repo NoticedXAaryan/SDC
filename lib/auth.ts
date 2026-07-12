@@ -5,6 +5,7 @@ import { admin } from "better-auth/plugins/admin";
 import { defaultAc, adminAc, userAc } from "better-auth/plugins/admin/access";
 import { db } from "./db";
 import * as schema from "./db/schema";
+import { Mailer } from "./services/mailer";
 
 /**
  * STC OS roles (ordered by privilege):
@@ -60,7 +61,16 @@ export const auth = betterAuth({
     }),
     emailAndPassword: {
         enabled: true,
-        // requireEmailVerification: true, // Enable when Resend is configured
+        sendResetPassword: async ({ user, url }, request) => {
+            await Mailer.sendPasswordReset(user.email, url);
+        }
+    },
+    emailVerification: {
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: async ({ user, url, token }, request) => {
+            await Mailer.sendEmailVerification(user.email, url);
+        }
     },
     user: {
         additionalFields: {
