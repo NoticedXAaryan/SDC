@@ -1,7 +1,7 @@
-import { db } from "../../../db";
-import { registrations } from "../../../db/schema";
+import { db } from "@/lib/db";
+import { registrations } from "@/lib/db/schema";
 import { and, eq, count, asc } from "drizzle-orm";
-import { IRegistrationRepository } from "../../interfaces/IRegistrationRepository";
+import { IRegistrationRepository } from "@/lib/interfaces/IRegistrationRepository";
 import crypto from "crypto";
 
 export class DrizzleRegistrationRepository implements IRegistrationRepository {

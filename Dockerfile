@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -15,17 +15,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Environment variables must be present at build time
-ARG DATABASE_URL
-ARG REDIS_URL
-ARG NEXT_PUBLIC_APP_URL
-ARG BETTER_AUTH_SECRET
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
-ENV DATABASE_URL=$DATABASE_URL
-ENV REDIS_URL=$REDIS_URL
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
-
+# Build Next.js app
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -33,7 +27,6 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Next.js telemetry is completely optional. Disabling it since this is a private club system.
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
@@ -46,7 +39,6 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

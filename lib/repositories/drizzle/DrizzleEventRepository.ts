@@ -1,7 +1,7 @@
-import { db } from "../../../db";
-import { events } from "../../../db/schema";
+import { db } from "@/lib/db";
+import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { IEventRepository } from "../../interfaces/IEventRepository";
+import { IEventRepository } from "@/lib/interfaces/IEventRepository";
 
 export class DrizzleEventRepository implements IEventRepository {
   async findById(eventId: string): Promise<any> {

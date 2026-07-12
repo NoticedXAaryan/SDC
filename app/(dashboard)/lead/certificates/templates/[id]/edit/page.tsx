@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { certificateTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { CertificateDesigner } from "@/components/certificates/designer-wrapper";
+import { CertificateDesigner } from "@/components/certificates/designer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function TemplateDesignerPage({ params }: { params: Promise<{ id: string }> }) {
