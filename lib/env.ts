@@ -11,6 +11,8 @@ export const env = createEnv({
     EMAIL_FROM_ADDRESS: z.string().email().optional(),
     EMAIL_FROM_NAME: z.string().min(1).optional(),
     OPENROUTER_API_KEY: z.string().min(1).optional(),
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.string().url(),
     PASS_SECRET: z.string().min(1).default("default_dev_secret_please_change_in_prod"),

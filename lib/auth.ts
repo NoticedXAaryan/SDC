@@ -82,6 +82,12 @@ export const auth = betterAuth({
             await Mailer.sendEmailVerification(user.email, url);
         }
     },
+    socialProviders: {
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID || "",
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+        }
+    },
     user: {
         additionalFields: {
             username: { type: "string", required: false },

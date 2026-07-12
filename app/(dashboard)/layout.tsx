@@ -1,6 +1,7 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import Link from "next/link";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -8,6 +9,7 @@ const navItems = [
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/achievements", label: "Hall of Fame" },
   { href: "/recruitment/apply", label: "Apply" },
+  { href: "/settings", label: "Settings" },
 ];
 
 const managementNavItems = [
@@ -50,6 +52,9 @@ export default async function DashboardLayout({
   const session = await requireSession();
   const userRole = (session.user.role || "member") as string;
   const showManagement = isManagementRole(userRole);
+  
+  // Extract initials for fallback
+  const initials = session.user.name?.substring(0, 2).toUpperCase() || "US";
 
   // Filter management items by the user's specific role
   const visibleManagementItems = managementNavItems.filter(
@@ -64,6 +69,10 @@ export default async function DashboardLayout({
           <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium">
             {getRoleLabel(userRole)}
           </span>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={session.user.image || ""} alt={session.user.name || "User"} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
           <span className="text-sm font-medium">{session.user.name}</span>
           <SignOutButton />
         </div>
