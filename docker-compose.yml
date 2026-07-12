@@ -13,12 +13,24 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_t3nUwPCRyIO7@ep-long-feather-aopa7d1t-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
       - REDIS_URL=redis://redis:6379
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-stc_os_super_secret_key_1234567890}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-https://sdc.aaaryan.space}
-      - PASS_SECRET=${PASS_SECRET:-stc_os_pass_secret_key_0987654321}
+    depends_on:
+      - redis
+    restart: always
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node server.js # Adjust this once worker script is compiled, or use tsx for dev
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - IS_WORKER=true
     depends_on:
       - redis
     restart: always

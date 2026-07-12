@@ -1,39 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { registerForEventAction } from "@/app/actions/events";
 import { useRouter } from "next/navigation";
 
-interface RegisterButtonProps {
-  eventId: string;
-}
-
-export function RegisterButton({ eventId }: RegisterButtonProps) {
+export function RegisterButton({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleRegister = async () => {
+  async function handleRegister() {
     setLoading(true);
-    setError("");
-    
-    const result = await registerForEventAction(eventId);
-    
-    if (result.success) {
-      router.refresh();
-    } else {
-      setError(result.error);
+    try {
+      const res = await fetch(`/api/events/${eventId}/register`, {
+        method: "POST",
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert(data.message || "Registration successful!");
+        router.refresh();
+      } else {
+        alert(data.error || "Failed to register.");
+      }
+    } catch (error) {
+      alert("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button onClick={handleRegister} disabled={loading} size="lg" className="w-full sm:w-auto">
-        {loading ? "Registering..." : "Register Now"}
-      </Button>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-    </div>
+    <button
+      onClick={handleRegister}
+      disabled={loading}
+      className="flex w-full items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+    >
+      {loading ? "Registering..." : "Register Now"}
+    </button>
   );
 }

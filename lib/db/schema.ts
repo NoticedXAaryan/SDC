@@ -1,6 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real } from "drizzle-orm/pg-core";
 
-export const roleEnum = pgEnum("role", ["owner", "admin", "lead", "co_lead", "member", "finance_lead", "alumni"]);
 
 export const user = pgTable("user", {
 					id: text("id").primaryKey(),
@@ -11,8 +10,13 @@ export const user = pgTable("user", {
 					createdAt: timestamp("createdAt").notNull(),
 					updatedAt: timestamp("updatedAt").notNull(),
 					
+					// Better Auth admin plugin fields
+					role: text("role").default("user"),
+					banned: boolean("banned").default(false),
+					banReason: text("banReason"),
+					banExpires: timestamp("banExpires"),
+					
 					// STC specific fields
-					role: roleEnum("role").default("member"),
 					username: text("username").unique(),
 					year: integer("year"),
 					branch: text("branch"),
@@ -32,7 +36,8 @@ export const session = pgTable("session", {
 					updatedAt: timestamp("updatedAt").notNull(),
 					ipAddress: text("ipAddress"),
 					userAgent: text("userAgent"),
-					userId: text("userId").notNull().references(() => user.id)
+					userId: text("userId").notNull().references(() => user.id),
+					impersonatedBy: text("impersonatedBy")
 				});
 
 export const account = pgTable("account", {
