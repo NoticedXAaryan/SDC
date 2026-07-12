@@ -25,6 +25,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: builder
     command: npx tsx worker.ts
     env_file:
       - .env
