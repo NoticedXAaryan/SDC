@@ -6,13 +6,13 @@ import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ sessionId: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const sessionAuth = await requireRole(["admin", "owner", "lead", "event_lead", "co_lead", "faculty_coordinator"]);
     await checkEmergencyFreeze(sessionAuth.user.role as string);
 
     const { passCode } = await req.json();
-    const { sessionId } = await params;
+    const { id: sessionId } = await params;
     
     if (!passCode) {
       return NextResponse.json({ error: "Passcode is required" }, { status: 400 });
