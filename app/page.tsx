@@ -8,7 +8,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-4xl space-y-6">
           <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium">
-            STC OS v2.1 (Trusted)
+            SDC OS v2.1 (Trusted)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">

@@ -48,7 +48,7 @@ export default function ApplyPage() {
     <div className="flex items-center justify-center min-h-screen p-4 bg-muted/20">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle>Join STC</CardTitle>
+          <CardTitle>Join SDC</CardTitle>
           <CardDescription>Apply for the current recruitment cycle.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -60,7 +60,7 @@ export default function ApplyPage() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="whyJoin">Why do you want to join STC?</Label>
+              <Label htmlFor="whyJoin">Why do you want to join SDC?</Label>
               <textarea 
                 id="whyJoin"
                 name="whyJoin"

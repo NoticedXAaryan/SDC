@@ -7,7 +7,7 @@ export const env = createEnv({
     REDIS_URL: z.string().url().optional(),
     REDIS_HOST: z.string().optional().default("localhost"),
     REDIS_PORT: z.string().optional().default("6379"),
-    RESEND_API_KEY: z.string().min(1).optional(),
+    SENDGRID_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM_ADDRESS: z.string().email().optional(),
     EMAIL_FROM_NAME: z.string().min(1).optional(),
     OPENROUTER_API_KEY: z.string().min(1).optional(),

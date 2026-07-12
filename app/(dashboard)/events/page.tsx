@@ -27,7 +27,7 @@ export default async function EventsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Events</h1>
           <p className="text-muted-foreground">
-            Discover and register for upcoming STC events.
+            Discover and register for upcoming SDC events.
           </p>
         </div>
         {canCreate && (

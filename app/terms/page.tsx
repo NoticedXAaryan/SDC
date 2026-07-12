@@ -5,7 +5,7 @@ export default function TermsOfServicePage() {
       <p>Last updated: July 2026</p>
       
       <h2>1. Acceptance of Terms</h2>
-      <p>By accessing STC OS, you agree to abide by the rules of the Student Developer Club.</p>
+      <p>By accessing SDC OS, you agree to abide by the rules of the Student Developer Club.</p>
       
       <h2>2. Code of Conduct</h2>
       <p>Members must maintain a respectful environment. Any form of harassment, discrimination, or academic dishonesty (including forging attendance) will result in immediate ban.</p>

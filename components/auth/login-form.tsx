@@ -41,7 +41,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight">STC OS Login</CardTitle>
+        <CardTitle className="text-2xl font-bold tracking-tight">SDC OS Login</CardTitle>
         <CardDescription>
           Enter your email and password to sign in to the club portal.
         </CardDescription>

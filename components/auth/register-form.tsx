@@ -46,7 +46,7 @@ export function RegisterForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold tracking-tight">Create an Account</CardTitle>
         <CardDescription>
-          Enter your details below to create your STC OS account.
+          Enter your details below to create your SDC OS account.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleRegister}>

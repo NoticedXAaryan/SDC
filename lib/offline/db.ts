@@ -1,6 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from "idb";
 
-export interface STCDB extends DBSchema {
+export interface SDCDB extends DBSchema {
   pendingCheckIns: {
     key: string;
     value: {
@@ -12,13 +12,13 @@ export interface STCDB extends DBSchema {
   };
 }
 
-let dbPromise: Promise<IDBPDatabase<STCDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<SDCDB>> | null = null;
 
 export function getDB() {
   if (typeof window === "undefined") return null;
   
   if (!dbPromise) {
-    dbPromise = openDB<STCDB>("stc-os-offline-db", 1, {
+    dbPromise = openDB<SDCDB>("sdc-os-offline-db", 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains("pendingCheckIns")) {
           db.createObjectStore("pendingCheckIns", { keyPath: "id" });

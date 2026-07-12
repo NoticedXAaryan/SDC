@@ -13,7 +13,8 @@ export class AuthorizationError extends Error {
  * STC OS role hierarchy.
  * Used for comparison and display throughout the app.
  */
-export const STC_ROLES = [
+export const SDC_ROLES = [
+  "applicant",
   "alumni", 
   "member", 
   "faculty_coordinator",
@@ -29,10 +30,10 @@ export const STC_ROLES = [
   "admin", 
   "owner"
 ] as const;
-export type STCRole = (typeof STC_ROLES)[number];
+export type SDCRole = (typeof SDC_ROLES)[number];
 
 /** Roles that can access management features (scanner, certificates, finance, audit) */
-export const MANAGEMENT_ROLES: STCRole[] = [
+export const MANAGEMENT_ROLES: SDCRole[] = [
   "co_lead", 
   "volunteer_lead",
   "finance_lead", 
@@ -48,7 +49,7 @@ export const MANAGEMENT_ROLES: STCRole[] = [
 ];
 
 /** Roles that can perform admin operations (member management, role changes) */
-export const ADMIN_ROLES: STCRole[] = ["vice_lead", "lead", "admin", "owner"];
+export const ADMIN_ROLES: SDCRole[] = ["vice_lead", "lead", "admin", "owner"];
 
 /**
  * Extended session user type that includes our custom fields.
@@ -62,7 +63,7 @@ export type SessionUser = {
   emailVerified: boolean;
   name: string;
   image?: string | null;
-  role: STCRole;
+  role: SDCRole;
   username?: string | null;
   points?: number | null;
   level?: number | null;
@@ -115,9 +116,9 @@ export async function getCurrentUser(): Promise<AuthSession | null> {
  * The role comes from the session (populated by Better Auth's admin plugin),
  * so no additional DB query is needed.
  */
-export async function requireRole(roles: STCRole[]) {
+export async function requireRole(roles: SDCRole[]) {
   const session = await requireSession();
-  const userRole = (session.user.role || "member") as STCRole;
+  const userRole = (session.user.role || "applicant") as SDCRole;
 
   if (!roles.includes(userRole)) {
     throw new AuthorizationError(`Role '${userRole}' is not authorized. Required: ${roles.join(", ")}`);
@@ -146,7 +147,7 @@ export async function requireFinanceLead() {
  * Does NOT fetch session — use with a role you already have.
  */
 export function isManagementRole(role: string): boolean {
-  return MANAGEMENT_ROLES.includes(role as STCRole);
+  return MANAGEMENT_ROLES.includes(role as SDCRole);
 }
 
 /**
@@ -154,7 +155,7 @@ export function isManagementRole(role: string): boolean {
  * Evaluates whether a role can transition an entity from one status to another.
  */
 export function canTransition(
-  role: STCRole,
+  role: SDCRole,
   entityType: "event" | "expense" | "resourceRequest" | "contentItem" | "application",
   fromStatus: string,
   toStatus: string

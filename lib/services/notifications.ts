@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
 import { notifications, user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { STCRole } from "@/lib/dal/auth";
+import { SDCRole } from "@/lib/dal/auth";
 
 export async function notifyLeads(
-  roleRequired: STCRole,
+  roleRequired: SDCRole,
   notification: { type: string; title: string; message: string; link?: string }
 ) {
   const leads = await db.select({ id: user.id }).from(user).where(eq(user.role, roleRequired as any));

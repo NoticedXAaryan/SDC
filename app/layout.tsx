@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STC OS | Student Developer Club",
+  title: "SDC OS | Student Developer Club",
   description: "The operating system for student clubs. Manage members, events, certificates, and finances.",
 };
 

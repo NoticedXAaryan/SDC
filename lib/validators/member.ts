@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { STC_ROLES } from "@/lib/dal/auth";
+import { SDC_ROLES } from "@/lib/dal/auth";
 
 export const memberSearchSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().optional(),
-  role: z.enum(STC_ROLES).optional(),
+  role: z.enum(SDC_ROLES).optional(),
   year: z.coerce.number().int().optional(),
   sortBy: z.enum(["name", "createdAt", "points", "role"]).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
@@ -15,8 +15,8 @@ export type MemberSearchParams = z.infer<typeof memberSearchSchema>;
 
 export const roleChangeSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
-  role: z.enum(STC_ROLES, {
-    message: `Role must be one of: ${STC_ROLES.join(", ")}`,
+  role: z.enum(SDC_ROLES, {
+    message: `Role must be one of: ${SDC_ROLES.join(", ")}`,
   }),
 });
 

@@ -27,7 +27,7 @@ export const reportsWorker = new Worker("reports-queue", async (job: Job) => {
         type: "report_delivery",
         payload: {
           email: recipientEmail,
-          subject: "Your Weekly STC Report is Ready",
+          subject: "Your Weekly SDC Report is Ready",
           reportUrl: mockReportUrl,
         }
       });

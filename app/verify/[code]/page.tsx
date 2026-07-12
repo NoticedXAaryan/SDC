@@ -23,7 +23,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
       <Card className="border-2 shadow-lg">
         <CardHeader className="text-center pb-4 border-b">
           <CardTitle className="text-3xl font-bold tracking-tight">Certificate Verification</CardTitle>
-          <CardDescription>Verify the authenticity of a STC certificate</CardDescription>
+          <CardDescription>Verify the authenticity of a SDC certificate</CardDescription>
         </CardHeader>
         <CardContent className="pt-8 space-y-6">
           

@@ -42,7 +42,7 @@ export async function gradeApplication(answers: any): Promise<AIGradingResult> {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "STC OS",
+      "X-Title": "SDC OS",
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-free",
@@ -77,7 +77,7 @@ export async function callAI(prompt: string, schema: z.ZodTypeAny): Promise<any>
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "STC OS",
+      "X-Title": "SDC OS",
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-free",

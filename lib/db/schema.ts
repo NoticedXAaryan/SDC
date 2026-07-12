@@ -16,7 +16,7 @@ export const user = pgTable("user", {
 					banReason: text("banReason"),
 					banExpires: timestamp("banExpires"),
 					
-					// STC specific fields
+					// SDC specific fields
 					username: text("username").unique(),
 					year: integer("year"),
 					branch: text("branch"),
@@ -81,7 +81,7 @@ export const member = pgTable("member", {
 					role: text("role").notNull(),
 					createdAt: timestamp("createdAt").notNull(),
 					
-					// STC specific fields
+					// SDC specific fields
 					domain: text("domain")
 				});
 

@@ -8,7 +8,7 @@ import * as schema from "./db/schema";
 import { Mailer } from "./services/mailer";
 
 /**
- * STC OS roles (ordered by privilege):
+ * SDC OS roles (ordered by privilege):
  * - owner: Full system control, cannot be demoted if last owner
  * - admin: Near-full access, can manage members/events/finance
  * - lead: Domain lead, can manage own domain's events/members
@@ -22,7 +22,7 @@ import { Mailer } from "./services/mailer";
  * The `adminRoles` are ["owner", "admin"] — these can access admin endpoints.
  */
 
-// Define STC-specific role permissions using Better Auth's access control system.
+// Define SDC-specific role permissions using Better Auth's access control system.
 // The admin plugin requires all roles referenced in adminRoles to exist in this map.
 const ownerRole = defaultAc.newRole({
     user: ["create", "list", "set-role", "ban", "impersonate", "delete", "set-password", "set-email", "get", "update"],
@@ -54,7 +54,7 @@ const facultyCoordinatorRole = defaultAc.newRole({
     session: [],
 });
 
-const userRole = defaultAc.newRole({
+const applicantRole = defaultAc.newRole({
     user: [],
     session: [],
 });
@@ -114,7 +114,7 @@ export const auth = betterAuth({
             // SDC domains/teams as organizations/roles
         }),
         admin({
-            defaultRole: "user",
+            defaultRole: "applicant",
             adminRoles: ["owner", "admin", "lead"],
             roles: {
                 owner: ownerRole,
@@ -131,7 +131,7 @@ export const auth = betterAuth({
                 faculty_coordinator: facultyCoordinatorRole,
                 member: memberRole,
                 alumni: alumniRole,
-                user: userRole,
+                applicant: applicantRole,
             },
         }),
     ],

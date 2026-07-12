@@ -64,7 +64,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-6">
-        <Link href="/dashboard" className="font-semibold text-lg">STC OS</Link>
+        <Link href="/dashboard" className="font-semibold text-lg">SDC OS</Link>
         <div className="ml-auto flex items-center space-x-4">
           <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium">
             {getRoleLabel(userRole)}

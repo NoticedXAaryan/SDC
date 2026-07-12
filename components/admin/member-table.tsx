@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { STCRole } from "@/lib/dal/auth";
+import type { SDCRole } from "@/lib/dal/auth";
 
 type Member = {
   id: string;
@@ -18,7 +18,7 @@ type Member = {
   image: string | null;
 };
 
-const ROLES: STCRole[] = ["member", "co_lead", "finance_lead", "lead", "admin", "owner"];
+const ROLES: SDCRole[] = ["applicant", "member", "co_lead", "finance_lead", "lead", "admin", "owner"];
 
 function getRoleColor(role: string | null): string {
   const colors: Record<string, string> = {
