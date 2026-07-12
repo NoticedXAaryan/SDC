@@ -17,7 +17,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_t3nUwPCRyIO7@ep-long-feather-aopa7d1t-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require}
       - REDIS_URL=redis://redis:6379
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-stc_os_super_secret_key_1234567890}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3001}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-https://sdc.aaaryan.space}
       - PASS_SECRET=${PASS_SECRET:-stc_os_pass_secret_key_0987654321}
     depends_on:
       - redis
