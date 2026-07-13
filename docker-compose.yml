@@ -13,6 +13,8 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - redis
     restart: always
@@ -27,6 +29,8 @@ services:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - IS_WORKER=true
     depends_on:
       - redis
