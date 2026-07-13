@@ -46,16 +46,31 @@ export function proxy(request: NextRequest) {
   
   // 1. Subdomain routing logic
   const hostname = request.headers.get('host') || '';
-  const currentHost = process.env.NODE_ENV === 'production' 
-    ? hostname.replace(`.yourdomain.com`, '') 
-    : hostname.replace(`.localhost:3000`, '');
+  
+  // Extract base domain from env variables, fallback to localhost
+  let baseDomain = 'localhost:3000';
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    try {
+      baseDomain = new URL(process.env.NEXT_PUBLIC_APP_URL).host;
+    } catch (e) {
+      // Ignore invalid URL
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    // If NEXT_PUBLIC_APP_URL is not set in production, try BETTER_AUTH_URL
+    if (process.env.BETTER_AUTH_URL) {
+      try {
+        baseDomain = new URL(process.env.BETTER_AUTH_URL).host;
+      } catch (e) {}
+    }
+  }
 
-  // If the host is not the main domain (e.g., 'techfest' instead of 'localhost:3000')
+  const currentHost = hostname.replace(`.${baseDomain}`, '');
+
+  // If the host is a subdomain
   let isSubdomain = false;
   if (
-    currentHost !== 'localhost:3000' && 
-    currentHost !== 'yourdomain.com' &&
-    currentHost !== 'www.yourdomain.com' &&
+    currentHost !== baseDomain && 
+    currentHost !== `www.${baseDomain}` &&
     currentHost !== hostname
   ) {
     isSubdomain = true;
