@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: builder
-    command: sh -c "npm run db:migrate && npx tsx worker.ts"
+    command: sh -c "npx tsx scripts/migrate.ts && npx tsx worker.ts"
     env_file:
       - .env
     environment:
