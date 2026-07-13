@@ -2,6 +2,9 @@ import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import Link from "next/link";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 import { navItems, managementNavItems } from "@/lib/config/nav";
 
@@ -46,8 +49,39 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-6">
-        <Link href="/dashboard" className="font-semibold text-lg">SDC OS</Link>
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <Sheet>
+          <SheetTrigger>
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle className="text-left font-semibold text-lg">SDC OS</SheetTitle>
+            </SheetHeader>
+            <nav className="grid gap-1 p-4 text-sm font-medium overflow-y-auto">
+              <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">General</p>
+              {navItems.map(item => (
+                <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                  {item.label}
+                </Link>
+              ))}
+              {showManagement && visibleManagementItems.length > 0 && (
+                <>
+                  <p className="px-3 py-2 mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Management</p>
+                  {visibleManagementItems.map(item => (
+                    <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
+                      {item.label}
+                    </Link>
+                  ))}
+                </>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
+        <Link href="/dashboard" className="hidden md:block font-semibold text-lg">SDC OS</Link>
         <div className="ml-auto flex items-center space-x-4">
           <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium">
             {getRoleLabel(userRole)}

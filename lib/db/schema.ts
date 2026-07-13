@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import crypto from "crypto";
 
 export const user = pgTable("user", {
@@ -98,7 +99,7 @@ export const invitation = pgTable("invitation", {
 
 export const eventTypeEnum = pgEnum("event_type", ["hackathon", "workshop", "seminar", "social", "competition"]);
 export const eventStatusEnum = pgEnum("event_status", ["draft", "published", "cancelled", "completed"]);
-export const eventVisibilityEnum = pgEnum("event_visibility", ["public", "private", "unlisted"]);
+export const eventVisibilityEnum = pgEnum("event_visibility", ["public", "private", "unlisted", "members_only", "invite_only"]);
 export const registrationStatusEnum = pgEnum("registration_status", ["confirmed", "waitlist", "checked_in", "cancelled", "no_show"]);
 
 export const events = pgTable("events", {
@@ -148,7 +149,7 @@ export const registrations = pgTable("registrations", {
   attendanceMethod: text("attendanceMethod").default("qr"), // qr, qr+face, manual
   faceMatchDistance: real("faceMatchDistance"),
   needsFaceEnrollment: boolean("needsFaceEnrollment").default(false),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (t) => [
   index("registrations_event_id_idx").on(t.eventId),
   index("registrations_user_id_idx").on(t.userId),
@@ -164,7 +165,7 @@ export const eventSessions = pgTable("event_sessions", {
   endTime: timestamp("endTime", { withTimezone: true }).notNull(),
   location: text("location"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 });
 
 export const sessionAttendance = pgTable("session_attendance", {
@@ -198,7 +199,7 @@ export const certificates = pgTable("certificates", {
   revokedReason: text("revokedReason"),
   issuedBy: text("issuedBy").notNull().references(() => user.id),
   issuedAt: timestamp("issuedAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (table) => [index("certificates_user_id_idx").on(table.userId)]);
 
 export const expenseStatusEnum = pgEnum("expense_status", ["pending", "approved", "rejected"]);
@@ -250,7 +251,7 @@ export const inventory = pgTable("inventory", {
   qtyTotal: integer("qtyTotal").notNull(),
   qtyAvailable: integer("qtyAvailable").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 });
 
 export const inventoryLogs = pgTable("inventoryLogs", {
@@ -277,7 +278,7 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
-export const applicationStatusEnum = pgEnum("application_status", ["applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]);
+export const applicationStatusEnum = pgEnum("application_status", ["draft", "applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]);
 
 export const applications = pgTable("applications", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -319,7 +320,7 @@ export const pointLogs = pgTable("pointLogs", {
   points: integer("points").notNull(),
   reason: text("reason").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (t) => ({
   index: index("point_logs_user_id_idx").on(t.userId)
 }));
@@ -426,7 +427,7 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").default(false).notNull(),
   link: text("link"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (table) => [index("notifications_user_id_idx").on(table.userId), index("notifications_read_idx").on(table.read)]);
 
 export const clubSettings = pgTable("club_settings", {
@@ -448,4 +449,62 @@ export const aiLogs = pgTable("ai_logs", {
   entityId: text("entityId"),
   entityType: text("entityType"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+});export const applicationsRelations = relations(applications, ({ one }) => ({
+  user: one(user, {
+    fields: [applications.userId],
+    references: [user.id],
+  }),
+}));
+
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  budget: one(budgets, {
+    fields: [expenses.budgetId],
+    references: [budgets.id],
+  }),
+  createdBy: one(user, {
+    fields: [expenses.createdBy],
+    references: [user.id],
+  }),
+  approvedBy: one(user, {
+    fields: [expenses.approvedBy],
+    references: [user.id],
+  }),
+}));
+
+export const budgetsRelations = relations(budgets, ({ one, many }) => ({
+  event: one(events, {
+    fields: [budgets.eventId],
+    references: [events.id],
+  }),
+  expenses: many(expenses),
+}));
+
+export const incomesRelations = relations(incomes, ({ one }) => ({
+  event: one(events, {
+    fields: [incomes.eventId],
+    references: [events.id],
+  }),
+}));
+
+export const inventoryLogsRelations = relations(inventoryLogs, ({ one }) => ({
+  item: one(inventory, {
+    fields: [inventoryLogs.itemId],
+    references: [inventory.id],
+  }),
+  user: one(user, {
+    fields: [inventoryLogs.userId],
+    references: [user.id],
+  }),
+}));
+
+export const eventsRelations = relations(events, ({ many }) => ({
+  sessions: many(eventSessions),
+  incomes: many(incomes),
+}));
+
+export const eventSessionsRelations = relations(eventSessions, ({ one }) => ({
+  event: one(events, {
+    fields: [eventSessions.eventId],
+    references: [events.id],
+  }),
+}));

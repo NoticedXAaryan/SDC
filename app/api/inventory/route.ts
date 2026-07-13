@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { inventory } from "@/lib/db/schema";
 import { createInventoryItemSchema } from "@/lib/validators/inventory";
 import { logAuditEvent } from "@/lib/services/audit";
+import crypto from "crypto";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";

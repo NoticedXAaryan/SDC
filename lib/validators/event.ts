@@ -13,7 +13,7 @@ export const createEventBaseSchema = z.object({
   registrationDeadline: z.string().datetime().optional(),
   isPaid: z.boolean().default(false),
   price: z.number().min(0).optional(),
-  visibility: z.enum(["public", "private", "unlisted"]).default("public"),
+  visibility: z.enum(["public", "private", "unlisted", "members_only", "invite_only"]).default("public"),
   coverImage: z.string().url().optional(),
   tags: z.array(z.string().max(50)).max(10).optional(),
   attendanceEstimates: z.number().int().min(1).max(100000).optional(),

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
@@ -9,13 +10,20 @@ import { Globe } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const allProjects = await db.select().from(projects);
+  const allProjects = await db.select().from(projects).where(eq(projects.status, "approved")).orderBy(desc(projects.createdAt));
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">Featured Projects</h1>
-        <p className="text-xl text-muted-foreground">Discover amazing things built by our community.</p>
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight">Featured Projects</h1>
+          <p className="text-xl text-muted-foreground">Discover amazing things built by our community.</p>
+        </div>
+        <div>
+          <Link href="/projects/submit" className={cn(buttonVariants({ size: "lg" }))}>
+            Submit a Project
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-8">

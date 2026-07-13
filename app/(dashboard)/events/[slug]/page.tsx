@@ -1,12 +1,13 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events, registrations } from "@/lib/db/schema";
+import { events, registrations, eventSessions } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { RegisterButton } from "@/components/events/register-button";
 import { generateSignedPass } from "@/lib/passes/qr";
-import { certificateTemplates } from "@/lib/db/schema";
 import { IssueCertificatesButton } from "@/components/events/issue-certificates-button";
+import { AdminEventControls } from "@/components/events/admin-event-controls";
+import { EventSessionsList } from "@/components/events/event-sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
       )
     );
   const registeredCount = Number(countResult.count);
+
+  const sessions = await db.select().from(eventSessions).where(eq(eventSessions.eventId, event.id)).orderBy(eventSessions.startTime);
 
   // Check if user is registered
   const userRegistration = await db.select().from(registrations).where(
@@ -99,6 +102,14 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
             <h3 className="text-xl font-semibold mb-2">About this event</h3>
             <p className="whitespace-pre-wrap">{event.description || "No description provided."}</p>
           </div>
+
+          <div className="pt-8 border-t mt-8">
+            <EventSessionsList 
+              eventId={event.id} 
+              sessions={sessions} 
+              canManage={["admin", "owner", "lead", "co_lead", "event_lead"].includes(session.user.role as string)} 
+            />
+          </div>
         </div>
         
         <div className="md:w-80 w-full shrink-0">
@@ -155,10 +166,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
               </div>
             )}
             
-            {["admin", "owner", "lead"].includes(session.user.role as string) && template && (
+            {["admin", "owner", "lead", "co_lead"].includes(session.user.role as string) && (
               <div className="pt-4 border-t mt-4">
                 <h3 className="font-semibold text-lg mb-2">Admin Controls</h3>
-                <IssueCertificatesButton eventId={event.id} templateId={template.id} />
+                {template && <IssueCertificatesButton eventId={event.id} templateId={template.id} />}
+                <AdminEventControls eventId={event.id} currentStatus={event.status || "draft"} />
               </div>
             )}
           </div>

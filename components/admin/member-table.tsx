@@ -1,8 +1,22 @@
 "use client";
-
 import { useState } from "react";
-import type { SDCRole } from "@/lib/dal/auth";
-
+const SDC_ROLES = [
+  "applicant",
+  "alumni", 
+  "member", 
+  "faculty_coordinator",
+  "co_lead", 
+  "volunteer_lead",
+  "finance_lead", 
+  "tech_lead",
+  "marketing_lead",
+  "content_lead",
+  "event_lead",
+  "vice_lead",
+  "lead", 
+  "admin", 
+  "owner"
+] as const;
 type Member = {
   id: string;
   name: string;
@@ -17,8 +31,6 @@ type Member = {
   createdAt: Date;
   image: string | null;
 };
-
-const ROLES: SDCRole[] = ["applicant", "member", "co_lead", "finance_lead", "lead", "admin", "owner"];
 
 function getRoleColor(role: string | null): string {
   const colors: Record<string, string> = {
@@ -191,9 +203,9 @@ export function MemberTable({
                           disabled={changingRole === member.id}
                           className="rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
                         >
-                          {ROLES.map((r) => (
+                          {SDC_ROLES.map((r) => (
                             <option key={r} value={r}>
-                              {r.replace("_", " ")}
+                              {r.replace(/_/g, " ")}
                             </option>
                           ))}
                         </select>

@@ -4,7 +4,7 @@ import { eventSessions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
-import { nanoid } from "nanoid";
+import crypto from "crypto";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 const sessionSchema = z.object({
@@ -49,7 +49,7 @@ const { id: eventId } = await params;
 const { title, description, startTime, endTime, location } = parsed.data;
 
 const [newSession] = await db.insert(eventSessions).values({
-  id: nanoid(),
+  id: crypto.randomUUID(),
   eventId,
   title,
   description,

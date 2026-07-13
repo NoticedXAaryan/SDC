@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
-  const { user, upcomingEvents, myRegistrations, managementStats } = data;
+  const { user, upcomingEvents, myRegistrations, managementStats, myApplication } = data;
   const isManagement = isManagementRole(user.role as string);
 
   return (
@@ -48,6 +48,28 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {myApplication && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle>Application Status</CardTitle>
+            <CardDescription>Cycle: {myApplication.applicationCycle}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium">Status: <span className="uppercase text-primary">{(myApplication.status || "pending").replace(/_/g, " ")}</span></p>
+                {myApplication.status === "ai_graded" && (
+                  <p className="text-xs text-muted-foreground mt-1">Your application has been pre-screened and is awaiting manual review.</p>
+                )}
+                {myApplication.status === "interviewing" && (
+                  <p className="text-xs text-muted-foreground mt-1">You have been selected for an interview! Check your email for details.</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-8 md:grid-cols-2">

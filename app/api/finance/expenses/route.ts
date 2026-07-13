@@ -6,6 +6,7 @@ import { eq, desc } from "drizzle-orm";
 import { createExpenseSchema } from "@/lib/validators/finance";
 import { logAuditEvent } from "@/lib/services/audit";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 

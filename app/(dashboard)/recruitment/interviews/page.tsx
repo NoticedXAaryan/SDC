@@ -4,6 +4,7 @@ import { interviews, applications, user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScheduleInterviewDialog } from "./components/schedule-interview-dialog";
 
 export default async function InterviewsPage() {
   const session = await requireSession();
@@ -23,10 +24,20 @@ export default async function InterviewsPage() {
   .leftJoin(applications, eq(interviews.applicantId, applications.id))
   .leftJoin(user, eq(applications.userId, user.id));
 
+  const interviewingApplicants = await db.select({
+    id: applications.id,
+    name: user.name,
+    email: user.email,
+  })
+  .from(applications)
+  .innerJoin(user, eq(applications.userId, user.id))
+  .where(eq(applications.status, "interviewing"));
+
   return (
     <div className="max-w-5xl mx-auto py-12 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Interview Schedule</h1>
+        <ScheduleInterviewDialog applicants={interviewingApplicants} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

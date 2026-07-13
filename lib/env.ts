@@ -15,7 +15,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.string().url(),
-    PASS_SECRET: z.string().min(1).default("default_dev_secret_please_change_in_prod"),
+    PASS_SECRET: z.string().min(1),
     ADMIN_EMAIL: z.string().email().optional(),
     ADMIN_PASSWORD: z.string().min(1).optional(),
     ADMIN_NAME: z.string().optional().default("System Admin"),

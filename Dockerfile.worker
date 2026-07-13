@@ -1,0 +1,24 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+# The worker script doesn't have a specific build step if it's ts-node,
+# but we can compile it with tsc if needed. For now we use tsx or ts-node in production.
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV production
+
+COPY --from=builder /app/package*.json ./
+RUN npm ci --only=production
+
+COPY --from=builder /app/worker.ts ./
+COPY --from=builder /app/lib ./lib
+
+# Depending on how worker is invoked, we might use tsx or compile it.
+# Assuming tsx is used as devDependency but we want a lightweight prod.
+RUN npm install -g tsx
+
+CMD ["tsx", "worker.ts"]

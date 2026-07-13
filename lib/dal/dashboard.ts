@@ -1,6 +1,6 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user, events, registrations } from "@/lib/db/schema";
+import { user, events, registrations, applications } from "@/lib/db/schema";
 import { eq, count, sql, and, desc, gte } from "drizzle-orm";
 
 export async function getDashboardData() {
@@ -64,10 +64,24 @@ export async function getDashboardData() {
     };
   }
 
+  // 4. User's Application Status
+  const myApplication = await db.select({
+    id: applications.id,
+    status: applications.status,
+    applicationCycle: applications.applicationCycle,
+    aiScore: applications.aiScore,
+  })
+  .from(applications)
+  .where(eq(applications.userId, userId))
+  .orderBy(desc(applications.createdAt))
+  .limit(1)
+  .then(rows => rows[0] || null);
+
   return {
     user: session.user,
     upcomingEvents,
     myRegistrations: myRegistrationsData,
     managementStats,
+    myApplication,
   };
 }

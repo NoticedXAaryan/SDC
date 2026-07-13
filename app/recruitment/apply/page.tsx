@@ -10,41 +10,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { applicationSchema, type ApplicationValues } from "@/lib/validations/application";
 import { toast } from "sonner";
+import { recruitmentFormSchema } from "@/lib/constants/recruitment-schema";
 
-const steps = [
-  { id: "step1", title: "Basic Info" },
-  { id: "step2", title: "Professional Links" },
-  { id: "step3", title: "Skills & Interests" },
-  { id: "step4", title: "Availability" }
-];
+
 
 export default function ApplyPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const form = useForm<ApplicationValues>({
-    resolver: zodResolver(applicationSchema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      course: "",
-      phone: "",
-      linkedinUrl: "",
-      githubUrl: "",
-      portfolioUrl: "",
-      resumeUrl: "",
-      skills: [],
-      teamPreference: "",
-      whyJoin: "",
-      priorExperience: "",
-      availability: "",
-      status: "draft"
-    },
+  const form = useForm<any>({
+    defaultValues: {},
     mode: "onChange",
   });
+
+  const steps = recruitmentFormSchema;
 
   // Load draft from localStorage on mount
   useEffect(() => {
@@ -68,11 +49,8 @@ export default function ApplyPage() {
   }, [form]);
 
   const nextStep = async () => {
-    const fieldsToValidate: any[] = [];
-    if (currentStep === 0) fieldsToValidate.push("fullName", "email", "course", "phone");
-    if (currentStep === 1) fieldsToValidate.push("linkedinUrl", "githubUrl", "portfolioUrl", "resumeUrl");
-    if (currentStep === 2) fieldsToValidate.push("skills", "teamPreference", "whyJoin", "priorExperience");
-    if (currentStep === 3) fieldsToValidate.push("availability");
+    const currentStepData = steps[currentStep];
+    const fieldsToValidate = currentStepData.fields.map(f => f.id);
 
     const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
@@ -81,7 +59,7 @@ export default function ApplyPage() {
         await fetch("/api/applications", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...form.getValues(), status: "draft", applicationCycle: "2026-odd-sem" }),
+          body: JSON.stringify({ answers: form.getValues(), status: "draft", applicationCycle: "2026-odd-sem" }),
         });
       } catch (e) {
         // non-blocking
@@ -92,13 +70,23 @@ export default function ApplyPage() {
 
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
-  const onSubmit = async (data: ApplicationValues) => {
+  const onSubmit = async (data: any) => {
     setLoading(true);
     try {
       const payload = {
-        ...data,
+        answers: data,
         status: "applied",
-        applicationCycle: "2026-odd-sem"
+        applicationCycle: "2026-odd-sem",
+        // Map specific fields if they exist in the dynamic form
+        linkedinUrl: data.linkedinUrl,
+        githubUrl: data.githubUrl,
+        portfolioUrl: data.portfolioUrl,
+        resumeUrl: data.resumeUrl,
+        skills: data.skills ? (typeof data.skills === "string" ? data.skills.split(",").map((s: string) => s.trim()) : data.skills) : [],
+        teamPreference: data.teamPreference,
+        whyJoin: data.whyJoin,
+        priorExperience: data.priorExperience,
+        availability: data.availability,
       };
 
       const res = await fetch("/api/applications", {
@@ -133,78 +121,31 @@ export default function ApplyPage() {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
               
-              {currentStep === 0 && (
-                <div className="space-y-4">
-                  <FormField control={form.control} name="fullName" render={({ field }) => (
-                    <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="john@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="course" render={({ field }) => (
-                    <FormItem><FormLabel>Course & Year</FormLabel><FormControl><Input placeholder="B.Tech CS, 2nd Year" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="phone" render={({ field }) => (
-                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" placeholder="+1234567890" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                    <FormItem><FormLabel>LinkedIn URL</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/username" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="githubUrl" render={({ field }) => (
-                    <FormItem><FormLabel>GitHub URL</FormLabel><FormControl><Input placeholder="https://github.com/username" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
-                    <FormItem><FormLabel>Portfolio URL (Optional)</FormLabel><FormControl><Input placeholder="https://mywebsite.com" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="resumeUrl" render={({ field }) => (
-                    <FormItem><FormLabel>Resume Link (Optional, Google Drive / Dropbox)</FormLabel><FormControl><Input placeholder="https://drive.google.com/..." {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              )}
-
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  <FormField control={form.control} name="teamPreference" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team Preference</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Select a team" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="technical">Technical</SelectItem>
-                          <SelectItem value="design">Design</SelectItem>
-                          <SelectItem value="management">Management</SelectItem>
-                          <SelectItem value="marketing">Marketing</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="skills" render={({ field }) => (
-                    <FormItem><FormLabel>Skills (comma separated)</FormLabel><FormControl><Input placeholder="React, Node.js, Figma" onChange={(e) => field.onChange(e.target.value.split(',').map(s=>s.trim()))} value={field.value?.join(', ')} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="whyJoin" render={({ field }) => (
-                    <FormItem><FormLabel>Why do you want to join SDC?</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Your motivation..." {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="priorExperience" render={({ field }) => (
-                    <FormItem><FormLabel>Prior Experience / Projects</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Tell us about what you have built or done before..." {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              )}
-
-              {currentStep === 3 && (
-                <div className="space-y-4">
-                  <FormField control={form.control} name="availability" render={({ field }) => (
-                    <FormItem><FormLabel>Weekly Time Commitment</FormLabel><FormControl><Input placeholder="e.g. 10 hours/week, mostly evenings" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              )}
+              {steps[currentStep].fields.map((field) => (
+                <FormField key={field.id} control={form.control} name={field.id} render={({ field: formField }) => (
+                  <FormItem>
+                    <FormLabel>{field.label} {field.required && <span className="text-destructive">*</span>}</FormLabel>
+                    <FormControl>
+                      {field.type === "textarea" ? (
+                        <Textarea placeholder={field.placeholder} {...formField} value={formField.value || ""} className="min-h-[100px]" />
+                      ) : field.type === "select" ? (
+                        <Select onValueChange={formField.onChange} defaultValue={formField.value}>
+                          <SelectTrigger><SelectValue placeholder={field.placeholder || "Select an option"} /></SelectTrigger>
+                          <SelectContent>
+                            {field.options?.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input type={field.type} placeholder={field.placeholder} {...formField} value={formField.value || ""} />
+                      )}
+                    </FormControl>
+                    {field.description && <p className="text-[0.8rem] text-muted-foreground">{field.description}</p>}
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              ))}
 
             </CardContent>
             <CardFooter className="flex justify-between">

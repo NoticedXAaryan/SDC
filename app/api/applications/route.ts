@@ -53,17 +53,11 @@ const payload = {
   whyJoin: data.whyJoin || null,
   priorExperience: data.priorExperience || null,
   availability: data.availability || null,
-  status: data.status === "draft" ? "applied" : "applied", // Temporary override, status enum has 'applied' not 'draft' currently
+  status: data.status === "draft" ? "draft" : "applied",
   answers: data, // Keep old field for backward compatibility
 } as any;
 
-if (data.status === "draft") {
-   // Ignore draft saving if enum doesn't support it or add it later.
-   // Actually, I'll let it be 'applied' or handle it if we add 'draft' to the enum
-   payload.status = 'applied'; // fallback
-}
-
-let applicationId = nanoid();
+let applicationId: string = crypto.randomUUID();
 
 try {
   if (existing) {

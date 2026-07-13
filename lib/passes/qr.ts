@@ -2,7 +2,11 @@ import crypto from "crypto";
 import { IPassValidator } from "../interfaces/IPassValidator";
 
 // Ensure this secret is set in your .env.local
-const PASS_SECRET = process.env.PASS_SECRET || "default_dev_secret_please_change_in_prod";
+const PASS_SECRET = process.env.PASS_SECRET;
+
+if (!PASS_SECRET) {
+  throw new Error("PASS_SECRET is not defined in environment variables");
+}
 
 export interface PassPayload {
   userId: string;
@@ -23,7 +27,7 @@ export function generateSignedPass(payload: PassPayload): string {
     i: iat
   });
   
-  const hmac = crypto.createHmac("sha256", PASS_SECRET);
+  const hmac = crypto.createHmac("sha256", PASS_SECRET || "");
   hmac.update(dataString);
   const signature = hmac.digest("hex");
   
@@ -33,7 +37,7 @@ export function generateSignedPass(payload: PassPayload): string {
 }
 
 export class HMACPassValidator implements IPassValidator {
-  constructor(private secret: string = PASS_SECRET) {}
+  constructor(private secret: string = PASS_SECRET || "") {}
 
   async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
     try {

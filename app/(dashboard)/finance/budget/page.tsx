@@ -32,7 +32,7 @@ export default async function FinanceDashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              ${allBudgets.reduce((acc, b) => acc + parseFloat(b.allocated as string || "0"), 0).toFixed(2)}
+              ₹{allBudgets.reduce((acc, b) => acc + parseFloat(b.allocated as string || "0"), 0).toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -44,7 +44,7 @@ export default async function FinanceDashboardPage() {
           <Card key={budget.id}>
             <CardHeader>
               <CardTitle>{budget.eventTitle}</CardTitle>
-              <CardDescription>Allocated: ${budget.allocated}</CardDescription>
+              <CardDescription>Allocated: ₹{budget.allocated}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">Detailed view pending implementation.</p>
