@@ -25,6 +25,7 @@ ENV NODE_ENV=production
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV BETTER_AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime"
 ENV BETTER_AUTH_URL="http://localhost:3000"
+ENV PASS_SECRET="build-time-placeholder-secret-not-used-at-runtime"
 
 # Build Next.js app
 RUN npm run build

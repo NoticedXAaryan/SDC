@@ -3,6 +3,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV BETTER_AUTH_SECRET="build-time-placeholder-secret"
+ENV BETTER_AUTH_URL="http://localhost:3000"
+ENV PASS_SECRET="build-time-placeholder-secret"
 RUN npm run build
 # The worker script doesn't have a specific build step if it's ts-node,
 # but we can compile it with tsc if needed. For now we use tsx or ts-node in production.
