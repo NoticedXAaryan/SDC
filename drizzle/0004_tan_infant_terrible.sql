@@ -1,4 +1,4 @@
-CREATE TYPE "public"."ai_log_status" AS ENUM('success', 'failed');--> statement-breakpoint
+
 CREATE TYPE "public"."content_status" AS ENUM('idea', 'drafting', 'review', 'scheduled', 'published');--> statement-breakpoint
 CREATE TYPE "public"."procurement_status" AS ENUM('draft', 'pending_quotes', 'approval', 'approved', 'rejected', 'completed');--> statement-breakpoint
 CREATE TYPE "public"."submission_status" AS ENUM('pending', 'approved', 'rejected');--> statement-breakpoint
@@ -16,18 +16,7 @@ CREATE TABLE "achievement_submissions" (
 	"updatedAt" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "ai_logs" (
-	"id" text PRIMARY KEY NOT NULL,
-	"prompt" text NOT NULL,
-	"response" text,
-	"latencyMs" integer,
-	"modelUsed" text DEFAULT 'openrouter/free',
-	"status" "ai_log_status" DEFAULT 'success',
-	"entityId" text,
-	"entityType" text,
-	"createdAt" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
+
 CREATE TABLE "club_settings" (
 	"id" text PRIMARY KEY DEFAULT 'default' NOT NULL,
 	"isFrozen" boolean DEFAULT false NOT NULL,
@@ -108,8 +97,7 @@ CREATE TABLE "vendors" (
 );
 --> statement-breakpoint
 ALTER TABLE "events" ADD COLUMN "isInternal" boolean DEFAULT false;--> statement-breakpoint
-ALTER TABLE "events" ADD COLUMN "aiDraftMessage" text;--> statement-breakpoint
-ALTER TABLE "events" ADD COLUMN "aiDraftEmail" text;--> statement-breakpoint
+
 ALTER TABLE "expenses" ADD COLUMN "createdBy" text;--> statement-breakpoint
 ALTER TABLE "pointLogs" ADD COLUMN "points" integer NOT NULL;--> statement-breakpoint
 ALTER TABLE "projects" ADD COLUMN "status" "submission_status" DEFAULT 'pending';--> statement-breakpoint
