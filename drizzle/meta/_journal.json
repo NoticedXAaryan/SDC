@@ -57,6 +57,20 @@
       "when": 1783948837534,
       "tag": "0007_certain_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783961250717,
+      "tag": "0008_cuddly_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783963754452,
+      "tag": "0009_faulty_tarantula",
+      "breakpoints": true
     }
   ]
 }

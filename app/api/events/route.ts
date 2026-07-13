@@ -71,11 +71,12 @@ export async function GET(req: NextRequest) {
     }
 
     let query = db.select().from(events);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(events);
 
     if (conditions.length > 0) {
-      for (const condition of conditions) {
-        query = query.where(condition) as typeof query;
-      }
+      const combinedCondition = and(...conditions);
+      query = query.where(combinedCondition) as typeof query;
+      countQuery = countQuery.where(combinedCondition) as typeof countQuery;
     }
 
     const allEvents = await (query as any)
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(events);
+    const [countResult] = await countQuery;
 
     return NextResponse.json({
       events: allEvents,

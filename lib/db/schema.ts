@@ -202,6 +202,17 @@ export const certificates = pgTable("certificates", {
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (table) => [index("certificates_user_id_idx").on(table.userId)]);
 
+export const eventInvites = pgTable("event_invites", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  eventId: text("eventId").notNull().references(() => events.id),
+  userId: text("userId").references(() => user.id),
+  email: text("email").notNull(),
+  token: text("token").notNull().unique(),
+  status: text("status").default("pending"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull()
+});
+
 export const expenseStatusEnum = pgEnum("expense_status", ["pending", "approved", "rejected"]);
 export const inventoryActionEnum = pgEnum("inventory_action", ["check_out", "check_in"]);
 export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done", "blocked"]);
@@ -276,6 +287,15 @@ export const projects = pgTable("projects", {
   upvotes: integer("upvotes").default(0),
   status: submissionStatusEnum("status").default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull()
+});
+
+export const formTemplates = pgTable("form_templates", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  cycleName: text("cycleName").unique().notNull(), // Matches applicationCycle
+  fields: jsonb("fields").notNull(), // Array of { type, question, options, required }
+  isActive: boolean("isActive").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 });
 
 export const applicationStatusEnum = pgEnum("application_status", ["draft", "applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]);

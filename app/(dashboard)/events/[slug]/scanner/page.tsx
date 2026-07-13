@@ -13,28 +13,13 @@ export default function ScannerPage() {
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
+  const loadingRef = useRef(false);
   useEffect(() => {
-    // Only initialize scanner on client
-    if (typeof window !== "undefined" && !scannerRef.current) {
-      scannerRef.current = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-      );
-      
-      scannerRef.current.render(onScanSuccess, onScanFailure);
-    }
-    
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
-        scannerRef.current = null;
-      }
-    };
-  }, []);
+    loadingRef.current = loading;
+  }, [loading]);
 
-  async function onScanSuccess(decodedText: string, decodedResult: any) {
-    if (loading) return; // Prevent multiple requests
+  const onScanSuccess = async (decodedText: string, decodedResult: any) => {
+    if (loadingRef.current) return; // Prevent multiple requests
     
     setScanResult(decodedText);
     setLoading(true);
@@ -62,11 +47,32 @@ export default function ScannerPage() {
         setLoading(false);
       }, 2000);
     }
-  }
+  };
 
-  function onScanFailure(error: any) {
+  const onScanFailure = (error: any) => {
     // Suppress console spam for "No QR code found"
-  }
+  };
+
+  useEffect(() => {
+    // Only initialize scanner on client
+    if (typeof window !== "undefined" && !scannerRef.current) {
+      scannerRef.current = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        false
+      );
+      
+      scannerRef.current.render(onScanSuccess, onScanFailure);
+    }
+    
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+        scannerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

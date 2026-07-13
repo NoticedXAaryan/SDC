@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 COPY . .
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV BETTER_AUTH_SECRET="build-time-placeholder-secret"
@@ -16,7 +16,7 @@ WORKDIR /app
 ENV NODE_ENV production
 
 COPY --from=builder /app/package*.json ./
-RUN npm ci --only=production
+RUN npm install --legacy-peer-deps --production
 
 COPY --from=builder /app/worker.ts ./
 COPY --from=builder /app/lib ./lib

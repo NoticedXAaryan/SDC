@@ -1,6 +1,20 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: club_admin
+      POSTGRES_PASSWORD: club_password
+      POSTGRES_DB: club_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     volumes:
       - redisdata:/data
     restart: always
@@ -15,8 +29,10 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://club_admin:club_password@postgres:5432/club_db
     depends_on:
       - redis
+      - postgres
     restart: always
 
   worker:
@@ -31,10 +47,13 @@ services:
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://club_admin:club_password@postgres:5432/club_db
       - IS_WORKER=true
     depends_on:
       - redis
+      - postgres
     restart: always
 
 volumes:
   redisdata:
+  pgdata:

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 interface AdminEventControlsProps {
@@ -11,7 +11,6 @@ interface AdminEventControlsProps {
 }
 
 export function AdminEventControls({ eventId, currentStatus }: AdminEventControlsProps) {
-  const { toast } = useToast()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -29,17 +28,14 @@ export function AdminEventControls({ eventId, currentStatus }: AdminEventControl
         throw new Error(error.error || "Failed to update status")
       }
       
-      toast({
-        title: "Event Updated",
+      toast.success("Event Updated", {
         description: `Event status changed to ${status}.`
       })
       
       router.refresh()
     } catch (error: any) {
-      toast({
-        title: "Update Failed",
-        description: error.message,
-        variant: "destructive"
+      toast.error("Update Failed", {
+        description: error.message
       })
     } finally {
       setIsLoading(false)
