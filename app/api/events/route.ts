@@ -7,6 +7,7 @@ import { createEventSchema, eventSearchSchema } from "@/lib/validators/event";
 import { logAuditEvent } from "@/lib/services/audit";
 import { aiQueue } from "@/lib/queues/ai";
 import crypto from "crypto";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -99,94 +100,90 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * POST /api/events — Create a new event
- * Requires lead, admin, or owner role.
- */
-export async function POST(req: NextRequest) {
-  try {
-    const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
-    
-    const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
-    await checkEmergencyFreeze(session.user.role as string);
+export const POST = withApiHandler(async (req: NextRequest) => {
+try {
+const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
 
-    const body = await req.json();
-    const parsed = createEventSchema.safeParse(body);
+const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
+await checkEmergencyFreeze(session.user.role as string);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid event data", details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+const body = await req.json();
+const parsed = createEventSchema.safeParse(body);
 
-    const data = parsed.data;
-
-    // Generate slug from title
-    const slug = data.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      + "-" + crypto.randomBytes(3).toString("hex");
-
-    const eventId = crypto.randomUUID();
-
-    await db.insert(events).values({
-      id: eventId,
-      title: data.title,
-      slug,
-      type: data.type,
-      domain: data.domain || null,
-      description: data.description,
-      location: data.location || null,
-      capacity: data.capacity || null,
-      startsAt: new Date(data.startsAt),
-      endsAt: new Date(data.endsAt),
-      registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : null,
-      isPaid: data.isPaid,
-      price: data.price ? String(data.price) : null,
-      visibility: data.visibility,
-      coverImage: data.coverImage || null,
-      isInternal: data.isInternal || false,
-      status: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "draft" : "published",
-      metadata: {
-        approvalStatus: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "pending" : "approved",
-        attendanceEstimates: data.attendanceEstimates || null,
-      },
-      createdBy: session.user.id,
-    });
-
-    // Trigger default tasks generation
-    const { createDefaultEventTasks } = await import("@/lib/services/tasks");
-    await createDefaultEventTasks(eventId, data.type || "workshop", data.isInternal || false);
-
-    await logAuditEvent({
-      actorId: session.user.id,
-      action: "event_create",
-      entity: "event",
-      entityId: eventId,
-      details: `Created event: ${data.title}`,
-    });
-
-    // Enqueue AI job to draft comms (WhatsApp & Email)
-    await aiQueue.add("draft_event_comms", {
-      eventId,
-      eventDetails: {
-        title: data.title,
-        type: data.type,
-        description: data.description,
-        startsAt: data.startsAt,
-        location: data.location,
-        isInternal: data.isInternal,
-      }
-    });
-
-    return NextResponse.json({ success: true, id: eventId, slug }, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Events POST]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+if (!parsed.success) {
+  return NextResponse.json(
+    { error: "Invalid event data", details: parsed.error.flatten() },
+    { status: 400 }
+  );
 }
+
+const data = parsed.data;
+
+// Generate slug from title
+const slug = data.title
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "")
+  + "-" + crypto.randomBytes(3).toString("hex");
+
+const eventId = crypto.randomUUID();
+
+await db.insert(events).values({
+  id: eventId,
+  title: data.title,
+  slug,
+  type: data.type,
+  domain: data.domain || null,
+  description: data.description,
+  location: data.location || null,
+  capacity: data.capacity || null,
+  startsAt: new Date(data.startsAt),
+  endsAt: new Date(data.endsAt),
+  registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : null,
+  isPaid: data.isPaid,
+  price: data.price ? String(data.price) : null,
+  visibility: data.visibility,
+  coverImage: data.coverImage || null,
+  isInternal: data.isInternal || false,
+  status: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "draft" : "published",
+  metadata: {
+    approvalStatus: ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(session.user.role as string) ? "pending" : "approved",
+    attendanceEstimates: data.attendanceEstimates || null,
+  },
+  createdBy: session.user.id,
+});
+
+// Trigger default tasks generation
+const { createDefaultEventTasks } = await import("@/lib/services/tasks");
+await createDefaultEventTasks(eventId, data.type || "workshop", data.isInternal || false);
+
+await logAuditEvent({
+  actorId: session.user.id,
+  action: "event_create",
+  entity: "event",
+  entityId: eventId,
+  details: `Created event: ${data.title}`,
+});
+
+// Enqueue AI job to draft comms (WhatsApp & Email)
+await aiQueue.add("draft_event_comms", {
+  eventId,
+  eventDetails: {
+    title: data.title,
+    type: data.type,
+    description: data.description,
+    startsAt: data.startsAt,
+    location: data.location,
+    isInternal: data.isInternal,
+  }
+});
+
+return NextResponse.json({ success: true, id: eventId, slug }, { status: 201 });
+} catch (error: any) {
+if (error.name === "AuthorizationError") {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+}
+console.error("[Events POST]:", error);
+return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+});

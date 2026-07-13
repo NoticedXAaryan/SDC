@@ -1,8 +1,8 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique } from "drizzle-orm/pg-core";
-
+import crypto from "crypto";
 
 export const user = pgTable("user", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					name: text("name").notNull(),
 					email: text("email").notNull().unique(),
 					emailVerified: boolean("emailVerified").notNull(),
@@ -25,11 +25,12 @@ export const user = pgTable("user", {
 					links: jsonb("links"),
 					points: integer("points").default(0),
 					level: integer("level").default(1),
-					privacy: jsonb("privacy")
-				});
+					privacy: jsonb("privacy"),
+    deletedAt: timestamp("deletedAt")
+});
 
 export const session = pgTable("session", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					expiresAt: timestamp("expiresAt").notNull(),
 					token: text("token").notNull().unique(),
 					createdAt: timestamp("createdAt").notNull(),
@@ -38,10 +39,10 @@ export const session = pgTable("session", {
 					userAgent: text("userAgent"),
 					userId: text("userId").notNull().references(() => user.id),
 					impersonatedBy: text("impersonatedBy")
-				});
+				}, (table) => [index("session_user_id_idx").on(table.userId)]);
 
 export const account = pgTable("account", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					accountId: text("accountId").notNull(),
 					providerId: text("providerId").notNull(),
 					userId: text("userId").notNull().references(() => user.id),
@@ -54,10 +55,10 @@ export const account = pgTable("account", {
 					password: text("password"),
 					createdAt: timestamp("createdAt").notNull(),
 					updatedAt: timestamp("updatedAt").notNull()
-				});
+				}, (table) => [index("account_user_id_idx").on(table.userId)]);
 
 export const verification = pgTable("verification", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					identifier: text("identifier").notNull(),
 					value: text("value").notNull(),
 					expiresAt: timestamp("expiresAt").notNull(),
@@ -66,7 +67,7 @@ export const verification = pgTable("verification", {
 				});
 
 export const organization = pgTable("organization", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					name: text("name").notNull(),
 					slug: text("slug").unique(),
 					logo: text("logo"),
@@ -75,7 +76,7 @@ export const organization = pgTable("organization", {
 				});
 
 export const member = pgTable("member", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					organizationId: text("organizationId").notNull().references(() => organization.id),
 					userId: text("userId").notNull().references(() => user.id),
 					role: text("role").notNull(),
@@ -83,10 +84,10 @@ export const member = pgTable("member", {
 					
 					// SDC specific fields
 					domain: text("domain")
-				});
+				}, (table) => [index("member_user_id_idx").on(table.userId)]);
 
 export const invitation = pgTable("invitation", {
-					id: text("id").primaryKey(),
+					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					organizationId: text("organizationId").notNull().references(() => organization.id),
 					email: text("email").notNull(),
 					role: text("role"),
@@ -101,7 +102,7 @@ export const eventVisibilityEnum = pgEnum("event_visibility", ["public", "privat
 export const registrationStatusEnum = pgEnum("registration_status", ["confirmed", "waitlist", "checked_in", "cancelled", "no_show"]);
 
 export const events = pgTable("events", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   slug: text("slug").unique().notNull(),
   type: eventTypeEnum("type").default("workshop"),
@@ -115,8 +116,7 @@ export const events = pgTable("events", {
   endsAt: timestamp("endsAt", { withTimezone: true }),
   registrationDeadline: timestamp("registrationDeadline", { withTimezone: true }),
   visibility: eventVisibilityEnum("visibility").default("public"),
-  createdBy: text("createdBy").notNull().references(() => user.id),
-  budgetId: text("budgetId"), // To be linked to budgets later
+  createdBy: text("createdBy").notNull().references(() => user.id), // To be linked to budgets later
   metadata: jsonb("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
@@ -132,10 +132,10 @@ export const events = pgTable("events", {
   // AI fields
   aiDraftMessage: text("aiDraftMessage"),
   aiDraftEmail: text("aiDraftEmail"),
-});
+}, (table) => [index("events_status_idx").on(table.status), index("events_starts_at_idx").on(table.startsAt), index("events_created_by_idx").on(table.createdBy)]);
 
 export const registrations = pgTable("registrations", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   eventId: text("eventId").notNull().references(() => events.id),
   userId: text("userId").notNull().references(() => user.id),
   status: registrationStatusEnum("status").default("confirmed"),
@@ -147,7 +147,8 @@ export const registrations = pgTable("registrations", {
   // v2 fields
   attendanceMethod: text("attendanceMethod").default("qr"), // qr, qr+face, manual
   faceMatchDistance: real("faceMatchDistance"),
-  needsFaceEnrollment: boolean("needsFaceEnrollment").default(false)
+  needsFaceEnrollment: boolean("needsFaceEnrollment").default(false),
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
 }, (t) => [
   index("registrations_event_id_idx").on(t.eventId),
   index("registrations_user_id_idx").on(t.userId),
@@ -155,18 +156,20 @@ export const registrations = pgTable("registrations", {
 ]);
 
 export const eventSessions = pgTable("event_sessions", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   eventId: text("eventId").notNull().references(() => events.id),
   title: text("title").notNull(),
   description: text("description"),
   startTime: timestamp("startTime", { withTimezone: true }).notNull(),
   endTime: timestamp("endTime", { withTimezone: true }).notNull(),
   location: text("location"),
-  createdAt: timestamp("createdAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
 });
 
 export const sessionAttendance = pgTable("session_attendance", {
-  sessionId: text("sessionId").notNull().references(() => eventSessions.id),
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    sessionId: text("sessionId").notNull().references(() => eventSessions.id),
   userId: text("userId").notNull().references(() => user.id),
   checkedInAt: timestamp("checkedInAt", { withTimezone: true }).defaultNow().notNull()
 }, (t) => ({
@@ -174,7 +177,7 @@ export const sessionAttendance = pgTable("session_attendance", {
 }));
 
 export const certificateTemplates = pgTable("certificateTemplates", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   basePdf: text("basePdf").notNull(),
   schemas: jsonb("schemas").notNull(), // pdfme fields JSON
@@ -184,10 +187,10 @@ export const certificateTemplates = pgTable("certificateTemplates", {
 });
 
 export const certificates = pgTable("certificates", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   verifyCode: text("verifyCode").unique().notNull(), // nanoid(12)
   userId: text("userId").notNull().references(() => user.id),
-  eventId: text("eventId").notNull().references(() => events.id),
+  eventId: text("eventId").references(() => events.id),
   templateId: text("templateId").notNull().references(() => certificateTemplates.id),
   pdfUrl: text("pdfUrl").notNull(),
   hash: text("hash").notNull(), // SHA256 of PDF buffer
@@ -195,14 +198,15 @@ export const certificates = pgTable("certificates", {
   revokedReason: text("revokedReason"),
   issuedBy: text("issuedBy").notNull().references(() => user.id),
   issuedAt: timestamp("issuedAt").defaultNow().notNull(),
-});
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+}, (table) => [index("certificates_user_id_idx").on(table.userId)]);
 
 export const expenseStatusEnum = pgEnum("expense_status", ["pending", "approved", "rejected"]);
 export const inventoryActionEnum = pgEnum("inventory_action", ["check_out", "check_in"]);
 export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done", "blocked"]);
 
 export const tasks = pgTable("tasks", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default("todo"),
@@ -211,17 +215,17 @@ export const tasks = pgTable("tasks", {
   dueDate: timestamp("dueDate", { withTimezone: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
-});
+}, (table) => [index("tasks_event_id_idx").on(table.eventId)]);
 
 export const budgets = pgTable("budgets", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   eventId: text("eventId").notNull().references(() => events.id),
   allocated: numeric("allocated").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
 
 export const expenses = pgTable("expenses", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   budgetId: text("budgetId").notNull().references(() => budgets.id),
   amount: numeric("amount").notNull(),
   category: text("category").notNull(),
@@ -233,7 +237,7 @@ export const expenses = pgTable("expenses", {
 });
 
 export const incomes = pgTable("incomes", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   eventId: text("eventId").notNull().references(() => events.id),
   amount: numeric("amount").notNull(),
   source: text("source").notNull(),
@@ -241,15 +245,16 @@ export const incomes = pgTable("incomes", {
 });
 
 export const inventory = pgTable("inventory", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   qtyTotal: integer("qtyTotal").notNull(),
   qtyAvailable: integer("qtyAvailable").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
 });
 
 export const inventoryLogs = pgTable("inventoryLogs", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   itemId: text("itemId").notNull().references(() => inventory.id),
   userId: text("userId").notNull().references(() => user.id),
   action: inventoryActionEnum("action").notNull(),
@@ -260,7 +265,7 @@ export const inventoryLogs = pgTable("inventoryLogs", {
 export const submissionStatusEnum = pgEnum("submission_status", ["pending", "approved", "rejected"]);
 
 export const projects = pgTable("projects", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description").notNull(),
   githubUrl: text("githubUrl"),
@@ -275,7 +280,7 @@ export const projects = pgTable("projects", {
 export const applicationStatusEnum = pgEnum("application_status", ["applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]);
 
 export const applications = pgTable("applications", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().references(() => user.id),
   applicationCycle: text("applicationCycle").notNull(),
   status: applicationStatusEnum("status").default("applied"),
@@ -299,7 +304,7 @@ export const applications = pgTable("applications", {
 ]);
 
 export const interviews = pgTable("interviews", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   applicantId: text("applicantId").notNull().references(() => applications.id),
   interviewerId: text("interviewerId").notNull().references(() => user.id),
   scheduledAt: timestamp("scheduledAt", { withTimezone: true }).notNull(),
@@ -309,18 +314,19 @@ export const interviews = pgTable("interviews", {
 });
 
 export const pointLogs = pgTable("pointLogs", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().references(() => user.id),
   points: integer("points").notNull(),
   reason: text("reason").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
 }, (t) => ({
   index: index("point_logs_user_id_idx").on(t.userId)
 }));
 
 
 export const achievementSubmissions = pgTable("achievement_submissions", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().references(() => user.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -335,7 +341,7 @@ export const achievementSubmissions = pgTable("achievement_submissions", {
 export const contentStatusEnum = pgEnum("content_status", ["idea", "drafting", "review", "scheduled", "published"]);
 
 export const contentItems = pgTable("content_items", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description"),
   platform: text("platform"), 
@@ -349,7 +355,7 @@ export const contentItems = pgTable("content_items", {
 });
 
 export const vendors = pgTable("vendors", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   contactName: text("contactName"),
   email: text("email"),
@@ -364,7 +370,7 @@ export const vendors = pgTable("vendors", {
 export const procurementStatusEnum = pgEnum("procurement_status", ["draft", "pending_quotes", "approval", "approved", "rejected", "completed"]);
 
 export const procurementRequests = pgTable("procurement_requests", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description").notNull(),
   status: procurementStatusEnum("status").default("draft"),
@@ -379,7 +385,7 @@ export const procurementRequests = pgTable("procurement_requests", {
 });
 
 export const researchPapers = pgTable("researchPapers", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().references(() => user.id),
   title: text("title").notNull(),
   authors: text("authors").notNull(),
@@ -390,7 +396,7 @@ export const researchPapers = pgTable("researchPapers", {
 });
 
 export const competitions = pgTable("competitions", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("userId").notNull().references(() => user.id),
   title: text("title").notNull(),
   position: text("position").notNull(),
@@ -400,7 +406,7 @@ export const competitions = pgTable("competitions", {
 });
 
 export const auditLogs = pgTable("auditLogs", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   actorId: text("actorId").notNull().references(() => user.id),
   action: text("action").notNull(),
   entity: text("entity").notNull(),
@@ -420,7 +426,8 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").default(false).notNull(),
   link: text("link"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+    updatedAt: timestamp("updatedAt").$onUpdateFn(() => new Date())
+}, (table) => [index("notifications_user_id_idx").on(table.userId), index("notifications_read_idx").on(table.read)]);
 
 export const clubSettings = pgTable("club_settings", {
   id: text("id").primaryKey().default("default"),

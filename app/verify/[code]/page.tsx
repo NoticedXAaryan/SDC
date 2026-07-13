@@ -16,7 +16,11 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
   }
 
   const [userData] = await db.select().from(user).where(eq(user.id, cert.userId)).limit(1);
-  const [eventData] = await db.select().from(events).where(eq(events.id, cert.eventId)).limit(1);
+  let eventData = null;
+  if (cert.eventId) {
+    const res = await db.select().from(events).where(eq(events.id, cert.eventId)).limit(1);
+    eventData = res[0];
+  }
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4 space-y-8">

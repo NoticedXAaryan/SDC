@@ -11,8 +11,12 @@ export class WebhookService {
     }
 
     try {
-      logger.info({ content: payload.content }, "Stub: Sending Discord webhook");
-      // TODO: const res = await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const res = await fetch(webhookUrl, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(payload) 
+      });
+      if (!res.ok) throw new Error(`Discord returned ${res.status}`);
       return true;
     } catch (error) {
       logger.error({ error }, "Failed to send Discord webhook");
@@ -27,8 +31,12 @@ export class WebhookService {
     }
 
     try {
-      logger.info({ text: payload.text }, "Stub: Sending Slack webhook");
-      // TODO: const res = await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const res = await fetch(webhookUrl, { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(payload) 
+      });
+      if (!res.ok) throw new Error(`Slack returned ${res.status}`);
       return true;
     } catch (error) {
       logger.error({ error }, "Failed to send Slack webhook");

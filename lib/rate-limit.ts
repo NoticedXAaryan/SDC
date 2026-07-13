@@ -4,8 +4,12 @@ import { env } from "@/lib/env";
 import { NextRequest } from "next/server";
 
 const redisClient = env.REDIS_URL 
-  ? new Redis(env.REDIS_URL, { enableOfflineQueue: false })
-  : new Redis({ host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT), enableOfflineQueue: false });
+  ? new Redis(env.REDIS_URL, { enableOfflineQueue: false, lazyConnect: true })
+  : new Redis({ host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT), enableOfflineQueue: false, lazyConnect: true });
+
+redisClient.on("error", () => {
+  // Ignore connection errors, especially during build time
+});
 
 const rateLimiter = new RateLimiterRedis({
   storeClient: redisClient,

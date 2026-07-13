@@ -36,3 +36,20 @@ export const aiWorker = new Worker(
   },
   { connection }
 );
+
+aiWorker.on("failed", async (job, error) => {
+  if (job && job.name === "draft_event_comms" && job.attemptsMade >= (job.opts.attempts || 1)) {
+    const { eventId } = job.data;
+    logger.warn({ jobId: job.id, eventId }, "AI drafting job max retries reached. Setting error state.");
+    try {
+      await db.update(events)
+        .set({
+          aiDraftMessage: "Error: Draft generation failed. Please regenerate.",
+          aiDraftEmail: "Error: Draft generation failed. Please regenerate.",
+        })
+        .where(eq(events.id, eventId));
+    } catch (dbError) {
+      logger.error({ jobId: job.id, eventId, error: dbError }, "Failed to update event state after AI failure");
+    }
+  }
+});

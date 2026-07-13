@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SDC OS (Student Developer Club Operating System)
 
-## Getting Started
+SDC OS is a robust, professional-grade platform designed to manage student clubs, handle recruitment, events, members, and internal club administration.
 
-First, run the development server:
+## Features
+- **Event Management**: Create and track events, attendance, and issue certificates.
+- **Recruitment & Interiews**: Track applications, AI grading, and schedule interviews.
+- **Role-based Access**: Custom roles (admin, leads, members) with granular permissions powered by Better Auth.
+- **QR Scanning**: Native QR code scanning for fast event check-ins.
+- **Inventory & Finance**: Manage club budgets, procurement requests, and physical inventory.
 
+## Architecture Stack
+- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, shadcn/ui.
+- **Backend**: Next.js API Routes, Drizzle ORM, PostgreSQL.
+- **Background Jobs**: BullMQ and Redis (via background worker process).
+- **Authentication**: Better Auth with custom role-based access control.
+
+## Local Setup
+
+### 1. Environment Variables
+Copy the example environment file and fill in the required keys:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+```
+Ensure you have a PostgreSQL database URL and Redis URL set up.
+
+### 2. Install Dependencies
+```bash
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Database Migration
+```bash
+npm run db:migrate
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Running Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The easiest way to run the entire stack (including Postgres, Redis, the Web app, and the Background Worker) is using Docker Compose:
 
-## Learn More
+```bash
+docker-compose up --build
+```
+This will start:
+- PostgreSQL Database (if configured in docker-compose.yml)
+- Redis Cache
+- Next.js Web App (http://localhost:3000)
+- Background Worker Process (processes emails, certificates, grading, etc.)
 
-To learn more about Next.js, take a look at the following resources:
+Alternatively, to run natively:
+```bash
+# Terminal 1: Web App
+npm run dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Terminal 2: Worker
+npm run worker
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security & Rate Limiting
+- All state-changing API routes are rate-limited via Redis.
+- Better Auth handles session hijacking prevention, secure CSRF tokens, and role-based guards.
+- Custom `withApiHandler` enforces structured error responses across all API endpoints.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+Please refer to the `docs/ai/` directory for architectural decisions, research notes, and past implementations before making major changes.

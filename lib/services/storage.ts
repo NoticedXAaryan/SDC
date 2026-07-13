@@ -1,12 +1,22 @@
-export interface IStorageService {
-  uploadFile(buffer: Uint8Array, filename: string, mimeType: string): Promise<string>;
-}
+import fs from "fs/promises";
+import path from "path";
 
-export class LocalMockStorageService implements IStorageService {
-  async uploadFile(buffer: Uint8Array, filename: string, mimeType: string): Promise<string> {
-    // In a real app, upload to S3/Cloudflare R2 here
-    console.log(`[Storage] Uploaded ${filename} (${buffer.length} bytes) as ${mimeType}`);
-    // Mock URL for now
-    return `https://storage.stc.local/${filename}`;
+export class LocalMockStorageService {
+  async uploadFile(buffer: Uint8Array | Buffer, filePath: string, mimeType: string): Promise<string> {
+    const uploadDir = path.join(process.cwd(), "public", "uploads", path.dirname(filePath));
+    const fileName = path.basename(filePath);
+    
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      await fs.mkdir(uploadDir, { recursive: true });
+    }
+    
+    const fullPath = path.join(uploadDir, fileName);
+    await fs.writeFile(fullPath, buffer);
+    
+    // Normalize path for web URL
+    const webPath = filePath.replace(/\\/g, "/");
+    return `/uploads/${webPath}`;
   }
 }

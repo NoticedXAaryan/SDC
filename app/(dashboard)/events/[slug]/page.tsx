@@ -5,6 +5,8 @@ import { eq, and, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { RegisterButton } from "@/components/events/register-button";
 import { generateSignedPass } from "@/lib/passes/qr";
+import { certificateTemplates } from "@/lib/db/schema";
+import { IssueCertificatesButton } from "@/components/events/issue-certificates-button";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,8 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
   if (!event || (event.status !== "published" && !["owner", "admin", "lead", "co_lead"].includes(session.user.role as string))) {
     notFound();
   }
+
+  const template = await db.query.certificateTemplates.findFirst();
   
   // Get registered count dynamically
   const [countResult] = await db.select({ count: sql<number>`count(*)` })
@@ -148,6 +152,13 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                     </a>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {["admin", "owner", "lead"].includes(session.user.role as string) && template && (
+              <div className="pt-4 border-t mt-4">
+                <h3 className="font-semibold text-lg mb-2">Admin Controls</h3>
+                <IssueCertificatesButton eventId={event.id} templateId={template.id} />
               </div>
             )}
           </div>

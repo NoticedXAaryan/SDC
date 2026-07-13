@@ -43,6 +43,13 @@
       "when": 1783861282603,
       "tag": "0005_warm_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783930768161,
+      "tag": "0006_shiny_lake",
+      "breakpoints": true
     }
   ]
 }

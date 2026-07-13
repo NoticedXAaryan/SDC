@@ -3,35 +3,36 @@ import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { certificateTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const session = await requireSession();
-    
-    // Check role (must be at least lead)
-    const userRole = session.user.role || "member";
-    if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
-    }
+export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
+try {
+const { id } = await params;
+const session = await requireSession();
 
-    const body = await req.json();
-    const { schemas, basePdf } = body;
-
-    if (!schemas || !basePdf) {
-      return NextResponse.json({ success: false, error: "Missing schemas or basePdf" }, { status: 400 });
-    }
-
-    await db.update(certificateTemplates)
-      .set({ schemas, basePdf, updatedAt: new Date() })
-      .where(eq(certificateTemplates.id, id));
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Failed to update template", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-  }
+// Check role (must be at least lead)
+const userRole = session.user.role || "member";
+if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
+  return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
 }
+
+const body = await req.json();
+const { schemas, basePdf } = body;
+
+if (!schemas || !basePdf) {
+  return NextResponse.json({ success: false, error: "Missing schemas or basePdf" }, { status: 400 });
+}
+
+await db.update(certificateTemplates)
+  .set({ schemas, basePdf, updatedAt: new Date() })
+  .where(eq(certificateTemplates.id, id));
+
+return NextResponse.json({ success: true });
+} catch (error: any) {
+console.error("Failed to update template", error);
+return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+}
+});
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

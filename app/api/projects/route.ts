@@ -3,6 +3,7 @@ import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -34,36 +35,36 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await requireSession();
-    const reqBody = await req.json();
+export const POST = withApiHandler(async (req: NextRequest) => {
+try {
+const session = await requireSession();
+const reqBody = await req.json();
 
-    const { title, description, githubUrl, liveUrl, teamMembers, images } = reqBody;
+const { title, description, githubUrl, liveUrl, teamMembers, images } = reqBody;
 
-    if (!title || !description) {
-      return NextResponse.json({ error: "Title and description are required" }, { status: 400 });
-    }
-
-    const projectId = crypto.randomUUID();
-
-    await db.insert(projects).values({
-      id: projectId,
-      title,
-      description,
-      githubUrl,
-      liveUrl,
-      teamMembers,
-      images,
-      status: "pending",
-    });
-
-    return NextResponse.json({ success: true, id: projectId }, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    console.error("[Projects POST]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+if (!title || !description) {
+  return NextResponse.json({ error: "Title and description are required" }, { status: 400 });
 }
+
+const projectId = crypto.randomUUID();
+
+await db.insert(projects).values({
+  id: projectId,
+  title,
+  description,
+  githubUrl,
+  liveUrl,
+  teamMembers,
+  images,
+  status: "pending",
+});
+
+return NextResponse.json({ success: true, id: projectId }, { status: 201 });
+} catch (error: any) {
+if (error.name === "AuthorizationError") {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+console.error("[Projects POST]:", error);
+return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+});

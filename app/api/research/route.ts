@@ -3,6 +3,7 @@ import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { researchPapers } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -33,35 +34,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await requireSession();
-    const reqBody = await req.json();
+export const POST = withApiHandler(async (req: NextRequest) => {
+try {
+const session = await requireSession();
+const reqBody = await req.json();
 
-    const { title, authors, url, publishedAt } = reqBody;
+const { title, authors, url, publishedAt } = reqBody;
 
-    if (!title || !authors) {
-      return NextResponse.json({ error: "Title and authors are required" }, { status: 400 });
-    }
-
-    const paperId = crypto.randomUUID();
-
-    await db.insert(researchPapers).values({
-      id: paperId,
-      userId: session.user.id,
-      title,
-      authors,
-      url,
-      publishedAt: publishedAt ? new Date(publishedAt) : null,
-      status: "pending",
-    });
-
-    return NextResponse.json({ success: true, id: paperId }, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    console.error("[Research POST]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+if (!title || !authors) {
+  return NextResponse.json({ error: "Title and authors are required" }, { status: 400 });
 }
+
+const paperId = crypto.randomUUID();
+
+await db.insert(researchPapers).values({
+  id: paperId,
+  userId: session.user.id,
+  title,
+  authors,
+  url,
+  publishedAt: publishedAt ? new Date(publishedAt) : null,
+  status: "pending",
+});
+
+return NextResponse.json({ success: true, id: paperId }, { status: 201 });
+} catch (error: any) {
+if (error.name === "AuthorizationError") {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+console.error("[Research POST]:", error);
+return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+});

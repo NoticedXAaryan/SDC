@@ -59,7 +59,7 @@ async function runAudit() {
     // 4. Logistics (Budget & Inventory)
     console.log("💰 Allocating Budget & Inventory...");
     await db.insert(budgets).values({ id: budgetId, eventId, allocated: "5000" });
-    await db.update(events).set({ budgetId }).where(eq(events.id, eventId));
+    // (budgetId no longer stored on events table)
 
     await db.insert(expenses).values({ id: expenseId, budgetId, amount: "500", category: "Food", createdBy: leadId });
 

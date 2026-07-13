@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { CookieBanner } from "@/components/cookie-banner";
+import { CookieBanner } from "@/components/global/cookie-banner";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { PostHogPageView } from "@/components/providers/posthog-pageview";
 import { PostHogIdentify } from "@/components/providers/posthog-identify";

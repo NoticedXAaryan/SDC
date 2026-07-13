@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/dal/auth";
 import { nanoid } from "nanoid";
 import { desc } from "drizzle-orm";
 import { z } from "zod";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 const vendorSchema = z.object({
   name: z.string().min(2),
@@ -27,35 +28,35 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
-    
-    const body = await req.json();
-    const parsed = vendorSchema.safeParse(body);
-    
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 });
-    }
+export const POST = withApiHandler(async (req: NextRequest) => {
+try {
+await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
 
-    const { name, contactName, email, phone, category, notes } = parsed.data;
+const body = await req.json();
+const parsed = vendorSchema.safeParse(body);
 
-    const [newVendor] = await db.insert(vendors).values({
-      id: nanoid(),
-      name,
-      contactName,
-      email: email || null,
-      phone,
-      category,
-      notes,
-    }).returning();
-
-    return NextResponse.json(newVendor, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Vendors POST]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+if (!parsed.success) {
+  return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 });
 }
+
+const { name, contactName, email, phone, category, notes } = parsed.data;
+
+const [newVendor] = await db.insert(vendors).values({
+  id: nanoid(),
+  name,
+  contactName,
+  email: email || null,
+  phone,
+  category,
+  notes,
+}).returning();
+
+return NextResponse.json(newVendor, { status: 201 });
+} catch (error: any) {
+if (error.name === "AuthorizationError") {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+}
+console.error("[Vendors POST]:", error);
+return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+});

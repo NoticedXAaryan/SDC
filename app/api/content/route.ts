@@ -5,6 +5,7 @@ import { eq, asc, desc } from "drizzle-orm";
 import { requireRole } from "@/lib/dal/auth";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 const contentSchema = z.object({
   title: z.string().min(3),
@@ -40,38 +41,38 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
-    
-    const body = await req.json();
-    const parsed = contentSchema.safeParse(body);
-    
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 });
-    }
+export const POST = withApiHandler(async (req: NextRequest) => {
+try {
+const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
-    const { title, description, platform, status, scheduledFor, mediaUrls } = parsed.data;
+const body = await req.json();
+const parsed = contentSchema.safeParse(body);
 
-    const [newItem] = await db.insert(contentItems).values({
-      id: nanoid(),
-      title,
-      description,
-      platform,
-      status: status || "idea",
-      scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-      mediaUrls: mediaUrls || [],
-      authorId: sessionAuth.user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).returning();
-
-    return NextResponse.json(newItem, { status: 201 });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Content POST]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+if (!parsed.success) {
+  return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 });
 }
+
+const { title, description, platform, status, scheduledFor, mediaUrls } = parsed.data;
+
+const [newItem] = await db.insert(contentItems).values({
+  id: nanoid(),
+  title,
+  description,
+  platform,
+  status: status || "idea",
+  scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+  mediaUrls: mediaUrls || [],
+  authorId: sessionAuth.user.id,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+}).returning();
+
+return NextResponse.json(newItem, { status: 201 });
+} catch (error: any) {
+if (error.name === "AuthorizationError") {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+}
+console.error("[Content POST]:", error);
+return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+}
+});

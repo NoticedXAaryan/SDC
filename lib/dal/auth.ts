@@ -80,33 +80,22 @@ export type AuthSession = {
   user: SessionUser;
 };
 
-/**
- * Requires an active session. Redirects to /login if not authenticated.
- * This is the primary guard for all authenticated pages.
- */
+
 export async function requireSession(): Promise<AuthSession> {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-  
-  if (!session) {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+  if (!session || !session.user) {
     redirect("/login");
   }
-  
   return session as unknown as AuthSession;
 }
 
-/**
- * Get current session without redirecting. Returns null if not authenticated.
- * Useful for conditional UI rendering.
- */
 export async function getCurrentUser(): Promise<AuthSession | null> {
-  try {
-    const headersList = await headers();
-    const session = await auth.api.getSession({ headers: headersList });
-    return session ? (session as unknown as AuthSession) : null;
-  } catch {
-    return null;
-  }
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+  return session ? (session as unknown as AuthSession) : null;
 }
 
 /**

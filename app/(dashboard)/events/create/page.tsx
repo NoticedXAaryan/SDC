@@ -3,14 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+
 const EVENT_TYPES = [
   { value: "workshop", label: "Workshop" },
   { value: "hackathon", label: "Hackathon" },
-  { value: "meetup", label: "Meetup" },
-  { value: "competition", label: "Competition" },
-  { value: "talk", label: "Talk" },
+  { value: "seminar", label: "Seminar" },
   { value: "social", label: "Social" },
-  { value: "other", label: "Other" },
+  { value: "competition", label: "Competition" },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -32,6 +37,12 @@ export default function CreateEventPage() {
 
     const form = new FormData(e.currentTarget);
 
+    const parseDate = (val: FormDataEntryValue | null) => {
+      if (!val || typeof val !== "string") return undefined;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d.toISOString();
+    };
+
     const body = {
       title: form.get("title") as string,
       type: form.get("type") as string,
@@ -39,11 +50,9 @@ export default function CreateEventPage() {
       description: form.get("description") as string,
       location: form.get("location") as string || undefined,
       capacity: form.get("capacity") ? Number(form.get("capacity")) : undefined,
-      startsAt: new Date(form.get("startsAt") as string).toISOString(),
-      endsAt: new Date(form.get("endsAt") as string).toISOString(),
-      registrationDeadline: form.get("registrationDeadline")
-        ? new Date(form.get("registrationDeadline") as string).toISOString()
-        : undefined,
+      startsAt: parseDate(form.get("startsAt")),
+      endsAt: parseDate(form.get("endsAt")),
+      registrationDeadline: parseDate(form.get("registrationDeadline")),
       isPaid,
       price: isPaid ? Number(form.get("price")) : undefined,
       visibility: form.get("visibility") as string,
@@ -71,163 +80,162 @@ export default function CreateEventPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Create Event</h1>
-        <p className="text-muted-foreground">Fill in the details to create a new event.</p>
+        <p className="text-muted-foreground mt-1">Fill in the details to create a new event.</p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-4 text-sm text-red-700 dark:text-red-300">
+        <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-lg border bg-card p-6 space-y-4">
-          <h2 className="font-semibold">Basic Information</h2>
-
-          <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-medium">Title *</label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              required
-              minLength={3}
-              maxLength={200}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="e.g., Web Development Workshop"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="type" className="text-sm font-medium">Type *</label>
-              <select
-                id="type"
-                name="type"
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                name="title"
                 required
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                minLength={3}
+                maxLength={200}
+                placeholder="e.g., Web Development Workshop"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Type *</Label>
+                <select
+                  id="type"
+                  name="type"
+                  required
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  {EVENT_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="domain">Domain</Label>
+                <Input
+                  id="domain"
+                  name="domain"
+                  placeholder="e.g., Web, AI/ML, Cybersecurity"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                required
+                minLength={10}
+                rows={4}
+                placeholder="Describe the event, what attendees will learn, etc."
+                className="resize-y"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                name="location"
+                placeholder="e.g., Room 301, Engineering Block"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Schedule & Capacity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startsAt">Start Date & Time *</Label>
+                <Input id="startsAt" name="startsAt" type="datetime-local" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endsAt">End Date & Time *</Label>
+                <Input id="endsAt" name="endsAt" type="datetime-local" required />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="registrationDeadline">Registration Deadline</Label>
+                <Input id="registrationDeadline" name="registrationDeadline" type="datetime-local" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity (max attendees)</Label>
+                <Input id="capacity" name="capacity" type="number" min="1" max="10000" placeholder="Leave blank for unlimited" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Visibility & Pricing</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2 max-w-sm">
+              <Label htmlFor="visibility">Visibility</Label>
+              <select 
+                id="visibility" 
+                name="visibility" 
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
-                {EVENT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {VISIBILITY_OPTIONS.map(v => (
+                  <option key={v.value} value={v.value}>{v.label}</option>
                 ))}
               </select>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="domain" className="text-sm font-medium">Domain</label>
-              <input
-                id="domain"
-                name="domain"
-                type="text"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                placeholder="e.g., Web, AI/ML, Cybersecurity"
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="isPaid" 
+                name="isPaid" 
+                checked={isPaid} 
+                onCheckedChange={(c) => setIsPaid(c as boolean)} 
+                value="true"
               />
+              <Label htmlFor="isPaid" className="cursor-pointer font-normal">This is a paid event</Label>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">Description *</label>
-            <textarea
-              id="description"
-              name="description"
-              required
-              minLength={10}
-              rows={4}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-              placeholder="Describe the event, what attendees will learn, etc."
-            />
-          </div>
+            {isPaid && (
+              <div className="space-y-2 max-w-sm">
+                <Label htmlFor="price">Price (INR) *</Label>
+                <Input id="price" name="price" type="number" min="1" step="0.01" required placeholder="e.g., 100" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          <div className="space-y-2">
-            <label htmlFor="location" className="text-sm font-medium">Location</label>
-            <input
-              id="location"
-              name="location"
-              type="text"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="e.g., Room 301, Engineering Block"
-            />
-          </div>
-        </div>
-
-        <div className="rounded-lg border bg-card p-6 space-y-4">
-          <h2 className="font-semibold">Schedule & Capacity</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="startsAt" className="text-sm font-medium">Start Date & Time *</label>
-              <input id="startsAt" name="startsAt" type="datetime-local" required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="endsAt" className="text-sm font-medium">End Date & Time *</label>
-              <input id="endsAt" name="endsAt" type="datetime-local" required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="registrationDeadline" className="text-sm font-medium">Registration Deadline</label>
-              <input id="registrationDeadline" name="registrationDeadline" type="datetime-local" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="capacity" className="text-sm font-medium">Capacity (max attendees)</label>
-              <input id="capacity" name="capacity" type="number" min="1" max="10000" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Leave blank for unlimited" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border bg-card p-6 space-y-4">
-          <h2 className="font-semibold">Visibility & Pricing</h2>
-
-          <div className="space-y-2">
-            <label htmlFor="visibility" className="text-sm font-medium">Visibility</label>
-            <select id="visibility" name="visibility" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              {VISIBILITY_OPTIONS.map(v => (
-                <option key={v.value} value={v.value}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              id="isPaid"
-              type="checkbox"
-              checked={isPaid}
-              onChange={(e) => setIsPaid(e.target.checked)}
-              className="rounded border-input"
-            />
-            <label htmlFor="isPaid" className="text-sm font-medium">This is a paid event</label>
-          </div>
-
-          {isPaid && (
-            <div className="space-y-2">
-              <label htmlFor="price" className="text-sm font-medium">Price (INR) *</label>
-              <input id="price" name="price" type="number" min="1" step="0.01" required className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g., 100" />
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          >
+        <div className="flex items-center gap-4">
+          <Button type="submit" disabled={loading} size="lg">
             {loading ? "Creating..." : "Create Event (Draft)"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex items-center justify-center rounded-md border px-6 py-2.5 text-sm font-medium hover:bg-muted"
-          >
+          </Button>
+          <Button type="button" variant="outline" size="lg" onClick={() => router.back()} disabled={loading}>
             Cancel
-          </button>
+          </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          Events are created as drafts. You'll need to publish them to make them visible to members.
+        <p className="text-sm text-muted-foreground">
+          Events are created as drafts. You'll need to publish them from the event management page to make them visible to members.
         </p>
       </form>
     </div>

@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
+
+export class AuthorizationError extends Error {
+  constructor(message: string = "Unauthorized") {
+    super(message);
+    this.name = "AuthorizationError";
+  }
+}
+
+export class ValidationError extends Error {
+  constructor(message: string = "Validation failed") {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+type ApiHandler<T = any> = (
+  req: NextRequest,
+  ctx: any
+) => Promise<NextResponse<T>> | NextResponse<T>;
+
+export interface ApiHandlerOptions {
+  requireRateLimit?: boolean;
+  rateLimitPrefix?: string;
+}
+
+export function withApiHandler(
+  handler: ApiHandler,
+  options: ApiHandlerOptions = { requireRateLimit: true }
+) {
+  return async (req: NextRequest, ctx: any) => {
+    try {
+      // 1. Rate Limiting (applied to mutating requests by default)
+      if (options.requireRateLimit !== false) {
+        // Only rate limit mutating methods by default if not explicitly set
+        const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+        if (isMutating) {
+          const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
+          if (!rl.success) {
+            return NextResponse.json(
+              { error: "Too many requests. Please try again later." },
+              { status: 429 }
+            );
+          }
+        }
+      }
+
+      // 2. Execute actual handler
+      return await handler(req, ctx);
+    } catch (error: any) {
+      if (error instanceof AuthorizationError || error?.name === "AuthorizationError") {
+        return NextResponse.json({ error: error.message }, { status: 403 });
+      }
+
+      if (error instanceof ValidationError || error?.name === "ZodError") {
+        return NextResponse.json(
+          { error: "Validation failed", details: error.errors || error.message },
+          { status: 400 }
+        );
+      }
+
+      // Log unexpected errors
+      logger.error({ err: error, path: req.nextUrl.pathname }, "API Error");
+
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      );
+    }
+  };
+}
