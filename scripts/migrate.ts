@@ -16,6 +16,20 @@ async function main() {
   const db = drizzle(pool, { schema });
 
   try {
+    // Self-healing: Check if the database has dirty state without migration history.
+    // This happens if db:push was used initially instead of migrate on a fresh DB.
+    const migrationTableCheck = await pool.query(`SELECT to_regclass('public.__drizzle_migrations');`);
+    const hasMigrationsTable = migrationTableCheck.rows[0].to_regclass !== null;
+    
+    if (!hasMigrationsTable) {
+      const typeCheck = await pool.query(`SELECT 1 FROM pg_type WHERE typname = 'application_status';`);
+      if (typeCheck.rows.length > 0) {
+        console.log("Detected dirty database without migration history. Resetting schema...");
+        await pool.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+        await pool.query(`GRANT ALL ON SCHEMA public TO postgres;`);
+        await pool.query(`GRANT ALL ON SCHEMA public TO public;`);
+      }
+    }
     // This will run migrations on the database, skipping the ones already applied
     await migrate(db, { migrationsFolder: "./drizzle" });
     console.log("Migrations completed successfully");
