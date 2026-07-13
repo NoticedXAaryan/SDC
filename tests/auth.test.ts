@@ -18,6 +18,6 @@ describe("Auth DAL", () => {
     // For now we just verify the constants.
     expect(SDC_ROLES).toContain("member");
     expect(SDC_ROLES).toContain("lead");
-    expect(SDC_ROLES).toContain("faculty_advisor");
+    expect(SDC_ROLES).toContain("faculty_coordinator");
   });
 });
