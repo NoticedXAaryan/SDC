@@ -22,6 +22,9 @@ async function main() {
         email: testEmail,
         name: "Aaryan Test",
         role: "admin",
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
       userData = await db.query.user.findFirst({ where: eq(user.id, newUserId) });
     }
@@ -43,7 +46,7 @@ async function main() {
          location: "Online",
          startsAt: new Date(),
          endsAt: new Date(Date.now() + 86400000),
-         createdById: userData.id
+         createdBy: userData.id
        });
        eventData = await db.query.events.findFirst({ where: eq(events.id, newEventId) });
     }
