@@ -35,8 +35,8 @@ export function CertificateDesigner({
       try {
         // webpackIgnore prevents the bundler from tracing into these modules
         const [pdfmeUi, pdfmeSchemas] = await Promise.all([
-          import(/* webpackIgnore: true */ "@pdfme/ui"),
-          import(/* webpackIgnore: true */ "@pdfme/schemas"),
+          import("@pdfme/ui"),
+          import("@pdfme/schemas"),
         ]);
 
         const { Designer } = pdfmeUi;
