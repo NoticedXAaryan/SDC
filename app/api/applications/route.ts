@@ -11,7 +11,6 @@ import { eq, and } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const rl = await checkRateLimit(req, "apply");
 if (!rl.success) {
   return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -89,8 +88,4 @@ if (data.status !== "draft") {
 }
 
 return NextResponse.json({ success: true, applicationId });
-} catch (error) {
-console.error("Failed to submit application:", error);
-return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-}
 });

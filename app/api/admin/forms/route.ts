@@ -24,12 +24,11 @@ export async function GET() {
     const forms = await db.select().from(formTemplates).orderBy(formTemplates.createdAt);
     return NextResponse.json(forms);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch forms" }, { status: 500 });
+
   }
 }
 
 export const POST = withApiHandler(async (req: Request) => {
-  try {
     await requireAdmin();
     const body = await req.json();
     const data = formSchema.parse(body);
@@ -41,7 +40,4 @@ export const POST = withApiHandler(async (req: Request) => {
     }).returning();
 
     return NextResponse.json(newForm);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
 });

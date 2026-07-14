@@ -8,7 +8,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const { id: eventId } = await params;
 const body = await req.json().catch(() => ({}));
 const { name, email } = body;
@@ -73,8 +72,5 @@ await db.insert(registrations).values({
 });
 
 return NextResponse.json({ success: true, passCode, regId }, { status: 201 });
-} catch (error: any) {
-console.error("[Event Guest Register POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

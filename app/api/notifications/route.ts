@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(userNotifications);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
   }
 }
 
@@ -33,7 +33,6 @@ const markReadSchema = z.object({
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await auth.api.getSession({
   headers: req.headers,
 });
@@ -59,7 +58,4 @@ await db.update(notifications)
   );
 
 return NextResponse.json({ message: "Notifications marked as read" });
-} catch (error: any) {
-return NextResponse.json({ error: error.message }, { status: 400 });
-}
 });

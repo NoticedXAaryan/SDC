@@ -14,7 +14,6 @@ const revokeSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const sessionAuth = await requireRole(["admin", "owner"]); // only high level admins should revoke
 
 const body = await req.json();
@@ -50,11 +49,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, message: "Certificate revoked successfully" });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Certificates Revoke PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

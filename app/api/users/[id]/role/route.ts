@@ -14,7 +14,6 @@ const VALID_ROLES = [
 ];
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireRole(["admin", "owner", "lead"]);
 const currentUserRole = session.user.role as string;
 
@@ -52,11 +51,5 @@ if (targetUser.role === "owner" && currentUserRole !== "owner") {
 await db.update(user).set({ role }).where(eq(user.id, targetUserId));
 
 return NextResponse.json({ success: true, role });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[User Role PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

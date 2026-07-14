@@ -5,11 +5,9 @@ import { eq, and, isNotNull, lte, gte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { emailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
+import { getRedisConfig } from "@/lib/redis";
 
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
+const connection = getRedisConfig();
 
 export const socialQueue = new Queue("social-queue", { connection });
 
@@ -21,7 +19,6 @@ export const socialWorker = new Worker("social-queue", async (job: Job) => {
     const tomorrowStart = startOfDay(addDays(today, 1));
     const tomorrowEnd = endOfDay(addDays(today, 1));
 
-    // Find all content scheduled for tomorrow that is not yet published
     const scheduledContent = await db.select({
       id: contentItems.id,
       title: contentItems.title,

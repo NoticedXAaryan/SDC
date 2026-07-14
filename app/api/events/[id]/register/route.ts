@@ -14,7 +14,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const rl = await checkRateLimit(req, "register");
 if (!rl.success) {
   return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -153,8 +152,5 @@ return NextResponse.json({
     ? "Registration confirmed! Your QR pass is ready."
     : `You're on the waitlist (position ${(confirmedCount || 0) - (event.capacity || 0) + 1}).`,
 }, { status: 201 });
-} catch (error: any) {
-console.error("[Event Register POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

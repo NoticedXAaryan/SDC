@@ -9,7 +9,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireSession();
 const { id: eventId } = await params;
 
@@ -54,11 +53,4 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, message: "Successfully deregistered" });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-console.error("[Event Deregister POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
 });

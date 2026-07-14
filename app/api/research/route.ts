@@ -30,12 +30,11 @@ export async function GET(req: NextRequest) {
       const data = await db.select().from(researchPapers).where(eq(researchPapers.status, "approved")).orderBy(desc(researchPapers.createdAt));
       return NextResponse.json({ papers: data });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
   }
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireSession();
 const reqBody = await req.json();
 
@@ -58,11 +57,4 @@ await db.insert(researchPapers).values({
 });
 
 return NextResponse.json({ success: true, id: paperId }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-console.error("[Research POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
 });

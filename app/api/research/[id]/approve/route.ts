@@ -9,7 +9,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 // Only content leads and admins can approve research papers
 await requireRole(["content_lead", "admin", "owner"]);
 
@@ -59,11 +58,5 @@ if (newStatus === "approved") {
 }
 
 return NextResponse.json({ success: true, paper: updated });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Research Approve PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

@@ -5,12 +5,9 @@ import { eq, and, gte, lt } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { emailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { getRedisConfig } from "@/lib/redis";
 
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
+const connection = getRedisConfig();
 
 export const remindersQueue = new Queue("reminders-queue", { connection });
 
@@ -18,11 +15,8 @@ export const remindersWorker = new Worker("reminders-queue", async (job: Job) =>
   const { type } = job.data;
   
   if (type === "daily_event_reminders") {
-    // Find all events starting tomorrow (Asia/Kolkata timezone standard)
     const today = new Date();
     const tomorrow = addDays(today, 1);
-    
-    // We should do this strictly in UTC mapped to start/end of day tomorrow
     const tomorrowStart = startOfDay(tomorrow);
     const tomorrowEnd = endOfDay(tomorrow);
 
@@ -38,7 +32,6 @@ export const remindersWorker = new Worker("reminders-queue", async (job: Job) =>
     logger.info({ count: upcomingEvents.length }, "Found upcoming events for reminders");
 
     for (const event of upcomingEvents) {
-      // Find all confirmed registrations
       const attendees = await db.select({
         email: user.email,
         name: user.name,
@@ -77,7 +70,7 @@ remindersQueue.add("daily_event_reminders", { type: "daily_event_reminders" }, {
   repeat: {
     pattern: "0 8 * * *",
   },
-  jobId: "daily-event-reminders-job" // ensures it doesn't duplicate
+  jobId: "daily-event-reminders-job"
 }).catch(err => logger.error({ err }, "Failed to schedule reminders cron"));
 
 remindersWorker.on('completed', job => {

@@ -12,7 +12,6 @@ const statusSchema = z.object({
 });
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  try {
     const resolvedParams = await params;
     await requireAdmin();
     const body = await req.json();
@@ -38,8 +37,4 @@ export const PATCH = withApiHandler(async (req: Request, { params }: { params: P
     }
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    console.error(error);
-    return NextResponse.json({ error: error.message || "Failed to update status" }, { status: 400 });
-  }
 });

@@ -11,7 +11,6 @@ const attendanceSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string; sessionId: string }> }) => {
-  try {
     const resolvedParams = await params;
     await requireAdmin();
     const body = await req.json();
@@ -53,7 +52,4 @@ export const POST = withApiHandler(async (req: Request, { params }: { params: Pr
     });
 
     return NextResponse.json({ success: true, message: "Checked in successfully" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to mark attendance" }, { status: 400 });
-  }
 });

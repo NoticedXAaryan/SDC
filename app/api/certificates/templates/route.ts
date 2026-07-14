@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireSession();
 const userRole = session.user.role || "member";
 if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
@@ -67,7 +66,5 @@ await db.insert(certificateTemplates).values({
 });
 
 return NextResponse.json({ success: true, id });
-} catch (error: any) {
 return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-}
 });

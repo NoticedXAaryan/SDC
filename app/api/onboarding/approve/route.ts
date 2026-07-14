@@ -13,7 +13,6 @@ const approveSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await auth.api.getSession({
   headers: req.headers,
 });
@@ -68,7 +67,5 @@ if (parsed.approve) {
   });
   return NextResponse.json({ message: "User rejected" });
 }
-} catch (error: any) {
-return NextResponse.json({ error: error.message }, { status: 400 });
-}
+
 });

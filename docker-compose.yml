@@ -5,6 +5,11 @@ services:
       - "6379:6379"
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: always
 
   app:
@@ -18,14 +23,14 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: always
 
   worker:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: builder
+      dockerfile: Dockerfile.worker
     command: sh -c "npx tsx scripts/migrate.ts && npx tsx worker.ts"
     env_file:
       - .env
@@ -35,7 +40,8 @@ services:
       - REDIS_PORT=6379
       - IS_WORKER=true
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: always
 
 volumes:

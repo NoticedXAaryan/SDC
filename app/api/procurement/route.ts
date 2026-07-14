@@ -47,7 +47,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const sessionAuth = await requireRole(["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -72,17 +71,10 @@ const [newRequest] = await db.insert(procurementRequests).values({
 }).returning();
 
 return NextResponse.json(newRequest, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Procurement POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-try {
 const sessionAuth = await requireRole(["finance_lead", "lead", "vice_lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -132,11 +124,5 @@ await db.transaction(async (tx) => {
 });
 
 return NextResponse.json({ success: true, message: `Procurement updated to ${parsed.data.status}` });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Procurement PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

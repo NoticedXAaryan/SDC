@@ -9,7 +9,6 @@ import crypto from "crypto";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireLead();
 if (!session) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,8 +44,4 @@ if (status === "interviewing") {
 }
 
 return NextResponse.json({ success: true, data: updatedApp });
-} catch (error) {
-console.error("Failed to update application status:", error);
-return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-}
 });

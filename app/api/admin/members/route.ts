@@ -13,115 +13,106 @@ export const dynamic = "force-dynamic";
  * GET /api/admin/members — List members with search, filter, pagination
  * Requires admin or owner role.
  */
-export async function GET(req: NextRequest) {
-  try {
-    const session = await requireAdmin();
+export const GET = withApiHandler(async (req: NextRequest) => {
+  const session = await requireAdmin();
 
-    const url = new URL(req.url);
-    const params = memberSearchSchema.safeParse({
-      page: url.searchParams.get("page"),
-      limit: url.searchParams.get("limit"),
-      search: url.searchParams.get("search"),
-      role: url.searchParams.get("role"),
-      year: url.searchParams.get("year"),
-      sortBy: url.searchParams.get("sortBy"),
-      sortOrder: url.searchParams.get("sortOrder"),
-    });
+  const url = new URL(req.url);
+  const params = memberSearchSchema.safeParse({
+    page: url.searchParams.get("page"),
+    limit: url.searchParams.get("limit"),
+    search: url.searchParams.get("search"),
+    role: url.searchParams.get("role"),
+    year: url.searchParams.get("year"),
+    sortBy: url.searchParams.get("sortBy"),
+    sortOrder: url.searchParams.get("sortOrder"),
+  });
 
-    if (!params.success) {
-      return NextResponse.json(
-        { error: "Invalid parameters", details: params.error.flatten() },
-        { status: 400 }
-      );
-    }
+  if (!params.success) {
+    return NextResponse.json(
+      { error: "Invalid parameters", details: params.error.flatten() },
+      { status: 400 }
+    );
+  }
 
-    const { page, limit, search, role, year, sortBy, sortOrder } = params.data;
-    const offset = (page - 1) * limit;
+  const { page, limit, search, role, year, sortBy, sortOrder } = params.data;
+  const offset = (page - 1) * limit;
 
-    // Build query conditions
-    const conditions = [];
-    
-    if (search) {
-      conditions.push(
-        or(
-          ilike(user.name, `%${search}%`),
-          ilike(user.email, `%${search}%`),
-          ilike(user.username, `%${search}%`)
-        )
-      );
-    }
-    
-    if (role) {
-      conditions.push(eq(user.role, role));
-    }
-    
-    if (year) {
-      conditions.push(eq(user.year, year));
-    }
+  // Build query conditions
+  const conditions = [];
+  
+  if (search) {
+    conditions.push(
+      or(
+        ilike(user.name, `%${search}%`),
+        ilike(user.email, `%${search}%`),
+        ilike(user.username, `%${search}%`)
+      )
+    );
+  }
+  
+  if (role) {
+    conditions.push(eq(user.role, role));
+  }
+  
+  if (year) {
+    conditions.push(eq(user.year, year));
+  }
 
-    // Build the query
-    let query = db.select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      username: user.username,
-      year: user.year,
-      branch: user.branch,
-      points: user.points,
-      level: user.level,
-      banned: user.banned,
-      createdAt: user.createdAt,
-      image: user.image,
-    }).from(user);
+  // Build the query
+  let query = db.select({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    username: user.username,
+    year: user.year,
+    branch: user.branch,
+    points: user.points,
+    level: user.level,
+    banned: user.banned,
+    createdAt: user.createdAt,
+    image: user.image,
+  }).from(user);
 
-    // Apply conditions
-    if (conditions.length > 0) {
-      for (const condition of conditions) {
-        if (condition) {
-          query = query.where(condition) as typeof query;
-        }
+  // Apply conditions
+  if (conditions.length > 0) {
+    for (const condition of conditions) {
+      if (condition) {
+        query = query.where(condition) as typeof query;
       }
     }
-
-    // Apply sorting
-    const sortColumn = {
-      name: user.name,
-      createdAt: user.createdAt,
-      points: user.points,
-      role: user.role,
-    }[sortBy] ?? user.createdAt;
-
-    const orderFn = sortOrder === "asc" ? asc : desc;
-    query = query.orderBy(orderFn(sortColumn)) as typeof query;
-
-    // Get total count for pagination
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(user);
-    const total = Number(countResult[0]?.count ?? 0);
-
-    // Apply pagination
-    const members = await (query as any).limit(limit).offset(offset);
-
-    return NextResponse.json({
-      members,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Admin Members GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+
+  // Apply sorting
+  const sortColumn = {
+    name: user.name,
+    createdAt: user.createdAt,
+    points: user.points,
+    role: user.role,
+  }[sortBy] ?? user.createdAt;
+
+  const orderFn = sortOrder === "asc" ? asc : desc;
+  query = query.orderBy(orderFn(sortColumn)) as typeof query;
+
+  // Get total count for pagination
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(user);
+  const total = Number(countResult[0]?.count ?? 0);
+
+  // Apply pagination
+  const members = await (query as any).limit(limit).offset(offset);
+
+  return NextResponse.json({
+    members,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+}, { requireRateLimit: false });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireAdmin();
 const body = await req.json();
 
@@ -191,11 +182,5 @@ return NextResponse.json({
   previousRole,
   newRole,
 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Admin Members PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

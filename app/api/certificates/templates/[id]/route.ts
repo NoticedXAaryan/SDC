@@ -6,7 +6,6 @@ import { eq } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const { id } = await params;
 const session = await requireSession();
 
@@ -28,26 +27,18 @@ await db.update(certificateTemplates)
   .where(eq(certificateTemplates.id, id));
 
 return NextResponse.json({ success: true });
-} catch (error: any) {
-console.error("Failed to update template", error);
-return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-}
 });
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const session = await requireSession();
-    
-    const templateRows = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, id)).limit(1);
-    const template = templateRows[0];
-    
-    if (!template) {
-      return NextResponse.json({ success: false, error: "Template not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, template });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  const { id } = await params;
+  const session = await requireSession();
+  
+  const templateRows = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, id)).limit(1);
+  const template = templateRows[0];
+  
+  if (!template) {
+    return NextResponse.json({ success: false, error: "Template not found" }, { status: 404 });
   }
+
+  return NextResponse.json({ success: true, template });
 }

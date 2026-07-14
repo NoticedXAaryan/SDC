@@ -19,7 +19,6 @@ const formSchema = z.object({
 });
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  try {
     const resolvedParams = await params;
     await requireAdmin();
     const body = await req.json();
@@ -32,18 +31,11 @@ export const PATCH = withApiHandler(async (req: Request, { params }: { params: P
     }).where(eq(formTemplates.id, resolvedParams.id)).returning();
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
 });
 
 export const DELETE = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  try {
     const resolvedParams = await params;
     await requireAdmin();
     await db.delete(formTemplates).where(eq(formTemplates.id, resolvedParams.id));
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
-  }
 });

@@ -29,7 +29,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
 
 const body = await req.json();
@@ -52,11 +51,5 @@ const [newVendor] = await db.insert(vendors).values({
 }).returning();
 
 return NextResponse.json(newVendor, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Vendors POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

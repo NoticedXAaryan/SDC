@@ -10,7 +10,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
 const body = await req.json();
 const { email, templateId, eventId } = body;
@@ -52,11 +51,5 @@ return NextResponse.json({
   success: true, 
   message: `Successfully queued certificate for ${email}.`
 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Certificates Issue Single POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

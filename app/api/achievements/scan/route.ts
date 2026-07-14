@@ -12,7 +12,6 @@ const prefillSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 await requireRole(["member", "alumni", "co_lead", "event_lead", "lead", "admin", "owner"]);
 
 // Accept a raw text prompt for now (could be OCR text or a description of the proof)
@@ -33,11 +32,5 @@ const prompt = `
 const result = await callAI(prompt, prefillSchema);
 
 return NextResponse.json({ success: true, prefill: result });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Achievement Scan POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

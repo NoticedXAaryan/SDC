@@ -8,7 +8,6 @@ import { requireRole } from "@/lib/dal/auth";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const POST = withApiHandler(async (req: Request) => {
-try {
 // Authenticate the scanner (must be at least a lead)
 const session = await requireRole(["owner", "admin", "lead", "co_lead", "volunteer_lead"]);
 
@@ -81,8 +80,4 @@ return NextResponse.json({
   message: "Successfully checked in!"
 });
 
-} catch (error: any) {
-console.error("Check-in Error:", error);
-return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-}
 });

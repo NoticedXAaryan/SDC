@@ -14,7 +14,6 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["member", "lead", "co_lead", "finance_lead", "admin", "owner"]);
 
 const formData = await req.formData();
@@ -67,11 +66,5 @@ return NextResponse.json({
   size: buffer.length,
   name: newFileName,
 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Upload POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

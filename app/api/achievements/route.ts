@@ -21,7 +21,6 @@ const reviewSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const sessionAuth = await requireRole(["member", "alumni", "co_lead", "event_lead", "lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -42,17 +41,10 @@ const [submission] = await db.insert(achievementSubmissions).values({
 }).returning();
 
 return NextResponse.json(submission, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Achievement POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-try {
 // Only leads and admins can review
 const sessionAuth = await requireRole(["event_lead", "lead", "admin", "owner"]);
 
@@ -96,11 +88,5 @@ await db.transaction(async (tx) => {
 });
 
 return NextResponse.json({ success: true, message: `Submission ${parsed.data.status}` });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Achievement PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

@@ -31,12 +31,11 @@ export async function GET(req: NextRequest) {
       const data = await db.select().from(projects).where(eq(projects.status, "approved")).orderBy(desc(projects.createdAt));
       return NextResponse.json({ projects: data });
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
   }
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireSession();
 const reqBody = await req.json();
 
@@ -60,11 +59,4 @@ await db.insert(projects).values({
 });
 
 return NextResponse.json({ success: true, id: projectId }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-console.error("[Projects POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
 });

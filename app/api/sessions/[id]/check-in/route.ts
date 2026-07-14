@@ -8,7 +8,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 // Only leads and admins can perform check-ins
 await requireRole(["co_lead", "lead", "volunteer_lead", "admin", "owner"]);
 
@@ -61,11 +60,5 @@ await db.insert(sessionAttendance).values({
 });
 
 return NextResponse.json({ success: true, message: "Successfully checked into session" });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Session Check-in POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

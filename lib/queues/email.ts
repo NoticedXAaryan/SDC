@@ -1,12 +1,8 @@
 import { Queue } from "bullmq";
-import { env } from "@/lib/env";
-
-const connection = env.REDIS_URL 
-  ? { url: env.REDIS_URL }
-  : { host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT) };
+import { getRedisConfig } from "@/lib/redis";
 
 export const emailQueue = new Queue("email-queue", { 
-  connection,
+  connection: getRedisConfig(),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },

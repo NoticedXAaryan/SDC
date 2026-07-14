@@ -469,7 +469,9 @@ export const aiLogs = pgTable("ai_logs", {
   entityId: text("entityId"),
   entityType: text("entityType"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});export const applicationsRelations = relations(applications, ({ one }) => ({
+});
+
+export const applicationsRelations = relations(applications, ({ one }) => ({
   user: one(user, {
     fields: [applications.userId],
     references: [user.id],

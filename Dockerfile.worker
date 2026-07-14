@@ -1,28 +1,25 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS deps
 WORKDIR /app
+RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-COPY . .
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy only what the worker needs — no Next.js build artifacts
+COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+COPY worker.ts ./
+COPY lib ./lib
+COPY scripts/migrate.ts ./scripts/migrate.ts
+COPY drizzle ./drizzle
+
+# Dummy build-time env vars for module initialization
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 ENV BETTER_AUTH_SECRET="build-time-placeholder-secret"
 ENV BETTER_AUTH_URL="http://localhost:3000"
 ENV PASS_SECRET="build-time-placeholder-secret"
-RUN npm run build
-# The worker script doesn't have a specific build step if it's ts-node,
-# but we can compile it with tsc if needed. For now we use tsx or ts-node in production.
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV production
-
-COPY --from=builder /app/package*.json ./
-RUN npm install --legacy-peer-deps --production
-
-COPY --from=builder /app/worker.ts ./
-COPY --from=builder /app/lib ./lib
-
-# Depending on how worker is invoked, we might use tsx or compile it.
-# Assuming tsx is used as devDependency but we want a lightweight prod.
-RUN npm install -g tsx
-
-CMD ["tsx", "worker.ts"]
+CMD ["npx", "tsx", "worker.ts"]

@@ -10,7 +10,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireRole(["finance_lead", "admin", "owner"]);
 const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
 await checkEmergencyFreeze(session.user.role as string);
@@ -58,11 +57,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, status });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Expense PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

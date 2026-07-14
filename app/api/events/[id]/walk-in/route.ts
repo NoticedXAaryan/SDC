@@ -15,7 +15,6 @@ const walkInSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireRole(["admin", "owner", "lead", "event_lead", "co_lead", "faculty_coordinator"]);
 await checkEmergencyFreeze(session.user.role as string);
 
@@ -84,11 +83,5 @@ const result = await db.transaction(async (tx) => {
 });
 
 return NextResponse.json({ success: true, result });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Walk-in POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

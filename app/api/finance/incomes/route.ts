@@ -40,7 +40,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["finance_lead", "admin", "owner"]);
 const body = await req.json();
 const parsed = createIncomeSchema.safeParse(body);
@@ -77,11 +76,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, id: incomeId }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Incomes POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

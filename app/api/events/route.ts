@@ -13,96 +13,90 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/events — List events with filters and pagination
- * Public for authenticated users.
+ * Requires authentication.
  */
-export async function GET(req: NextRequest) {
-  try {
-    const session = await requireSession();
-    const isManagement = isManagementRole(session.user.role as string);
-    const isAdmin = ["admin", "owner"].includes(session.user.role as string);
+export const GET = withApiHandler(async (req: NextRequest) => {
+  const session = await requireSession();
+  const isManagement = isManagementRole(session.user.role as string);
+  const isAdmin = ["admin", "owner"].includes(session.user.role as string);
 
-    // Get user domain if they are a siloed lead
-    let userDomain: string | null = null;
-    if (isManagement && !isAdmin) {
-      userDomain = await getUserDomain(session.user.id, session.user.role as string);
-    }
-
-    const url = new URL(req.url);
-    const params = eventSearchSchema.safeParse({
-      page: url.searchParams.get("page"),
-      limit: url.searchParams.get("limit"),
-      search: url.searchParams.get("search"),
-      type: url.searchParams.get("type"),
-      status: url.searchParams.get("status"),
-      domain: url.searchParams.get("domain"),
-      upcoming: url.searchParams.get("upcoming"),
-    });
-
-    if (!params.success) {
-      return NextResponse.json(
-        { error: "Invalid parameters", details: params.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const { page, limit, search, type, status, domain, upcoming } = params.data;
-    const offset = (page - 1) * limit;
-
-    const conditions = [];
-
-    if (search) {
-      conditions.push(ilike(events.title, `%${search}%`));
-    }
-    if (type) {
-      conditions.push(eq(events.type, type));
-    }
-    if (!isManagement) {
-      conditions.push(eq(events.status, "published"));
-    } else if (status) {
-      conditions.push(eq(events.status, status));
-    }
-    if (userDomain) {
-      conditions.push(eq(events.domain, userDomain));
-    } else if (domain) {
-      conditions.push(eq(events.domain, domain));
-    }
-    if (upcoming) {
-      conditions.push(gte(events.startsAt, new Date()));
-    }
-
-    let query = db.select().from(events);
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(events);
-
-    if (conditions.length > 0) {
-      const combinedCondition = and(...conditions);
-      query = query.where(combinedCondition) as typeof query;
-      countQuery = countQuery.where(combinedCondition) as typeof countQuery;
-    }
-
-    const allEvents = await (query as any)
-      .orderBy(desc(events.startsAt))
-      .limit(limit)
-      .offset(offset);
-
-    const [countResult] = await countQuery;
-
-    return NextResponse.json({
-      events: allEvents,
-      pagination: {
-        page,
-        limit,
-        total: Number(countResult.count),
-        totalPages: Math.ceil(Number(countResult.count) / limit),
-      },
-    });
-  } catch (error: any) {
-    console.error("[Events GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  // Get user domain if they are a siloed lead
+  let userDomain: string | null = null;
+  if (isManagement && !isAdmin) {
+    userDomain = await getUserDomain(session.user.id, session.user.role as string);
   }
-}
+
+  const url = new URL(req.url);
+  const params = eventSearchSchema.safeParse({
+    page: url.searchParams.get("page"),
+    limit: url.searchParams.get("limit"),
+    search: url.searchParams.get("search"),
+    type: url.searchParams.get("type"),
+    status: url.searchParams.get("status"),
+    domain: url.searchParams.get("domain"),
+    upcoming: url.searchParams.get("upcoming"),
+  });
+
+  if (!params.success) {
+    return NextResponse.json(
+      { error: "Invalid parameters", details: params.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { page, limit, search, type, status, domain, upcoming } = params.data;
+  const offset = (page - 1) * limit;
+
+  const conditions = [];
+
+  if (search) {
+    conditions.push(ilike(events.title, `%${search}%`));
+  }
+  if (type) {
+    conditions.push(eq(events.type, type));
+  }
+  if (!isManagement) {
+    conditions.push(eq(events.status, "published"));
+  } else if (status) {
+    conditions.push(eq(events.status, status));
+  }
+  if (userDomain) {
+    conditions.push(eq(events.domain, userDomain));
+  } else if (domain) {
+    conditions.push(eq(events.domain, domain));
+  }
+  if (upcoming) {
+    conditions.push(gte(events.startsAt, new Date()));
+  }
+
+  let query = db.select().from(events);
+  let countQuery = db.select({ count: sql<number>`count(*)` }).from(events);
+
+  if (conditions.length > 0) {
+    const combinedCondition = and(...conditions);
+    query = query.where(combinedCondition) as typeof query;
+    countQuery = countQuery.where(combinedCondition) as typeof countQuery;
+  }
+
+  const allEvents = await (query as any)
+    .orderBy(desc(events.startsAt))
+    .limit(limit)
+    .offset(offset);
+
+  const [countResult] = await countQuery;
+
+  return NextResponse.json({
+    events: allEvents,
+    pagination: {
+      page,
+      limit,
+      total: Number(countResult.count),
+      totalPages: Math.ceil(Number(countResult.count) / limit),
+    },
+  });
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
 
 const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
@@ -180,11 +174,5 @@ await aiQueue.add("draft_event_comms", {
 });
 
 return NextResponse.json({ success: true, id: eventId, slug }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Events POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

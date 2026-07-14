@@ -11,7 +11,6 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
 const body = await req.json();
 const parsed = logInventoryActionSchema.safeParse(body);
@@ -74,14 +73,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, logId: result.logId, qtyAvailable: result.newQtyAvailable }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-if (error.message === "Item not found" || error.message === "Insufficient available quantity" || error.message === "Cannot check in more than total quantity") {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-}
-console.error("[Inventory Log POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

@@ -39,7 +39,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["finance_lead", "admin", "owner"]);
 const body = await req.json();
 const parsed = createBudgetSchema.safeParse(body);
@@ -76,11 +75,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, id: budgetId }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Budgets POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

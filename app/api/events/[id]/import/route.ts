@@ -10,7 +10,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireRole(["admin", "owner", "lead", "event_lead", "co_lead"]);
 await checkEmergencyFreeze(session.user.role as string);
 const { id: eventId } = await params;
@@ -88,11 +87,5 @@ const result = await db.transaction(async (tx) => {
 });
 
 return NextResponse.json({ success: true, imported: result.importedCount, total: validRows.length });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Bulk Import POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

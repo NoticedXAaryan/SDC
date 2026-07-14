@@ -15,7 +15,6 @@ const applySchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await auth.api.getSession({
   headers: req.headers,
 });
@@ -43,7 +42,4 @@ await db.update(user)
   .where(eq(user.id, session.user.id));
 
 return NextResponse.json({ message: "Application submitted successfully" });
-} catch (error: any) {
-return NextResponse.json({ error: error.message }, { status: 400 });
-}
 });

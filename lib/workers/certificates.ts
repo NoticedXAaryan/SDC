@@ -6,11 +6,7 @@ import { PdfmeRenderer } from "@/lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "@/lib/services/storage";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
-
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
+import { getRedisConfig } from "@/lib/redis";
 
 export const certificateWorker = new Worker("certificate-generation", async (job: Job) => {
   const { userId, eventId, templateId, issuedBy } = job.data;
@@ -29,7 +25,6 @@ export const certificateWorker = new Worker("certificate-generation", async (job
   const verifyCode = crypto.randomBytes(6).toString("hex");
   const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify/${verifyCode}`;
 
-  // Format inputs based on schema
   const inputs: Record<string, any> = {
     name: userData.name,
     eventName: eventData.title,
@@ -42,17 +37,12 @@ export const certificateWorker = new Worker("certificate-generation", async (job
     schemas: templateData.schemas as any,
   };
 
-  // Generate final PDF
   const finalPdfBuffer = await renderer.render(template, [inputs]);
-
-  // SHA256
   const hash = crypto.createHash("sha256").update(finalPdfBuffer).digest("hex");
 
-  // Upload
   const storage = new LocalMockStorageService();
   const pdfUrl = await storage.uploadFile(finalPdfBuffer, `certs/${verifyCode}.pdf`, "application/pdf");
 
-  // DB Insert
   await db.insert(certificates).values({
     id: crypto.randomUUID(),
     verifyCode,
@@ -64,7 +54,7 @@ export const certificateWorker = new Worker("certificate-generation", async (job
     issuedBy
   });
 
-}, { connection });
+}, { connection: getRedisConfig() });
 
 certificateWorker.on('completed', job => {
   logger.info({ jobId: job.id, entityId: job.data?.eventId || job.data?.userId }, "Certificate job completed!");

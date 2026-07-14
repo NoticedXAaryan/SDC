@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { registrations } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { HMACPassValidator } from "@/lib/passes/qr";
 import { requireRole } from "@/lib/dal/auth";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const POST = withApiHandler(async (req: Request) => {
-try {
 const session = await requireRole(["owner", "admin", "lead", "co_lead", "volunteer_lead"]);
 
 const body = await req.json();
@@ -21,6 +20,8 @@ if (!Array.isArray(checkIns)) {
 const results = [];
 const validator = new HMACPassValidator();
 
+// 1. Validate all tokens
+const validCheckIns = [];
 for (const checkIn of checkIns) {
   try {
     const payload = await validator.validate(checkIn.token);
@@ -34,38 +35,52 @@ for (const checkIn of checkIns) {
       results.push({ id: checkIn.id, success: false, error: "Invalid token payload" });
       continue;
     }
-
-    // 3. Find registration
-    const userRegs = await db.select().from(registrations).where(
-      and(
-        eq(registrations.eventId, checkIn.eventId),
-        eq(registrations.userId, payload.userId),
-        eq(registrations.passCode, payload.passCode)
-      )
-    ).limit(1);
-
-    const registration = userRegs[0];
     
-    if (!registration || registration.status !== "confirmed") {
-      results.push({ id: checkIn.id, success: false, error: "Invalid status" });
-      continue;
-    }
+    validCheckIns.push({ ...checkIn, payload });
+  } catch (e: any) {
+    results.push({ id: checkIn.id, success: false, error: "Server error" });
+  }
+}
 
-    // Check in
+if (validCheckIns.length > 0) {
+  // 2. Fetch potential registrations in bulk
+  const userIds = validCheckIns.map(c => c.payload.userId);
+  const eventIds = [...new Set(validCheckIns.map(c => c.payload.eventId))];
+  
+  const userRegs = await db.select().from(registrations).where(
+    and(
+      inArray(registrations.eventId, eventIds),
+      inArray(registrations.userId, userIds)
+    )
+  );
+
+  const regMap = new Map();
+  for (const r of userRegs) {
+    regMap.set(`${r.eventId}-${r.userId}-${r.passCode}`, r);
+  }
+
+  const idsToUpdate = [];
+  for (const checkIn of validCheckIns) {
+    const key = `${checkIn.eventId}-${checkIn.payload.userId}-${checkIn.payload.passCode}`;
+    const reg = regMap.get(key);
+
+    if (!reg || reg.status !== "confirmed") {
+      results.push({ id: checkIn.id, success: false, error: "Invalid status" });
+    } else {
+      idsToUpdate.push(reg.id);
+      results.push({ id: checkIn.id, success: true });
+    }
+  }
+
+  // 3. Batch Update
+  if (idsToUpdate.length > 0) {
     await db.update(registrations).set({
       status: "checked_in",
       checkedInAt: new Date()
-    }).where(eq(registrations.id, registration.id));
-
-    results.push({ id: checkIn.id, success: true });
-  } catch (err) {
-    results.push({ id: checkIn.id, success: false, error: "Server error" });
+    }).where(inArray(registrations.id, idsToUpdate));
   }
 }
 
 return NextResponse.json({ success: true, results });
 
-} catch (error: any) {
-return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-}
 });

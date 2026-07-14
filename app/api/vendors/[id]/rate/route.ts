@@ -14,7 +14,6 @@ const rateSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
 
 const body = await req.json();
@@ -43,11 +42,5 @@ await db.update(vendors).set({
 }).where(eq(vendors.id, id));
 
 return NextResponse.json({ success: true, message: "Vendor rated successfully" });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Vendor Rate PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

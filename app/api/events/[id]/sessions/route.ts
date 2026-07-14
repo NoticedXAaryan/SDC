@@ -34,7 +34,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const sessionAuth = await requireRole(["admin", "owner", "lead", "event_lead", "co_lead"]);
 await checkEmergencyFreeze(sessionAuth.user.role as string);
 
@@ -60,11 +59,5 @@ const [newSession] = await db.insert(eventSessions).values({
 }).returning();
 
 return NextResponse.json(newSession, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Sessions POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { eventInvites, user, events } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/dal/auth";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import crypto from "crypto";
 import { emailQueue } from "@/lib/queues/email";
@@ -13,7 +13,6 @@ const inviteSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  try {
     const resolvedParams = await params;
     await requireAdmin();
     const body = await req.json();
@@ -22,35 +21,46 @@ export const POST = withApiHandler(async (req: Request, { params }: { params: Pr
     const [event] = await db.select().from(events).where(eq(events.id, resolvedParams.id));
     if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-    const results = [];
-    for (const email of emails) {
-      // Find user if exists
-      const [existingUser] = await db.select().from(user).where(eq(user.email, email));
-      const token = crypto.randomUUID();
+    // Bulk query existing users
+    const existingUsers = emails.length > 0
+      ? await db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.email, emails))
+      : [];
+    const userMap = new Map(existingUsers.map(u => [u.email, u.id]));
 
-      const [newInvite] = await db.insert(eventInvites).values({
-        id: crypto.randomUUID(),
+    const invitesToInsert = [];
+    const jobsToQueue = [];
+
+    for (const email of emails) {
+      const token = crypto.randomUUID();
+      const inviteId = crypto.randomUUID();
+      
+      invitesToInsert.push({
+        id: inviteId,
         eventId: resolvedParams.id,
-        userId: existingUser?.id,
+        userId: userMap.get(email) || null,
         email,
         token,
-        status: "pending",
+        status: "pending" as const,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      }).returning();
+      });
 
-      results.push(newInvite);
-
-      // Dispatch email
       const inviteUrl = `${process.env.BETTER_AUTH_URL}/events/${resolvedParams.id}/join?token=${token}`;
-      await emailQueue.add("send-event-invite", {
-        to: email,
-        subject: `You're invited to ${event.title}`,
-        body: `You have been invited to ${event.title}. Click here to RSVP: ${inviteUrl}`,
-      }, { jobId: `invite-${newInvite.id}` });
+      jobsToQueue.push({
+        name: "send-event-invite",
+        data: {
+          to: email,
+          subject: `You're invited to ${event.title}`,
+          body: `You have been invited to ${event.title}. Click here to RSVP: ${inviteUrl}`,
+        },
+        opts: { jobId: `invite-${inviteId}` }
+      });
     }
 
-    return NextResponse.json({ success: true, count: results.length });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to send invites" }, { status: 400 });
-  }
+    let insertedInvites = [];
+    if (invitesToInsert.length > 0) {
+      insertedInvites = await db.insert(eventInvites).values(invitesToInsert).returning();
+      await emailQueue.addBulk(jobsToQueue);
+    }
+
+    return NextResponse.json({ success: true, count: insertedInvites.length });
 });

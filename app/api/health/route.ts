@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
-import { env } from "@/lib/env";
-import Redis from "ioredis";
+import { getRedisClient } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * GET /api/health — Public health check endpoint.
+ * Returns database and Redis connection status.
+ * Intentionally unauthenticated — used by Docker healthchecks and monitoring.
+ */
 export async function GET() {
   let dbStatus = "unknown";
   let redisStatus = "unknown";
@@ -15,20 +19,14 @@ export async function GET() {
     dbStatus = "connected";
   } catch (error) {
     dbStatus = "disconnected";
-    console.error("Health check DB error:", error);
   }
 
   try {
-    const redis = env.REDIS_URL 
-      ? new Redis(env.REDIS_URL, { maxRetriesPerRequest: 0, connectTimeout: 1000 })
-      : new Redis({ host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT), maxRetriesPerRequest: 0, connectTimeout: 1000 });
-    
+    const redis = getRedisClient();
     await redis.ping();
     redisStatus = "connected";
-    redis.disconnect();
   } catch (error) {
     redisStatus = "disconnected";
-    console.error("Health check Redis error:", error);
   }
 
   const isHealthy = dbStatus === "connected" && redisStatus === "connected";
@@ -39,7 +37,6 @@ export async function GET() {
     redis: redisStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
   }, { 
     status: isHealthy ? 200 : 503 
   });

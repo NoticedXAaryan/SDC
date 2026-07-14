@@ -18,15 +18,21 @@ import { logger } from "./lib/logger";
 
 logger.info("🚀 Starting Background Workers...");
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  logger.info("Shutting down workers...");
-  await certificateWorker.close();
-  await emailWorker.close();
-  await gradingWorker.close();
-  await aiWorker.close();
-  await remindersWorker.close();
-  await reportsWorker.close();
-  await socialWorker.close();
+// Graceful shutdown — handles both Docker SIGTERM and dev Ctrl+C (SIGINT)
+async function shutdown(signal: string) {
+  logger.info({ signal }, "Shutting down workers...");
+  await Promise.allSettled([
+    certificateWorker.close(),
+    emailWorker.close(),
+    gradingWorker.close(),
+    aiWorker.close(),
+    remindersWorker.close(),
+    reportsWorker.close(),
+    socialWorker.close(),
+  ]);
+  logger.info("All workers shut down cleanly.");
   process.exit(0);
-});
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

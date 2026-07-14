@@ -9,7 +9,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-try {
 const session = await requireRole(["co_lead", "lead", "admin", "owner"]);
 const { id: eventId } = await params;
 
@@ -83,11 +82,5 @@ return NextResponse.json({
   success: true,
   message: `Successfully queued ${jobs.length} certificates for generation.`,
 });
-} catch (error: any) {
-console.error("[Certificates Issue-All]:", error);
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

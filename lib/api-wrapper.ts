@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
-export class AuthorizationError extends Error {
-  constructor(message: string = "Unauthorized") {
-    super(message);
-    this.name = "AuthorizationError";
-  }
-}
+// Re-export AuthorizationError from its canonical source so existing imports keep working
+export { AuthorizationError } from "@/lib/dal/auth";
+import { AuthorizationError } from "@/lib/dal/auth";
 
 export class ValidationError extends Error {
   constructor(message: string = "Validation failed") {
     super(message);
     this.name = "ValidationError";
+  }
+}
+
+export class NotFoundError extends Error {
+  constructor(message: string = "Not found") {
+    super(message);
+    this.name = "NotFoundError";
   }
 }
 
@@ -34,7 +38,6 @@ export function withApiHandler(
     try {
       // 1. Rate Limiting (applied to mutating requests by default)
       if (options.requireRateLimit !== false) {
-        // Only rate limit mutating methods by default if not explicitly set
         const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
         if (isMutating) {
           const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
@@ -54,14 +57,18 @@ export function withApiHandler(
         return NextResponse.json({ error: error.message }, { status: 403 });
       }
 
-      if (error instanceof ValidationError || error?.name === "ZodError") {
+      if (error instanceof NotFoundError || error?.name === "NotFoundError") {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+
+      if (error instanceof ValidationError || error?.name === "ZodError" || error?.name === "ValidationError") {
         return NextResponse.json(
           { error: "Validation failed", details: error.errors || error.message },
           { status: 400 }
         );
       }
 
-      // Log unexpected errors
+      // Log unexpected errors — never leak internals to client
       logger.error({ err: error, path: req.nextUrl.pathname }, "API Error");
 
       return NextResponse.json(

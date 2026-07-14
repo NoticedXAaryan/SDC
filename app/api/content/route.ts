@@ -42,7 +42,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -68,11 +67,5 @@ const [newItem] = await db.insert(contentItems).values({
 }).returning();
 
 return NextResponse.json(newItem, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Content POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

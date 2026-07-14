@@ -4,11 +4,9 @@ import { applications } from "../db/schema";
 import { gradeApplication } from "../services/ai";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { env } from "@/lib/env";
+import { getRedisConfig } from "@/lib/redis";
 
-const connection = env.REDIS_URL 
-  ? { url: env.REDIS_URL }
-  : { host: env.REDIS_HOST, port: parseInt(env.REDIS_PORT) };
+const connection = getRedisConfig();
 
 export const gradingQueue = new Queue("ai-grading", { 
   connection,

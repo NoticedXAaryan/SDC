@@ -9,7 +9,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["admin", "owner", "faculty_coordinator"]);
 
 const body = await req.json();
@@ -45,11 +44,5 @@ await logAuditEvent({
 });
 
 return NextResponse.json({ success: true, isFrozen });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Faculty Freeze PATCH]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

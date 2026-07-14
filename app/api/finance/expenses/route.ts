@@ -44,7 +44,6 @@ export async function GET() {
 }
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const session = await requireRole(["co_lead", "lead", "finance_lead", "admin", "owner"]);
 const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
 await checkEmergencyFreeze(session.user.role as string);
@@ -95,11 +94,5 @@ await NotificationService.notifyLeads("finance_lead", {
 });
 
 return NextResponse.json({ success: true, id: expenseId }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Expenses POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });

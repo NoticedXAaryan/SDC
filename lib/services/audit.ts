@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 import crypto from "crypto";
 
 export type AuditAction =
@@ -44,6 +45,9 @@ export type AuditEntity = "user" | "event" | "registration" | "budget" | "expens
 /**
  * Log an action to the audit trail.
  * Called from all state-changing operations across the system.
+ * 
+ * Uses fire-and-forget pattern — audit logging should never crash
+ * the operation it's tracking.
  */
 export async function logAuditEvent({
   actorId,
@@ -70,12 +74,7 @@ export async function logAuditEvent({
     });
   } catch (error) {
     // Audit logging should never crash the operation it's tracking.
-    // Log to console as a fallback — this is a monitoring concern.
-    console.error("[AUDIT] Failed to write audit log:", error, {
-      actorId,
-      action,
-      entity,
-      entityId,
-    });
+    // Log via Pino (structured JSON) so monitoring can catch it.
+    logger.error({ err: error, actorId, action, entity, entityId }, "Failed to write audit log");
   }
 }

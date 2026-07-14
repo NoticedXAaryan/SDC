@@ -6,7 +6,6 @@ import { eq } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const DELETE = withApiHandler(async (req: Request) => {
-try {
 const session = await requireSession();
 const userId = session.user.id;
 
@@ -29,7 +28,5 @@ await db.update(user).set({
 }).where(eq(user.id, userId));
 
 return NextResponse.json({ success: true, message: "Account data anonymized successfully" });
-} catch (error: any) {
 return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-}
 });

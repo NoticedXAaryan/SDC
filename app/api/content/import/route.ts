@@ -9,7 +9,6 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-try {
 const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
 // Expect multipart/form-data with a file
@@ -48,11 +47,5 @@ if (itemsToInsert.length > 0) {
 }
 
 return NextResponse.json({ success: true, count: itemsToInsert.length }, { status: 201 });
-} catch (error: any) {
-if (error.name === "AuthorizationError") {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-}
-console.error("[Content Import POST]:", error);
-return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-}
+
 });
