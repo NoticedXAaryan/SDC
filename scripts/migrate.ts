@@ -16,10 +16,11 @@ async function main() {
   const db = drizzle(pool, { schema });
 
   try {
-    // Self-healing: Check if the database has dirty state without migration history.
-    // This happens if db:push was used initially instead of migrate on a fresh DB.
-    const migrationTableCheck = await pool.query(`SELECT to_regclass('public.__drizzle_migrations');`);
-    const hasMigrationsTable = migrationTableCheck.rows[0].to_regclass !== null;
+    const migrationTableCheck = await pool.query(`
+      SELECT to_regclass('drizzle.__drizzle_migrations') as drizzle_migrations, 
+             to_regclass('public.__drizzle_migrations') as public_migrations;
+    `);
+    const hasMigrationsTable = migrationTableCheck.rows[0].drizzle_migrations !== null || migrationTableCheck.rows[0].public_migrations !== null;
     
     if (!hasMigrationsTable) {
       const typeCheck = await pool.query(`SELECT 1 FROM pg_type WHERE typname = 'application_status';`);
