@@ -93,5 +93,27 @@ export const Mailer = {
         contentType: 'image/png'
       }]
     });
+  },
+
+  async sendCertificate(to: string, eventTitle: string, pdfBuffer: Buffer) {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
+        <h2 style="color: #333;">Your Certificate for ${eventTitle}</h2>
+        <p>Congratulations on participating in <strong>${eventTitle}</strong>!</p>
+        <p>Please find your official certificate attached to this email.</p>
+        <p style="font-size: 12px; color: #666; margin-top: 30px;">Thank you for joining us! — SDC Team</p>
+      </div>
+    `;
+    
+    return this.sendEmail({
+      to,
+      subject: `Your Certificate for ${eventTitle}`,
+      html,
+      attachments: [{
+        filename: 'certificate.pdf',
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }]
+    });
   }
 };

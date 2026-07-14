@@ -4,6 +4,7 @@ import { certificates, certificateTemplates, user, events } from "@/lib/db/schem
 import { eq } from "drizzle-orm";
 import { PdfmeRenderer } from "@/lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "@/lib/services/storage";
+import { Mailer } from "@/lib/services/mailer";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
 import { getRedisConfig } from "@/lib/redis";
@@ -53,6 +54,11 @@ export const certificateWorker = new Worker("certificate-generation", async (job
     hash,
     issuedBy
   });
+
+  // Send the email with the attached certificate
+  if (userData.email) {
+    await Mailer.sendCertificate(userData.email, eventData.title, Buffer.from(finalPdfBuffer));
+  }
 
 }, { connection: getRedisConfig() });
 
