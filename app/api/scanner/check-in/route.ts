@@ -26,11 +26,7 @@ if (!payload.valid) {
   return NextResponse.json({ success: false, error: "Invalid or forged pass token" }, { status: 400 });
 }
 
-// 1b. Check iat for rotating QR (anti-screenshot layer)
-const now = Math.floor(Date.now() / 1000);
-if (payload.iat && (now - payload.iat > 30)) {
-  return NextResponse.json({ success: false, error: "Pass expired. Ask attendee to refresh their QR code." }, { status: 400 });
-}
+// 1b. Removed iat check as QR codes are currently static and do not rotate.
 
 // 2. Ensure the token is for the correct event
 if (payload.eventId !== eventId) {

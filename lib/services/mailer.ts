@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { env } from "../env";
+import QRCode from "qrcode";
 
 const resend = new Resend(env.RESEND_API_KEY || "dummy-key");
 
@@ -7,7 +8,7 @@ export const Mailer = {
   /**
    * Sends an email using Resend.
    */
-  async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  async sendEmail({ to, subject, html, attachments }: { to: string; subject: string; html: string; attachments?: any[] }) {
     if (!env.RESEND_API_KEY || !env.EMAIL_FROM_ADDRESS) {
       console.warn("⚠️ RESEND_API_KEY or EMAIL_FROM_ADDRESS is not set. Email not sent.");
       console.log(`[Email to ${to}] Subject: ${subject}`);
@@ -23,6 +24,7 @@ export const Mailer = {
         to,
         subject,
         html,
+        attachments,
       });
 
       if (error) {
@@ -67,21 +69,29 @@ export const Mailer = {
     return this.sendEmail({ to, subject: "Verify your email - SDC OS", html });
   },
 
-  /**
-   * Send Event QR Pass
-   */
-  async sendEventQRPass(to: string, eventTitle: string, qrCodeDataUrl: string) {
+  async sendEventQRPass(to: string, eventTitle: string, passToken: string) {
+    // Generate QR code base64 from the token
+    const qrCodeDataUrl = await QRCode.toDataURL(passToken, { width: 300, margin: 2 });
+    const base64Data = qrCodeDataUrl.replace(/^data:image\/\w+;base64,/, "");
+
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
         <h2 style="color: #333;">Your Pass for ${eventTitle}</h2>
         <p>You have successfully registered for <strong>${eventTitle}</strong>!</p>
-        <p>Please present the QR code below at the venue entrance:</p>
-        <div style="margin: 30px 0;">
-          <img src="${qrCodeDataUrl}" alt="Your QR Pass" style="width: 250px; height: 250px; border-radius: 10px; border: 1px solid #eaeaea;" />
-        </div>
-        <p style="font-size: 12px; color: #666;">See you there!</p>
+        <p>Please find your QR pass attached to this email. Present it at the venue entrance.</p>
+        <p style="font-size: 12px; color: #666; margin-top: 30px;">See you there!</p>
       </div>
     `;
-    return this.sendEmail({ to, subject: `Your Pass for ${eventTitle}`, html });
+    
+    return this.sendEmail({ 
+      to, 
+      subject: `Your Pass for ${eventTitle}`, 
+      html,
+      attachments: [{
+        filename: 'pass.png',
+        content: Buffer.from(base64Data, 'base64'),
+        contentType: 'image/png'
+      }]
+    });
   }
 };
