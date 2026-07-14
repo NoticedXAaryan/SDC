@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
   try {
     const buffer = await QRCode.toBuffer(token, { width: 300, margin: 2 });
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=31536000, immutable"

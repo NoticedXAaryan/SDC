@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { applications } from "@/lib/db/schema";
+import { applications, formTemplates } from "@/lib/db/schema";
 import { getCurrentUser, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { gradingQueue } from "@/lib/queues/grading";
 import { nanoid } from "nanoid";
@@ -26,10 +26,26 @@ await checkEmergencyFreeze(session?.user?.role as string);
 const body = await req.json();
 const cycle = body.applicationCycle || "2026-odd-sem";
 
-// Validate using Zod
-const result = applicationSchema.safeParse(body);
-if (!result.success && body.status !== "draft") {
-  return NextResponse.json({ error: "Validation failed", details: result.error.flatten() }, { status: 400 });
+// Validate against active form template
+const [activeForm] = await db.select().from(formTemplates).where(eq(formTemplates.isActive, true)).limit(1);
+
+if (!activeForm && body.status !== "draft") {
+  return NextResponse.json({ error: "No active application cycle found" }, { status: 400 });
+}
+
+if (activeForm && body.status !== "draft") {
+  const fields = activeForm.fields as any[];
+  const answers = body.answers || body;
+  const missingFields = fields
+    .filter(f => f.required)
+    .filter(f => !answers[f.id] || String(answers[f.id]).trim() === "");
+
+  if (missingFields.length > 0) {
+    return NextResponse.json({ 
+      error: "Validation failed", 
+      details: { missing: missingFields.map(f => f.id) } 
+    }, { status: 400 });
+  }
 }
 
 const data = body; // Can use partial data for drafts
