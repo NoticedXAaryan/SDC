@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/dal/auth";
 import { emailQueue } from "@/lib/queues/email";
 import { aiQueue } from "@/lib/queues/ai";
-import { gradingQueue } from "@/lib/workers/grading";
+import { gradingQueue } from "@/lib/queues/grading";
 import { certificateQueue } from "@/lib/queues/certificates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

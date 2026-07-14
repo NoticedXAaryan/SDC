@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { applications } from "@/lib/db/schema";
 import { getCurrentUser, checkEmergencyFreeze } from "@/lib/dal/auth";
-import { gradingQueue } from "@/lib/workers/grading";
+import { gradingQueue } from "@/lib/queues/grading";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 import { checkRateLimit } from "@/lib/rate-limit";

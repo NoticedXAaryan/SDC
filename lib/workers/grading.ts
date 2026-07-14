@@ -8,14 +8,7 @@ import { getRedisConfig } from "@/lib/redis";
 
 const connection = getRedisConfig();
 
-export const gradingQueue = new Queue("ai-grading", { 
-  connection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: true,
-  }
-});
+
 
 export const gradingWorker = new Worker(
   "ai-grading",
