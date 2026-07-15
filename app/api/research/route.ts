@@ -7,8 +7,7 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     const session = await requireSession();
     const isManagement = isManagementRole(session.user.role as string);
     const isAdmin = ["admin", "owner"].includes(session.user.role as string);
@@ -25,14 +24,7 @@ export async function GET(req: NextRequest) {
     const data = await db.select().from(researchPapers).where(conditions).orderBy(desc(researchPapers.createdAt));
 
     return NextResponse.json({ papers: data });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      const data = await db.select().from(researchPapers).where(eq(researchPapers.status, "approved")).orderBy(desc(researchPapers.createdAt));
-      return NextResponse.json({ papers: data });
-    }
-
-  }
-}
+  });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();

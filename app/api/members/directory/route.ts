@@ -1,3 +1,4 @@
+import { withApiHandler } from "@/lib/api-wrapper";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -7,8 +8,7 @@ import { isManagementRole } from "@/lib/dal/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     const session = await auth.api.getSession({
       headers: req.headers,
     });
@@ -72,8 +72,4 @@ export async function GET(req: NextRequest) {
         limit,
       },
     });
-  } catch (error: any) {
-    console.error("[Members Directory GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  });

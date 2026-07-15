@@ -6,8 +6,7 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     const session = await requireSession();
     const userRole = session.user.role || "member";
     if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
@@ -17,10 +16,7 @@ export async function GET(req: NextRequest) {
       orderBy: (templates, { desc }) => [desc(templates.createdAt)]
     });
     return NextResponse.json({ success: true, templates });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
-  }
-}
+  });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();

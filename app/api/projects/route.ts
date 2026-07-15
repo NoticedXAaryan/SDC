@@ -7,8 +7,7 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     const session = await requireSession();
     const isManagement = isManagementRole(session.user.role as string);
     const isAdmin = ["admin", "owner"].includes(session.user.role as string);
@@ -25,15 +24,7 @@ export async function GET(req: NextRequest) {
     const data = await db.select().from(projects).where(conditions).orderBy(desc(projects.createdAt));
 
     return NextResponse.json({ projects: data });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      // Unauthenticated users can only see approved projects
-      const data = await db.select().from(projects).where(eq(projects.status, "approved")).orderBy(desc(projects.createdAt));
-      return NextResponse.json({ projects: data });
-    }
-
-  }
-}
+  });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();

@@ -17,8 +17,7 @@ const sessionSchema = z.object({
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     const { id: eventId } = await params;
     
     const sessions = await db.select()
@@ -27,11 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .orderBy(eventSessions.startTime);
       
     return NextResponse.json(sessions);
-  } catch (error) {
-    console.error("[Sessions GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  });
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
 const sessionAuth = await requireRole(["admin", "owner", "lead", "event_lead", "co_lead"]);

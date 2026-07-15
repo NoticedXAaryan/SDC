@@ -1,3 +1,4 @@
+import { withApiHandler } from "@/lib/api-wrapper";
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
@@ -10,8 +11,7 @@ export const dynamic = "force-dynamic";
  * GET /api/admin/audit
  * Fetches recent audit logs. Requires admin or owner role.
  */
-export async function GET(req: NextRequest) {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     await requireRole(["admin", "owner"]);
     
     const url = new URL(req.url);
@@ -71,11 +71,4 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Audit GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  });

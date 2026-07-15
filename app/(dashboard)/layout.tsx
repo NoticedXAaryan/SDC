@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
 import { navItems, managementNavItems } from "@/lib/config/nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 
 function getRoleLabel(role: string): string {
@@ -83,6 +84,7 @@ export default async function DashboardLayout({
         </Sheet>
         <Link href="/dashboard" className="hidden md:block font-semibold text-lg">SDC OS</Link>
         <div className="ml-auto flex items-center space-x-4">
+          <NotificationBell />
           <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium">
             {getRoleLabel(userRole)}
           </span>
