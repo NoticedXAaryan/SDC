@@ -99,11 +99,14 @@ export const auth = betterAuth({
                     const isUni = email.endsWith('@goa.paruluniversity.ac.in') || email.endsWith('@paruluniversity.ac.in');
                     const domain = email.split("@")[1];
 
+                    // Check if this user is the designated system administrator
+                    const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL.toLowerCase().trim();
+
                     return {
                         data: {
                             ...user,
                             email,
-                            role: isUni ? "applicant" : "outsider"
+                            role: isAdmin ? "owner" : (isUni ? "applicant" : "outsider")
                             // Note: collegeDomain can be added here if schema is updated
                         }
                     };

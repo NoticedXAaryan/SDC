@@ -9,7 +9,6 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:bootstrap": "tsx --env-file=.env.local scripts/bootstrap.ts",
     "db:seed": "tsx --env-file=.env.local scripts/seed-dev.ts",
     "db:clean": "tsx --env-file=.env.local scripts/clean-dummy.ts",
     "db:generate": "drizzle-kit generate",
