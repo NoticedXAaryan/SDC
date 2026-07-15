@@ -9,10 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 
+import { Turnstile } from "@marsidev/react-turnstile";
+
 export function RegisterForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -22,12 +25,19 @@ export function RegisterForm() {
     setLoading(true);
     setError("");
     
+    if (!turnstileToken && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+      setError("Please complete the captcha.");
+      setLoading(false);
+      return;
+    }
+    
     try {
       const result = await signUp.email({
         name,
         email,
         password,
-      });
+        turnstileToken,
+      } as any);
       
       if (result.error) {
         setError(result.error.message || "Failed to register");
@@ -82,10 +92,18 @@ export function RegisterForm() {
               required
             />
           </div>
+          {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            <div className="flex justify-center my-2">
+              <Turnstile 
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                onSuccess={(token) => setTurnstileToken(token)}
+              />
+            </div>
+          )}
           {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || (!turnstileToken && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)}>
             {loading ? "Creating account..." : "Create account"}
           </Button>
 

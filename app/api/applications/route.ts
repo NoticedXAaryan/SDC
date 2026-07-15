@@ -36,6 +36,19 @@ await checkEmergencyFreeze(session?.user?.role as string);
 const body = await req.json();
 const cycle = body.applicationCycle || "2026-odd-sem";
 
+// 0. Honeypot check
+if (body.honeypot) {
+  // If the hidden honeypot field is filled, it's a bot
+  return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+}
+
+// 1. Turnstile validation
+const { validateTurnstile } = await import("@/lib/turnstile");
+const turnstileValid = await validateTurnstile(body.turnstileToken || req.headers.get("x-turnstile-token"));
+if (!turnstileValid) {
+  return NextResponse.json({ error: "Invalid captcha token" }, { status: 400 });
+}
+
 // Validate against active form template
 const [activeForm] = await db.select().from(formTemplates).where(eq(formTemplates.isActive, true)).limit(1);
 

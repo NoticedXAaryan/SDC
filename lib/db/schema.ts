@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique, check as drizzleCheck } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 export const user = pgTable("user", {
@@ -28,7 +28,9 @@ export const user = pgTable("user", {
 					level: integer("level").default(1),
 					privacy: jsonb("privacy"),
     deletedAt: timestamp("deletedAt")
-});
+}, (table) => [
+	drizzleCheck("role_check", sql`${table.role} IN ('owner', 'admin', 'lead', 'vice_lead', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead', 'faculty_coordinator', 'member', 'alumni', 'applicant', 'outsider', 'user')`)
+]);
 
 export const session = pgTable("session", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

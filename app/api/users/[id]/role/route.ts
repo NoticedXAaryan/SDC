@@ -50,6 +50,15 @@ if (targetUser.role === "owner" && currentUserRole !== "owner") {
 
 await db.update(user).set({ role }).where(eq(user.id, targetUserId));
 
+// Revoke sessions so the user has to login again to get the new role
+const { auth } = await import("@/lib/auth");
+await auth.api.revokeOtherSessions({ userId: targetUserId, headers: req.headers } as any).catch(() => {});
+// Note: Revoking all sessions is better to force immediate role refresh for the target user.
+// Since better-auth revokeOtherSessions requires active session headers which might be for the admin,
+// a direct DB deletion of sessions is safest:
+const { session: dbSession } = await import("@/lib/db/schema");
+await db.delete(dbSession).where(eq(dbSession.userId, targetUserId));
+
 return NextResponse.json({ success: true, role });
 
 });

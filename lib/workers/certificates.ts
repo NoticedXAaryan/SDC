@@ -7,7 +7,7 @@ import { LocalMockStorageService } from "@/lib/services/storage";
 import { Mailer } from "@/lib/services/mailer";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
 export const certificateWorker = new Worker("certificate-generation", async (job: Job) => {
   const { userId, eventId, templateId, issuedBy } = job.data;
@@ -60,7 +60,7 @@ export const certificateWorker = new Worker("certificate-generation", async (job
     await Mailer.sendCertificate(userData.email, eventData.title, Buffer.from(finalPdfBuffer));
   }
 
-}, { connection: getRedisConfig() });
+}, getWorkerConfig());
 
 certificateWorker.on('completed', job => {
   logger.info({ jobId: job.id, entityId: job.data?.eventId || job.data?.userId }, "Certificate job completed!");
@@ -69,3 +69,6 @@ certificateWorker.on('completed', job => {
 certificateWorker.on('failed', (job, err) => {
   logger.error({ jobId: job?.id, entityId: job?.data?.eventId || job?.data?.userId, err }, `Certificate job failed with ${err.message}`);
 });
+
+
+

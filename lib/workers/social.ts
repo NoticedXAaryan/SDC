@@ -5,11 +5,11 @@ import { eq, and, isNotNull, lte, gte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { emailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
-const connection = getRedisConfig();
+const connection = getWorkerConfig();
 
-export const socialQueue = new Queue("social-queue", { connection });
+export const socialQueue = new Queue("social-queue", getWorkerConfig());
 
 export const socialWorker = new Worker("social-queue", async (job: Job) => {
   const { type } = job.data;
@@ -57,7 +57,7 @@ export const socialWorker = new Worker("social-queue", async (job: Job) => {
       logger.info({ contentId: item.id, email: item.authorEmail }, "Enqueued content reminder");
     }
   }
-}, { connection });
+}, getWorkerConfig());
 
 // Schedule the daily cron job (runs every day at 9:00 AM)
 socialQueue.add("daily_social_reminders", { type: "daily_social_reminders" }, {
@@ -66,3 +66,6 @@ socialQueue.add("daily_social_reminders", { type: "daily_social_reminders" }, {
   },
   jobId: "daily-social-reminders-job"
 }).catch(err => logger.error({ err }, "Failed to schedule social cron"));
+
+
+

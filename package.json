@@ -20,6 +20,7 @@
     "@ai-sdk/openai": "^4.0.11",
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
+    "@marsidev/react-turnstile": "^1.5.3",
     "@pdfme/generator": "^6.1.11",
     "@pdfme/schemas": "^6.1.11",
     "@pdfme/ui": "^6.1.11",

@@ -40,7 +40,7 @@ const PUBLIC_PATHS = [
   "/api/health",
 ];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
   const { pathname } = request.nextUrl;
   
@@ -75,6 +75,22 @@ export function proxy(request: NextRequest) {
   ) {
     isSubdomain = true;
     url.pathname = `/events/${currentHost}${url.pathname}`;
+  }
+
+  // 1.5. Protect Better Auth signup with Turnstile
+  if (pathname === '/api/auth/sign-up/email' && request.method === 'POST') {
+    try {
+      const clonedRequest = request.clone();
+      const body = await clonedRequest.json();
+      
+      const { validateTurnstile } = await import("@/lib/turnstile");
+      const turnstileValid = await validateTurnstile(body.turnstileToken);
+      if (!turnstileValid) {
+        return NextResponse.json({ error: "Invalid or missing captcha token" }, { status: 400 });
+      }
+    } catch (err) {
+      return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
+    }
   }
 
   // 2. Auth Protection Logic

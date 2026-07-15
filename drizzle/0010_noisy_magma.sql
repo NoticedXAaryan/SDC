@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD CONSTRAINT "role_check" CHECK ("user"."role" IN ('owner', 'admin', 'lead', 'vice_lead', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead', 'faculty_coordinator', 'member', 'alumni', 'applicant', 'outsider', 'user'));

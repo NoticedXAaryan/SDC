@@ -1,7 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { Mailer } from "@/lib/services/mailer";
 import { logger } from "@/lib/logger";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
 /**
  * Email worker — processes all email job types from the shared email-queue.
@@ -71,7 +71,7 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
       logger.warn({ type }, "Unknown email job type — job will be discarded");
   }
 }, { 
-  connection: getRedisConfig(),
+  ...getWorkerConfig(),
   concurrency: 5,
   removeOnComplete: { count: 100 },
   removeOnFail: { count: 1000 }
@@ -84,3 +84,6 @@ emailWorker.on('completed', job => {
 emailWorker.on('failed', (job, err) => {
   logger.error({ jobId: job?.id, type: job?.data?.type, err }, "Email job failed");
 });
+
+
+

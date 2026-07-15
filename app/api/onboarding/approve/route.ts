@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
@@ -41,12 +42,16 @@ if (!targetUser) {
 if (parsed.approve) {
   // Using better-auth admin plugin to set role
   await (auth.api as any).setRole({
+    headers: await headers(),
     body: {
       userId: parsed.userId,
       role: "member",
     },
-    headers: req.headers,
   });
+
+  // Revoke previous sessions to apply new role
+  const { session: dbSession } = await import("@/lib/db/schema");
+  await db.delete(dbSession).where(eq(dbSession.userId, parsed.userId));
 
   // Send notification
   await NotificationService.sendInAppNotification({

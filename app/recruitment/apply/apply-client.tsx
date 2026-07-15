@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 type FieldDef = {
   id: string;
@@ -114,6 +115,9 @@ export default function ApplyClient({ activeForm }: { activeForm: FormTemplate }
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
+              <div className="hidden" aria-hidden="true">
+                <input type="text" name="honeypot" tabIndex={-1} autoComplete="off" value={form.watch("honeypot") || ""} onChange={(e) => form.setValue("honeypot", e.target.value)} />
+              </div>
               {fields.map((field) => (
                 <FormField key={field.id} control={form.control} name={field.id} render={({ field: formField }) => (
                   <FormItem>
@@ -138,10 +142,18 @@ export default function ApplyClient({ activeForm }: { activeForm: FormTemplate }
                   </FormItem>
                 )} />
               ))}
+              {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                <div className="flex justify-center my-4">
+                  <Turnstile 
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => form.setValue("turnstileToken", token)}
+                  />
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-between border-t p-6">
               <Button type="button" variant="outline" onClick={handleSaveDraft}>Save Draft</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Submitting..." : "Submit Application"}</Button>
+              <Button type="submit" disabled={loading || (!form.watch("turnstileToken") && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)}>{loading ? "Submitting..." : "Submit Application"}</Button>
             </CardFooter>
           </form>
         </Form>

@@ -5,11 +5,11 @@ import { eq, and, gte, lt } from "drizzle-orm";
 import { logger } from "@/lib/logger";
 import { emailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
-const connection = getRedisConfig();
+const connection = getWorkerConfig();
 
-export const remindersQueue = new Queue("reminders-queue", { connection });
+export const remindersQueue = new Queue("reminders-queue", getWorkerConfig());
 
 export const remindersWorker = new Worker("reminders-queue", async (job: Job) => {
   const { type } = job.data;
@@ -63,7 +63,7 @@ export const remindersWorker = new Worker("reminders-queue", async (job: Job) =>
       logger.info({ eventId: event.id, sentCount: attendees.length }, "Enqueued reminders for event");
     }
   }
-}, { connection });
+}, getWorkerConfig());
 
 // Schedule the daily cron job (runs every day at 8:00 AM)
 remindersQueue.add("daily_event_reminders", { type: "daily_event_reminders" }, {
@@ -80,3 +80,6 @@ remindersWorker.on('completed', job => {
 remindersWorker.on('failed', (job, err) => {
   logger.error({ jobId: job?.id, type: job?.data?.type, err }, "Reminder job failed");
 });
+
+
+

@@ -1,11 +1,11 @@
 import { Worker, Job, Queue } from "bullmq";
 import { logger } from "@/lib/logger";
 import { emailQueue } from "@/lib/queues/email";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
-const connection = getRedisConfig();
+const connection = getWorkerConfig();
 
-export const reportsQueue = new Queue("reports-queue", { connection });
+export const reportsQueue = new Queue("reports-queue", getWorkerConfig());
 
 export const reportsWorker = new Worker("reports-queue", async (job: Job) => {
   const { type, recipientEmail } = job.data;
@@ -32,7 +32,7 @@ export const reportsWorker = new Worker("reports-queue", async (job: Job) => {
 
     logger.info({ reportUrl: mockReportUrl }, "Weekly report generated successfully");
   }
-}, { connection });
+}, getWorkerConfig());
 
 // Schedule the weekly cron job (runs every Monday at 8:00 AM)
 reportsQueue.add("weekly_report", { 
@@ -44,3 +44,6 @@ reportsQueue.add("weekly_report", {
   },
   jobId: "weekly-report-job"
 }).catch(err => logger.error({ err }, "Failed to schedule weekly report cron"));
+
+
+

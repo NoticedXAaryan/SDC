@@ -4,7 +4,7 @@ import { events } from "../db/schema";
 import { draftCommsForEvent } from "../services/ai";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
 export const aiWorker = new Worker(
   "ai-queue",
@@ -30,7 +30,7 @@ export const aiWorker = new Worker(
       }
     }
   },
-  { connection: getRedisConfig() }
+  getWorkerConfig()
 );
 
 aiWorker.on("failed", async (job, error) => {
@@ -49,3 +49,6 @@ aiWorker.on("failed", async (job, error) => {
     }
   }
 });
+
+
+

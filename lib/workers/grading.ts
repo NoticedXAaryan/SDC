@@ -4,9 +4,9 @@ import { applications } from "../db/schema";
 import { gradeApplication } from "../services/ai";
 import { eq } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { getRedisConfig } from "@/lib/redis";
+import { getWorkerConfig } from "@/lib/redis";
 
-const connection = getRedisConfig();
+const connection = getWorkerConfig();
 
 
 
@@ -34,7 +34,7 @@ export const gradingWorker = new Worker(
       throw error;
     }
   },
-  { connection }
+  getWorkerConfig()
 );
 
 gradingWorker.on("failed", async (job, error) => {
@@ -53,3 +53,6 @@ gradingWorker.on("failed", async (job, error) => {
     }
   }
 });
+
+
+

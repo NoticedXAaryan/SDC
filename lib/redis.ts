@@ -32,8 +32,15 @@ export function getRedisClient(): Redis {
     : new Redis({ ...config, enableOfflineQueue: false, lazyConnect: true, maxRetriesPerRequest: null });
 
   _sharedClient.on("error", (err) => {
-    // Suppress connection errors during build/startup — they'll be caught by health checks
+    // Suppress connection errors during build/startup
   });
 
   return _sharedClient;
 }
+
+export const getWorkerConfig = () => ({
+  connection: getRedisConfig() as any,
+  concurrency: 5,
+  removeOnComplete: { age: 3600, count: 100 },
+  removeOnFail: { age: 86400, count: 1000 },
+});
