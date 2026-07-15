@@ -13,7 +13,8 @@
     "db:seed": "tsx --env-file=.env.local scripts/seed-dev.ts",
     "db:clean": "tsx --env-file=.env.local scripts/clean-dummy.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts"
+    "db:migrate": "tsx --env-file=.env.local scripts/migrate.ts",
+    "worker": "tsx --env-file=.env.local worker.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.11",

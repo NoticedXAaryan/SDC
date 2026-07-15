@@ -15,8 +15,10 @@ services:
     env_file: [.env]
 
   worker:
-    build: .
-    command: ["npm", "run", "worker"]
+    build: 
+      context: .
+      target: builder
+    command: ["npx", "tsx", "worker.ts"]
     depends_on: 
 
       redis: 
