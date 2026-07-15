@@ -6,12 +6,19 @@ services:
     healthcheck: 
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
+    networks:
+      - default
+      - dokploy-network
+
   migrator:
     build:
       context: .
       target: builder
     command: ["npx", "tsx", "scripts/migrate.ts"]
     env_file: [.env]
+    networks:
+      - default
+      - dokploy-network
 
   app:
     build: .
@@ -21,6 +28,9 @@ services:
       redis: 
         condition: service_healthy
     env_file: [.env]
+    networks:
+      - default
+      - dokploy-network
 
   worker:
     build: 
@@ -28,8 +38,14 @@ services:
       target: builder
     command: ["npx", "tsx", "worker.ts"]
     depends_on: 
-
       redis: 
         condition: service_healthy
     env_file: [.env]
+    networks:
+      - default
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
 
