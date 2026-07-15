@@ -8,65 +8,50 @@ if (!PASS_SECRET) {
   throw new Error("PASS_SECRET is not defined in environment variables");
 }
 
+import jwt from "jsonwebtoken";
+import { getRedisClient } from "../redis";
+
 export interface PassPayload {
   userId: string;
   eventId: string;
   passCode: string;
-  iat?: number; // Issued at for rotating QR
+  iat?: number; 
 }
 
-/**
- * Generates an HMAC signed token string for a pass payload.
- */
 export function generateSignedPass(payload: PassPayload): string {
-  const iat = payload.iat || Math.floor(Date.now() / 1000);
-  const dataString = JSON.stringify({
-    u: payload.userId,
-    e: payload.eventId,
-    p: payload.passCode,
-    i: iat
-  });
-  
-  const hmac = crypto.createHmac("sha256", PASS_SECRET || "");
-  hmac.update(dataString);
-  const signature = hmac.digest("hex");
-  
-  // Format: base64(payload).signature
-  const base64Payload = Buffer.from(dataString).toString("base64");
-  return `${base64Payload}.${signature}`;
+  const token = jwt.sign({ 
+    eventId: payload.eventId, 
+    userId: payload.userId, 
+    passCode: payload.passCode,
+    jti: crypto.randomUUID() 
+  }, process.env.QR_SECRET || process.env.PASS_SECRET || "fallback_secret", { expiresIn: "30s" });
+  return token;
 }
 
 export class HMACPassValidator implements IPassValidator {
-  constructor(private secret: string = PASS_SECRET || "") {}
+  constructor(private secret: string = process.env.QR_SECRET || process.env.PASS_SECRET || "fallback_secret") {}
 
   async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
     try {
-      const [base64Payload, signature] = payload.split(".");
-      if (!base64Payload || !signature) return { valid: false };
+      const decoded = jwt.verify(payload, this.secret) as any;
       
-      const dataString = Buffer.from(base64Payload, "base64").toString("utf-8");
-      
-      // Re-calculate signature
-      const hmac = crypto.createHmac("sha256", this.secret);
-      hmac.update(dataString);
-      const expectedSignature = hmac.digest("hex");
-      
-      // Compare in constant time to prevent timing attacks
-      if (crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
-        const parsed = JSON.parse(dataString);
-        return {
-          valid: true,
-          userId: parsed.u,
-          eventId: parsed.e,
-          passCode: parsed.p,
-          iat: parsed.i
-        };
+      const redis = getRedisClient();
+      const used = await redis.get(`qr:jti:${decoded.jti}`);
+      if (used) {
+        return { valid: false }; // QR already used
       }
+      // Set short TTL matching token expiration
+      await redis.setex(`qr:jti:${decoded.jti}`, 60, "1");
+
+      return {
+        valid: true,
+        userId: decoded.userId,
+        eventId: decoded.eventId,
+        passCode: decoded.passCode,
+        iat: decoded.iat
+      };
     } catch (err) {
-      // Return false if JSON parsing or base64 decoding fails
       return { valid: false };
     }
-    
-    return { valid: false };
   }
 }

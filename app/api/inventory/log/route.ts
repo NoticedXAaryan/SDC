@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { inventory, inventoryLogs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { logInventoryActionSchema } from "@/lib/validators/inventory";
 import { logAuditEvent } from "@/lib/services/audit";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -26,7 +26,8 @@ const { itemId, action, qty } = parsed.data;
 
 // Run within a transaction to ensure atomicity
 const result = await db.transaction(async (tx) => {
-  const [item] = await tx.select().from(inventory).where(eq(inventory.id, itemId)).limit(1);
+  const res = await tx.execute(sql`SELECT * FROM inventory WHERE id=${itemId} FOR UPDATE`);
+  const item = (res as any).rows ? (res as any).rows[0] : (res as any)[0]; // handle node-postgres vs postgres.js variations
   if (!item) {
     throw new Error("Item not found");
   }

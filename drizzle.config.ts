@@ -9,4 +9,6 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
+  // @ts-ignore
+  migrations: { transactional: true, table: "__drizzle_migrations" }
 });

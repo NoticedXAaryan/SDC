@@ -83,11 +83,28 @@ export const auth = betterAuth({
         user: {
             create: {
                 before: async (user) => {
-                    const isUni = user.email.endsWith('@goa.paruluniversity.ac.in') || user.email.endsWith('@paruluniversity.ac.in');
+                    const email = user.email.toLowerCase().trim();
+                    
+                    // The disposable-email-domains package exports an array directly as default
+                    const disposableList = (await import("disposable-email-domains")).default || await import("disposable-email-domains");
+                    
+                    const isBad = Array.isArray(disposableList) 
+                        ? disposableList.includes(email.split('@')[1]) 
+                        : false;
+
+                    if (isBad) {
+                        throw new Error("Use your college email or personal Gmail, disposable emails blocked");
+                    }
+
+                    const isUni = email.endsWith('@goa.paruluniversity.ac.in') || email.endsWith('@paruluniversity.ac.in');
+                    const domain = email.split("@")[1];
+
                     return {
                         data: {
                             ...user,
+                            email,
                             role: isUni ? "applicant" : "outsider"
+                            // Note: collegeDomain can be added here if schema is updated
                         }
                     };
                 }
@@ -96,6 +113,9 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
+        requireEmailVerification: true,
+        autoSignIn: false,
+        minPasswordLength: 8,
         sendResetPassword: async ({ user, url }, request) => {
             await Mailer.sendPasswordReset(user.email, url);
         }
@@ -103,6 +123,7 @@ export const auth = betterAuth({
     emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
+        expiresIn: 3600,
         sendVerificationEmail: async ({ user, url, token }, request) => {
             await Mailer.sendEmailVerification(user.email, url);
         }
@@ -119,15 +140,21 @@ export const auth = betterAuth({
             year: { type: "number", required: false },
             branch: { type: "string", required: false },
             bio: { type: "string", required: false },
-            skills: { type: "string", required: false }, // JSON stored as text
-            links: { type: "string", required: false },  // JSON stored as text
+            skills: { type: "string", required: false }, 
+            links: { type: "string", required: false },  
             points: { type: "number", required: false, defaultValue: 0 },
             level: { type: "number", required: false, defaultValue: 1 },
+            role: { type: "string", required: true, defaultValue: "outsider", input: false }
         },
     },
     session: {
-        expiresIn: 60 * 60 * 24 * 30, // 30 days
-        updateAge: 60 * 60 * 24,       // Update session every 24h
+        expiresIn: 60 * 60 * 24 * 7, // 7 days
+        updateAge: 60,               // update every 60s
+        cookieCache: { enabled: true, maxAge: 60 }
+    },
+    advanced: {
+        cookiePrefix: "sdc",
+        useSecureCookies: process.env.NODE_ENV === "production"
     },
     plugins: [
         organization({

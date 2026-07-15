@@ -16,6 +16,16 @@ if (!rl.success) {
   return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 }
 
+const idemKey = req.headers.get("x-idempotency-key");
+if (idemKey) {
+  const { getRedisClient } = await import("@/lib/redis");
+  const redis = getRedisClient();
+  const seen = await redis.get(`idem:${idemKey}`);
+  if (seen) {
+    return NextResponse.json(JSON.parse(seen));
+  }
+}
+
 const session = await getCurrentUser();
 if (!session) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -103,5 +113,12 @@ if (data.status !== "draft") {
   }, { jobId: crypto.createHash("sha256").update(`grade:${applicationId}`).digest("hex") });
 }
 
-return NextResponse.json({ success: true, applicationId });
+const responseBody = { success: true, applicationId };
+
+if (idemKey) {
+  const { getRedisClient } = await import("@/lib/redis");
+  await getRedisClient().setex(`idem:${idemKey}`, 86400, JSON.stringify(responseBody));
+}
+
+return NextResponse.json(responseBody);
 });

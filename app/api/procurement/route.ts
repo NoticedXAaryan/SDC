@@ -88,7 +88,12 @@ if (!parsed.success || !id) {
 const [existing] = await db.select().from(procurementRequests).where(eq(procurementRequests.id, id)).limit(1);
 if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+if (parsed.data.status === "approved" && existing.requestedBy === sessionAuth.user.id) {
+  return NextResponse.json({ error: "You cannot approve your own procurement request." }, { status: 403 });
+}
+
 await db.transaction(async (tx) => {
+
   // 1. Update procurement
   await tx.update(procurementRequests).set({
     status: parsed.data.status,

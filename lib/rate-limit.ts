@@ -9,14 +9,19 @@ const rateLimiter = new RateLimiterRedis({
   duration: 60, // per 60 seconds by IP
 });
 
-export async function checkRateLimit(req: NextRequest, keySuffix?: string): Promise<{ success: boolean }> {
+export async function checkRateLimit(req: NextRequest, keySuffix?: string): Promise<{ success: boolean, error?: string }> {
   const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
   const key = keySuffix ? `${ip}_${keySuffix}` : ip;
 
   try {
     await rateLimiter.consume(key);
     return { success: true };
-  } catch (rejRes) {
-    return { success: false };
+  } catch (error) {
+    if (error instanceof Error) {
+      // Redis connection error -> fail closed
+      return { success: false, error: "Service temporarily unavailable" };
+    }
+    // Rate limit exceeded
+    return { success: false, error: "Too many requests" };
   }
 }

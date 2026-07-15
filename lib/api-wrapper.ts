@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -36,15 +38,23 @@ export function withApiHandler(
 ) {
   return async (req: NextRequest, ctx: any) => {
     try {
+      const h = await headers();
+      const session = await auth.api.getSession({ headers: h });
+      
+      if (session && !session.user.emailVerified) {
+        return NextResponse.json({ error: "Verify email first", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+      }
+
       // 1. Rate Limiting (applied to mutating requests by default)
       if (options.requireRateLimit !== false) {
         const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
         if (isMutating) {
           const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
           if (!rl.success) {
+            const status = rl.error === "Service temporarily unavailable" ? 503 : 429;
             return NextResponse.json(
-              { error: "Too many requests. Please try again later." },
-              { status: 429 }
+              { error: rl.error || "Too many requests. Please try again later." },
+              { status }
             );
           }
         }

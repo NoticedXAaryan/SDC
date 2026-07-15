@@ -70,7 +70,12 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
     default:
       logger.warn({ type }, "Unknown email job type — job will be discarded");
   }
-}, { connection: getRedisConfig() });
+}, { 
+  connection: getRedisConfig(),
+  concurrency: 5,
+  removeOnComplete: { count: 100 },
+  removeOnFail: { count: 1000 }
+});
 
 emailWorker.on('completed', job => {
   logger.info({ jobId: job.id, type: job.data?.type }, "Email job completed successfully");

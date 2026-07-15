@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { expenses, budgets, user } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { createExpenseSchema } from "@/lib/validators/finance";
 import { logAuditEvent } from "@/lib/services/audit";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -59,22 +59,24 @@ if (!parsed.success) {
 
 const { budgetId, amount, category, receiptUrl } = parsed.data;
 
-// Check if budget exists
-const [budget] = await db.select().from(budgets).where(eq(budgets.id, budgetId)).limit(1);
-if (!budget) {
-  return NextResponse.json({ error: "Budget not found" }, { status: 404 });
-}
-
 const expenseId = crypto.randomUUID();
 
-await db.insert(expenses).values({
-  id: expenseId,
-  budgetId,
-  amount: String(amount),
-  category,
-  receiptUrl: receiptUrl || null,
-  status: "pending",
-  createdBy: session.user.id,
+await db.transaction(async (tx) => {
+  const res = await tx.execute(sql`SELECT * FROM budgets WHERE id=${budgetId} FOR UPDATE`);
+  const budget = (res as any).rows ? (res as any).rows[0] : (res as any)[0];
+  if (!budget) {
+    throw new Error("Budget not found");
+  }
+
+  await tx.insert(expenses).values({
+    id: expenseId,
+    budgetId,
+    amount: String(amount),
+    category,
+    receiptUrl: receiptUrl || null,
+    status: "pending",
+    createdBy: session.user.id,
+  });
 });
 
 await logAuditEvent({
