@@ -6,10 +6,18 @@ services:
     healthcheck: 
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
+  migrator:
+    build:
+      context: .
+      target: builder
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    env_file: [.env]
+
   app:
     build: .
-    depends_on: 
-
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
       redis: 
         condition: service_healthy
     env_file: [.env]
