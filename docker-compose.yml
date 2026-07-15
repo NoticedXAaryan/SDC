@@ -14,7 +14,7 @@ services:
     build:
       context: .
       target: builder
-    command: ["npx", "tsx", "scripts/migrate.ts"]
+    command: ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
     env_file: [.env]
     networks:
       - default

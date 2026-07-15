@@ -27,8 +27,8 @@ async function main() {
 
     if (!existingUser) {
       console.error(`❌ User with email ${email} not found in the database!`);
-      console.log("Please log in at least once so the account is created, then run this script again.");
-      process.exit(1);
+      console.log("Please log in at least once so the account is created. We will skip the owner upgrade for now.");
+      process.exit(0);
     }
 
     if (existingUser.role === "owner") {
