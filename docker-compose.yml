@@ -19,7 +19,7 @@ services:
     healthcheck: 
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
-  web:
+  app:
     build: .
     depends_on: 
       db: 
