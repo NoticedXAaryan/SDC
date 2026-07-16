@@ -78,6 +78,13 @@
       "when": 1784109792762,
       "tag": "0010_noisy_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784134966896,
+      "tag": "0011_woozy_weapon_omega",
+      "breakpoints": true
     }
   ]
 }

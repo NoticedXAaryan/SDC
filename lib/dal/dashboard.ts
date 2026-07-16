@@ -1,6 +1,6 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user, events, registrations, applications } from "@/lib/db/schema";
+import { user, events, registrations, applications, insights } from "@/lib/db/schema";
 import { eq, count, sql, and, desc, gte } from "drizzle-orm";
 
 export async function getDashboardData() {
@@ -63,6 +63,11 @@ export async function getDashboardData() {
       totalRegistrations: Number(totalRegs.count),
     };
   }
+  
+  let insightsData: any[] = [];
+  if (role === "admin" || role === "owner") {
+    insightsData = await db.select().from(insights).orderBy(desc(insights.generatedAt)).limit(3);
+  }
 
   // 4. User's Application Status
   const myApplication = await db.select({
@@ -83,5 +88,6 @@ export async function getDashboardData() {
     myRegistrations: myRegistrationsData,
     managementStats,
     myApplication,
+    insightsData,
   };
 }

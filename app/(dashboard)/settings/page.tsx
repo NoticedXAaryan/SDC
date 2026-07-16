@@ -1,16 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, AtSign, CheckCircle2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: session, isPending } = useSession();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const [username, setUsername] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [usernameError, setUsernameError] = useState("");
+  const [usernameSuccess, setUsernameSuccess] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (session?.user && (session.user as any).username) {
+      setUsername((session.user as any).username);
+    }
+  }, [session]);
+
+  // Debounce username check
+  useEffect(() => {
+    if (!username || username === (session?.user as any)?.username || username.length < 3) {
+      setIsAvailable(null);
+      setUsernameError("");
+      return;
+    }
+    
+    const checkUsername = async () => {
+      setIsChecking(true);
+      setUsernameError("");
+      try {
+        const res = await fetch(`/api/username/check?u=${encodeURIComponent(username)}`);
+        const data = await res.json();
+        
+        if (data.available) {
+          setIsAvailable(true);
+        } else {
+          setIsAvailable(false);
+          if (data.message) setUsernameError(data.message);
+        }
+      } catch (err) {
+        setUsernameError("Failed to check username");
+      } finally {
+        setIsChecking(false);
+      }
+    };
+    
+    const timeout = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timeout);
+  }, [username, session]);
+
+  const handleUpdateUsername = async () => {
+    if (!username || !isAvailable) return;
+    
+    setIsUpdating(true);
+    setUsernameError("");
+    setUsernameSuccess("");
+    try {
+      const res = await fetch("/api/users/me/username", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsernameSuccess(`Handle successfully updated to @${data.username}!`);
+      } else {
+        setUsernameError(data.error || "Failed to update handle");
+      }
+    } catch (err) {
+      setUsernameError("An error occurred");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (isPending) {
     return <div>Loading...</div>;
@@ -22,6 +95,7 @@ export default function SettingsPage() {
 
   const user = session.user;
   const initials = user.name?.substring(0, 2).toUpperCase() || "US";
+  const currentUsername = (user as any).username;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,7 +125,6 @@ export default function SettingsPage() {
 
       const data = await res.json();
       
-      // Update the user profile with Better Auth client
       await authClient.updateUser({
         image: data.url
       });
@@ -121,6 +194,45 @@ export default function SettingsPage() {
           </div>
 
         </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Username Handle</CardTitle>
+          <CardDescription>Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2 max-w-md">
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="username"
+                className="pl-9"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              />
+            </div>
+            
+            <div className="h-5">
+              {isChecking && <p className="text-sm text-muted-foreground flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</p>}
+              {!isChecking && isAvailable === true && username !== currentUsername && (
+                <p className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</p>
+              )}
+              {!isChecking && usernameError && <p className="text-sm text-red-500">{usernameError}</p>}
+              {!isChecking && usernameSuccess && <p className="text-sm text-green-600">{usernameSuccess}</p>}
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            onClick={handleUpdateUsername} 
+            disabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
+          >
+            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Update Handle
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

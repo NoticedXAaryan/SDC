@@ -18,6 +18,7 @@ const procurementReviewSchema = z.object({
   status: z.enum(["draft", "pending_quotes", "approval", "approved", "rejected", "completed"]),
   selectedVendorId: z.string().optional(),
   quotesUrl: z.string().url().optional(),
+  reason: z.string().optional(),
 });
 
 export const dynamic = "force-dynamic";
@@ -90,6 +91,10 @@ if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
 if (parsed.data.status === "approved" && existing.requestedBy === sessionAuth.user.id) {
   return NextResponse.json({ error: "You cannot approve your own procurement request." }, { status: 403 });
+}
+
+if (parsed.data.status === "rejected" && !parsed.data.reason) {
+  return NextResponse.json({ error: "A reason is required when rejecting a procurement request." }, { status: 400 });
 }
 
 await db.transaction(async (tx) => {

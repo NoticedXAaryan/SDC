@@ -42,7 +42,7 @@ export function RegisterForm() {
       if (result.error) {
         setError(result.error.message || "Failed to register");
       } else {
-        router.push("/dashboard");
+        router.push("/setup");
       }
     } catch (err) {
       setError("An unexpected error occurred");

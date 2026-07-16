@@ -18,6 +18,7 @@ export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 
 export const updateExpenseStatusSchema = z.object({
   status: z.enum(["pending", "approved", "rejected"]),
+  reason: z.string().optional(),
 });
 
 export type UpdateExpenseStatusInput = z.infer<typeof updateExpenseStatusSchema>;

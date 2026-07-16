@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { RejectModal } from "@/components/reject-modal";
 
 type Project = {
   id: string;
@@ -20,14 +21,15 @@ type Project = {
 
 export function ProjectApprovalList({ initialProjects }: { initialProjects: Project[] }) {
   const [projects, setProjects] = useState(initialProjects);
+  const [rejectProjectId, setRejectProjectId] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleAction = async (id: string, action: "approve" | "reject") => {
+  const handleAction = async (id: string, action: "approve" | "reject", reasonCode?: string, reasonNote?: string) => {
     try {
-      const res = await fetch(`/api/projects/${id}`, {
+      const res = await fetch(`/api/projects/${id}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: action === "approve" ? "approved" : "rejected" })
+        body: JSON.stringify({ status: action === "approve" ? "approved" : "rejected", reasonCode, reasonNote })
       });
 
       if (!res.ok) {
@@ -52,6 +54,7 @@ export function ProjectApprovalList({ initialProjects }: { initialProjects: Proj
   }
 
   return (
+    <>
     <div className="space-y-6">
       {projects.map(project => (
         <Card key={project.id}>
@@ -83,11 +86,21 @@ export function ProjectApprovalList({ initialProjects }: { initialProjects: Proj
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2 border-t pt-4">
-            <Button variant="destructive" onClick={() => handleAction(project.id, "reject")}>Reject</Button>
+            <Button variant="destructive" onClick={() => setRejectProjectId(project.id)}>Reject</Button>
             <Button onClick={() => handleAction(project.id, "approve")}>Approve</Button>
           </CardFooter>
         </Card>
       ))}
     </div>
+      <RejectModal
+        isOpen={!!rejectProjectId}
+        onOpenChange={(open) => !open && setRejectProjectId(null)}
+        onConfirm={(code, note) => {
+          if (rejectProjectId) handleAction(rejectProjectId, "reject", code, note);
+        }}
+        title="Reject Project"
+        description="Please provide a reason for rejecting this project submission."
+      />
+    </>
   );
 }

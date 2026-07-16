@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { RejectModal } from "@/components/reject-modal";
 
 const COLUMNS = [
   { id: "applied", label: "New Applications" },
@@ -15,15 +16,16 @@ const COLUMNS = [
 export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState<string | null>(null);
+  const [rejectAppId, setRejectAppId] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleStatusChange = async (applicationId: string, newStatus: string) => {
+  const handleStatusChange = async (applicationId: string, newStatus: string, reasonCode?: string, reasonNote?: string) => {
     setLoading(applicationId);
     try {
-      const res = await fetch(`/api/applications/${applicationId}`, {
+      const res = await fetch(`/api/applications/${applicationId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, reasonCode, reasonNote })
       });
       
       if (res.ok) {
@@ -40,6 +42,7 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
   };
 
   return (
+    <>
     <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-200px)]">
       {COLUMNS.map(col => (
         <div key={col.id} className="min-w-[320px] bg-muted/30 rounded-lg p-4 flex flex-col">
@@ -89,7 +92,7 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
                   {col.id === "interviewing" && (
                     <div className="flex gap-2 w-full">
                       <Button variant="default" size="sm" className="flex-1" onClick={() => handleStatusChange(app.id, "accepted")}>Accept</Button>
-                      <Button variant="destructive" size="sm" className="flex-1" onClick={() => handleStatusChange(app.id, "rejected")}>Reject</Button>
+                      <Button variant="destructive" size="sm" className="flex-1" onClick={() => setRejectAppId(app.id)}>Reject</Button>
                     </div>
                   )}
                 </div>
@@ -99,5 +102,15 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
         </div>
       ))}
     </div>
+      <RejectModal
+        isOpen={!!rejectAppId}
+        onOpenChange={(open) => !open && setRejectAppId(null)}
+        onConfirm={(code, note) => {
+          if (rejectAppId) handleStatusChange(rejectAppId, "rejected", code, note);
+        }}
+        title="Reject Application"
+        description="Please provide a reason for rejecting this application."
+      />
+    </>
   );
 }

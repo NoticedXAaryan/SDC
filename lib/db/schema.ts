@@ -19,6 +19,10 @@ export const user = pgTable("user", {
 					
 					// SDC specific fields
 					username: text("username").unique(),
+					usernameLower: text("username_lower").unique(),
+					displayName: text("display_name"),
+					handleChangedAt: timestamp("handle_changed_at"),
+					handleChangeCount: integer("handle_change_count").default(0),
 					year: integer("year"),
 					branch: text("branch"),
 					bio: text("bio"),
@@ -532,3 +536,92 @@ export const eventSessionsRelations = relations(eventSessions, ({ one }) => ({
     references: [events.id],
   }),
 }));
+
+export const formStatusEnum = pgEnum("form_status", ["draft", "published", "closed", "archived"]);
+export const formFieldTypeEnum = pgEnum("field_type", ["short_text", "long_text", "email", "number", "dropdown", "checkbox", "file", "date", "rating"]);
+export const certStatusEnum = pgEnum("cert_status", ["valid", "revoked", "draft"]);
+export const reviewActionEnum = pgEnum("review_action", ["approved", "rejected", "needs_info"]);
+
+export const forms = pgTable("forms", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdBy: text("created_by").notNull(),
+  status: formStatusEnum("status").default("draft"),
+  settings: jsonb("settings").notNull().default({ 
+    allowExternal: false,
+    requireLogin: true,
+    allowMultiple: false,
+    autoFillProfile: true,
+    quotaPerUser: 1,
+    quotaPerForm: 1000,
+    collegeDomainOnly: true,
+  }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const formFields = pgTable("form_fields", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  formId: text("form_id").notNull(),
+  type: formFieldTypeEnum("type").notNull(),
+  label: text("label").notNull(),
+  required: boolean("required").default(false),
+  options: jsonb("options"), 
+  autoFillKey: text("auto_fill_key"), 
+  order: integer("order").notNull(),
+});
+
+export const formResponses = pgTable("form_responses", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  formId: text("form_id").notNull(),
+  userId: text("user_id"),
+  answers: jsonb("answers").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const certTemplates = pgTable("cert_templates", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  eventId: text("event_id"),
+  backgroundUrl: text("background_url"),
+  fields: jsonb("fields").notNull(),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  version: integer("version").default(1),
+});
+
+export const certificatesV2 = pgTable("certificates_v2", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  templateId: text("template_id").notNull(),
+  userId: text("user_id").notNull(),
+  eventId: text("event_id"),
+  data: jsonb("data").notNull(),
+  pdfUrl: text("pdf_url"),
+  verifyId: text("verify_id").notNull().unique(),
+  status: certStatusEnum("status").default("valid"),
+  revokedReason: text("revoked_reason"),
+  issuedAt: timestamp("issued_at").defaultNow(),
+  issuedBy: text("issued_by").notNull(),
+});
+
+export const applicationReviews = pgTable("application_reviews", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  applicationId: text("application_id").notNull(),
+  reviewerId: text("reviewer_id").notNull(),
+  action: reviewActionEnum("action").notNull(),
+  reasonCode: text("reason_code"),
+  reasonNote: text("reason_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insights = pgTable("insights", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  category: text("category").notNull(), // e.g., 'growth', 'engagement', 'finance'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  metricValue: text("metric_value"),
+  metricTrend: text("metric_trend"), // e.g., '+12%', '-5%'
+  isActionable: boolean("is_actionable").default(false),
+  actionLink: text("action_link"),
+  generatedAt: timestamp("generated_at").defaultNow(),
+});

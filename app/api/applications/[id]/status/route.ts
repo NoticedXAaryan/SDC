@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { applications, user } from "@/lib/db/schema";
+import { applications, user, applicationReviews } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/dal/auth";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -9,13 +9,19 @@ import { withApiHandler } from "@/lib/api-wrapper";
 const statusSchema = z.object({
   status: z.enum(["draft", "applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"]),
   domain: z.string().optional(),
+  reasonCode: z.string().optional(),
+  reasonNote: z.string().optional()
 });
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const resolvedParams = await params;
-    await requireAdmin();
+    const session = await requireAdmin();
     const body = await req.json();
-    const { status, domain } = statusSchema.parse(body);
+    const { status, domain, reasonCode, reasonNote } = statusSchema.parse(body);
+
+    if (status === "rejected" && !reasonCode) {
+      return NextResponse.json({ error: "A reason code is required when rejecting an application." }, { status: 400 });
+    }
 
     const [app] = await db.select().from(applications).where(eq(applications.id, resolvedParams.id));
     if (!app) {
@@ -27,13 +33,22 @@ export const PATCH = withApiHandler(async (req: Request, { params }: { params: P
       .where(eq(applications.id, resolvedParams.id))
       .returning();
 
+    // Log the review
+    if (status === "rejected" || status === "accepted") {
+      await db.insert(applicationReviews).values({
+        applicationId: app.id,
+        reviewerId: session.user.id,
+        action: status === "rejected" ? "rejected" : "approved",
+        reasonCode: reasonCode || null,
+        reasonNote: reasonNote || null,
+      });
+    }
+
     // If accepted, update the user role to member and allot domain
     if (status === "accepted") {
       await db.update(user)
         .set({ role: "member" })
         .where(eq(user.id, app.userId));
-        
-      // Future: add to member table with domain allocation
     }
 
     return NextResponse.json(updated);

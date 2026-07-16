@@ -30,7 +30,11 @@ if (!parsed.success) {
   );
 }
 
-const { status } = parsed.data;
+const { status, reason } = parsed.data;
+
+if (status === "rejected" && !reason) {
+  return NextResponse.json({ error: "A reason is required when rejecting an expense." }, { status: 400 });
+}
 
 const { canTransition } = await import("@/lib/dal/auth");
 if (!canTransition(session.user.role, "expense", expense.status || "pending", status)) {
@@ -53,7 +57,7 @@ await logAuditEvent({
   action: status === "approved" ? "expense_approve" : "expense_reject",
   entity: "expense",
   entityId: id,
-  details: `Expense ${id} marked as ${status}`,
+  details: `Expense ${id} marked as ${status}${reason ? `. Reason: ${reason}` : ''}`,
 });
 
 return NextResponse.json({ success: true, status });
