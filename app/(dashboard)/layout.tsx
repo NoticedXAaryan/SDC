@@ -7,6 +7,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { CommandMenu } from "@/components/app/command-menu";
+import { DynamicBreadcrumbs } from "@/components/app/breadcrumbs";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -55,14 +57,11 @@ export default async function DashboardLayout({
           <SidebarTrigger className="md:hidden" />
           
           <div className="flex-1 flex items-center gap-4">
-            {/* Breadcrumb would go here auto from route */}
+            <DynamicBreadcrumbs />
           </div>
 
           <div className="flex-1 flex justify-center">
-            <Button variant="outline" className="w-full max-w-sm justify-start text-muted-foreground">
-              <Search className="mr-2 h-4 w-4" />
-              <span>Search (Cmd+K)</span>
-            </Button>
+            <CommandMenu />
           </div>
 
           <div className="ml-auto flex items-center space-x-4">

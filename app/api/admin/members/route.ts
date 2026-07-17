@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user } from "@/lib/db/schema";
+import { user, session as sessionTable } from "@/lib/db/schema";
 import { eq, ilike, or, sql, desc, asc } from "drizzle-orm";
 import { memberSearchSchema, roleChangeSchema } from "@/lib/validators/member";
 import { logAuditEvent } from "@/lib/services/audit";
@@ -166,6 +166,9 @@ const previousRole = targetUser.role;
 await db.update(user)
   .set({ role: newRole, updatedAt: new Date() })
   .where(eq(user.id, userId));
+
+// Revoke active sessions to force re-login with new permissions (DFD 7)
+await db.delete(sessionTable).where(eq(sessionTable.userId, userId));
 
 // Audit log
 await logAuditEvent({

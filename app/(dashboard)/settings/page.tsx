@@ -234,6 +234,84 @@ export default function SettingsPage() {
           </Button>
         </CardFooter>
       </Card>
+      <ActiveSessionsCard />
     </div>
+  );
+}
+
+function ActiveSessionsCard() {
+  const [activeSessions, setActiveSessions] = useState<any[] | null>(null);
+  const [isPending, setIsPending] = useState(true);
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const [revokingAll, setRevokingAll] = useState(false);
+
+  useEffect(() => {
+    authClient.listSessions().then(({ data }) => {
+      setActiveSessions(data || []);
+      setIsPending(false);
+    }).catch(() => setIsPending(false));
+  }, []);
+
+  const handleRevoke = async (token: string) => {
+    setRevoking(token);
+    try {
+      await authClient.revokeSession({ token });
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  const handleRevokeAllOther = async () => {
+    setRevokingAll(true);
+    try {
+      await authClient.revokeOtherSessions();
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRevokingAll(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Active Sessions</CardTitle>
+          <CardDescription>Manage your active devices and sessions.</CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleRevokeAllOther}
+          disabled={revokingAll || !activeSessions || activeSessions.length <= 1}
+        >
+          {revokingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+          Logout other devices
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isPending ? (
+          <div className="flex items-center"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading sessions...</div>
+        ) : (
+          <div className="space-y-4">
+            {activeSessions?.map((s: any) => (
+              <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <p className="font-medium">{s.userAgent || "Unknown Device"}</p>
+                  <p className="text-sm text-muted-foreground">IP: {s.ipAddress || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Started: {new Date(s.createdAt).toLocaleString()}</p>
+                </div>
+                <Button variant="destructive" size="sm" disabled={revoking === s.token} onClick={() => handleRevoke(s.token)}>
+                  {revoking === s.token ? "Revoking..." : "Revoke"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

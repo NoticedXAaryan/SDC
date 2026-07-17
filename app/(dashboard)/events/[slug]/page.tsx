@@ -139,7 +139,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
             
             {!isRegistered ? (
               canRegister ? (
-                <RegisterButton eventId={event.id} />
+                <RegisterButton 
+                  eventId={event.id} 
+                  forms={event.forms as any} 
+                  isWaitlist={event.capacity ? registeredCount >= event.capacity : false} 
+                />
               ) : (
                 <div className="bg-muted p-3 rounded-lg text-sm text-center text-muted-foreground border">
                   Registration Closed

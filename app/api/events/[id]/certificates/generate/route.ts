@@ -6,9 +6,9 @@ import { eq, and } from "drizzle-orm";
 import { certificateQueue } from "@/lib/queues/certificates";
 import { withApiHandler } from "@/lib/api-wrapper";
 
-export const POST = withApiHandler(async (req: Request, { params }: { params: { id: string } }) => {
+export const POST = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const session = await requireAdmin();
-    const { id } = params;
+    const { id } = await params;
     
     // Find event's template
     const templateData = await db.select().from(certTemplates).where(eq(certTemplates.eventId, id)).limit(1);

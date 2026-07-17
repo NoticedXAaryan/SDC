@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link";
 import { Users, Calendar, ClipboardList, CheckSquare, Activity, Plus, FileText, Settings, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function LeadDashboard({ user, managementStats, upcomingEvents }: any) {
   return (
@@ -110,33 +111,69 @@ export function LeadDashboard({ user, managementStats, upcomingEvents }: any) {
         </div>
 
         {/* 3. Quick Actions */}
-        <Card className="h-max">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 flex flex-col">
-            <Button variant="outline" className="justify-start h-auto py-3" asChild>
-              <Link href="/manage/events/new">
-                <Plus className="mr-2 h-4 w-4" /> Create Event
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-3" asChild>
-              <Link href="/manage/forms">
-                <FileText className="mr-2 h-4 w-4" /> Manage Forms
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-3" asChild>
-              <Link href="/manage/recruitment">
-                <Users className="mr-2 h-4 w-4" /> Recruitment
-              </Link>
-            </Button>
-            <Button variant="outline" className="justify-start h-auto py-3" asChild>
-              <Link href="/manage/settings">
-                <Settings className="mr-2 h-4 w-4" /> Domain Settings
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card className="h-max">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 flex flex-col">
+              <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                <Link href="/manage/events/new">
+                  <Plus className="mr-2 h-4 w-4" /> Create Event
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                <Link href="/manage/forms">
+                  <FileText className="mr-2 h-4 w-4" /> Manage Forms
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                <Link href="/manage/recruitment">
+                  <Users className="mr-2 h-4 w-4" /> Recruitment
+                </Link>
+              </Button>
+              <Button variant="outline" className="justify-start h-auto py-3" asChild>
+                <Link href="/manage/settings">
+                  <Settings className="mr-2 h-4 w-4" /> Domain Settings
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Upcoming Events (Next 7 Days)</CardTitle>
+              <Link href="/events" className="text-sm text-primary hover:underline font-medium">View all</Link>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {upcomingEvents.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-4">No events in the next 7 days.</div>
+              ) : (
+                upcomingEvents.map((event: any) => (
+                  <div key={event.id} className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-sm">{event.title}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.startsAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{event.type}</Badge>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" className="w-full text-xs h-7" asChild>
+                        <Link href={`/events/${event.slug}/manage`}>Manage</Link>
+                      </Button>
+                      <Button size="sm" className="w-full text-xs h-7" asChild>
+                        <Link href={`/events/${event.slug}/manage?tab=scanner`}>Open scanner</Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

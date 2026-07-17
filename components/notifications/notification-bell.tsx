@@ -20,13 +20,6 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-    // Poll every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   async function fetchNotifications() {
     try {
       const res = await fetch("/api/notifications");
@@ -38,6 +31,13 @@ export function NotificationBell() {
       console.error("Failed to fetch notifications");
     }
   }
+
+  useEffect(() => {
+    fetchNotifications();
+    // Poll every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function markAsRead(ids: string[]) {
     try {

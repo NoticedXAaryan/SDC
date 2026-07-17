@@ -21,6 +21,8 @@ if (!rl.success) {
 
 const session = await requireSession();
 const { id: eventId } = await params;
+const body = await req.json().catch(() => ({}));
+const formResponses = body.formResponses || null;
 
 // 1. Transaction to lock event and ensure capacity checks are atomic
 const result = await db.transaction(async (tx) => {
@@ -78,7 +80,7 @@ const result = await db.transaction(async (tx) => {
 
   if (existingReg) {
     await tx.update(registrations)
-      .set({ status: regStatus, passCode })
+      .set({ status: regStatus, passCode, formResponses })
       .where(eq(registrations.id, regId));
   } else {
     // Unique constraint on (eventId, userId) will also prevent duplicates here
@@ -88,6 +90,7 @@ const result = await db.transaction(async (tx) => {
       userId: session.user.id,
       status: regStatus,
       passCode,
+      formResponses,
     });
   }
 

@@ -12,16 +12,16 @@ export default function ManageFormsPage() {
   const [forms, setForms] = useState<any[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchForms();
-  }, []);
-
   const fetchForms = async () => {
     const res = await fetch("/api/forms");
     if (res.ok) {
       setForms(await res.json());
     }
   };
+
+  useEffect(() => {
+    fetchForms();
+  }, []);
 
   const createForm = async () => {
     const res = await fetch("/api/forms", {

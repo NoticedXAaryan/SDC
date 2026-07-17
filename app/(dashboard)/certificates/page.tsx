@@ -5,6 +5,7 @@ import { eq, desc } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink, Award } from "lucide-react";
+import { EmptyState } from "@/components/app/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -77,12 +78,12 @@ export default async function UserCertificatesPage() {
         ))}
 
         {userCerts.length === 0 && (
-          <div className="col-span-full py-16 text-center border-2 border-dashed rounded-xl bg-muted/20">
-            <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium text-foreground">No certificates yet</h3>
-            <p className="text-muted-foreground max-w-sm mx-auto mt-2">
-              Attend events and complete requirements to earn certificates. They will appear here once issued.
-            </p>
+          <div className="col-span-full">
+            <EmptyState
+              icon={Award}
+              title="No certificates yet"
+              description="Attend events and complete requirements to earn certificates. They will appear here once issued."
+            />
           </div>
         )}
       </div>

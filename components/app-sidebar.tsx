@@ -9,212 +9,97 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { 
   Home, Calendar, Briefcase, Package, 
   Settings, Users, FileText, QrCode, 
-  CreditCard, LayoutDashboard, Inbox, ShieldCheck
+  CreditCard, Inbox, ShieldCheck,
+  Award, MessageSquare, Target, Activity, CheckSquare
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export async function AppSidebar() {
   const session = await requireSession();
-  const role = session.user.role || "member";
+  const role = (session.user.role as string) || "member";
   
-  const isMember = role === "member" || role === "user";
-  const isLead = role === "lead" || role === "co_lead";
-  const isAdmin = role === "admin" || role === "faculty_coordinator" || role === "owner";
+  const isAdmin = ["admin", "faculty_coordinator", "owner"].includes(role);
+  const isLead = isAdmin || ["lead", "co_lead", "event_lead", "content_lead", "marketing_lead", "tech_lead", "finance_lead", "volunteer_lead", "vice_lead"].includes(role);
+  const isMember = true;
+
+  const navGroups = [
+    {
+      label: "My club",
+      visible: isMember,
+      items: [
+        { title: "Home", href: "/dashboard", icon: Home },
+        { title: "Events", href: "/events", icon: Calendar },
+        { title: "My registrations", href: "/events/my-registrations", icon: CheckSquare },
+        { title: "My pass", href: "/passes/me", icon: QrCode },
+        { title: "Certificates", href: "/certificates", icon: Award },
+        { title: "Achievements", href: "/achievements", icon: Target },
+        { title: "Feedback", href: "/forms/feedback", icon: MessageSquare },
+      ]
+    },
+    {
+      label: "Operations",
+      visible: isLead,
+      items: [
+        { title: "Work queue", href: "/manage/queue", icon: Inbox },
+        { title: "Events", href: "/manage/events", icon: Calendar },
+        { title: "Scanner", href: "/scanner", icon: QrCode },
+        { title: "Communications", href: "/communications", icon: MessageSquare },
+        { title: "Forms", href: "/manage/forms", icon: FileText },
+        { title: "Recruitment", href: "/manage/recruitment", icon: Briefcase },
+      ]
+    },
+    {
+      label: "Resources",
+      visible: isLead,
+      items: [
+        { title: "Projects", href: "/manage/projects", icon: Target },
+        { title: "Inventory", href: "/manage/inventory", icon: Package },
+        { title: "Finance", href: "/manage/finance", icon: CreditCard },
+        { title: "Content calendar", href: "/manage/content", icon: Calendar },
+      ]
+    },
+    {
+      label: "Administration",
+      visible: isAdmin,
+      items: [
+        { title: "Approvals", href: "/admin/approvals", icon: CheckSquare },
+        { title: "Members", href: "/admin/members", icon: Users },
+        { title: "Certificate templates", href: "/admin/certificates/templates", icon: ShieldCheck },
+        { title: "Audit log", href: "/admin/audit", icon: Activity },
+        { title: "Settings", href: "/admin/settings", icon: Settings },
+        { title: "System health", href: "/admin/health", icon: Activity },
+      ]
+    }
+  ];
 
   return (
     <Sidebar>
       <SidebarContent>
-        {isMember && (
-          <SidebarGroup>
-            <SidebarGroupLabel>General</SidebarGroupLabel>
+        {navGroups.filter(g => g.visible).map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/dashboard"><Home className="mr-2 h-4 w-4" /> Home</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/events"><Calendar className="mr-2 h-4 w-4" /> Events</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/recruitment"><Briefcase className="mr-2 h-4 w-4" /> Recruitment</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/inventory/my"><Package className="mr-2 h-4 w-4" /> My Stuff</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <Link href={item.href}>
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
-
-        {isLead && (
-          <>
-            <SidebarGroup>
-              <SidebarGroupLabel>Manage</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/manage/events"><Calendar className="mr-2 h-4 w-4" /> Manage Events</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/manage/recruitment"><Briefcase className="mr-2 h-4 w-4" /> Recruitment</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/manage/forms"><FileText className="mr-2 h-4 w-4" /> Forms</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/scan"><QrCode className="mr-2 h-4 w-4" /> QR Scan</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>Resources</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/manage/inventory"><Package className="mr-2 h-4 w-4" /> Inventory</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/manage/finance"><CreditCard className="mr-2 h-4 w-4" /> Finance</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>My Stuff</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/inventory/my"><Package className="mr-2 h-4 w-4" /> My Stuff</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
-        {isAdmin && (
-          <>
-            <SidebarGroup>
-              <SidebarGroupLabel>Overview</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" /> Overview</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/approvals"><Inbox className="mr-2 h-4 w-4" /> Approvals Inbox</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>Management</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/events"><Calendar className="mr-2 h-4 w-4" /> Events</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/recruitment"><Briefcase className="mr-2 h-4 w-4" /> Recruitment</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/forms"><FileText className="mr-2 h-4 w-4" /> Forms</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/certificates"><ShieldCheck className="mr-2 h-4 w-4" /> Certificates</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>Resources</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/inventory"><Package className="mr-2 h-4 w-4" /> Inventory</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/finance"><CreditCard className="mr-2 h-4 w-4" /> Finance</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/members"><Users className="mr-2 h-4 w-4" /> Members</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            <SidebarGroup>
-              <SidebarGroupLabel>System</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" /> Settings</Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
+        ))}
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        {isMember && (
-          <Button variant="outline" className="w-full justify-start" asChild>
-            <Link href="/forms/feedback">Feedback</Link>
-          </Button>
-        )}
-      </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

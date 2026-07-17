@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique, check as drizzleCheck } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique, check as drizzleCheck, foreignKey } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -139,7 +139,24 @@ export const events = pgTable("events", {
   // AI fields
   aiDraftMessage: text("aiDraftMessage"),
   aiDraftEmail: text("aiDraftEmail"),
-}, (table) => [index("events_status_idx").on(table.status), index("events_starts_at_idx").on(table.startsAt), index("events_created_by_idx").on(table.createdBy)]);
+    
+    // Phase 2 DFD Fields
+    parentId: text("parentId"), // Self reference for sub-events
+    checklist: jsonb("checklist"), // array of tasks
+    staff: jsonb("staff"), // array of assigned members
+    forms: jsonb("forms"), // array of form IDs attached
+    certificateTemplateId: text("certificateTemplateId"),
+    budgetId: text("budgetId"),
+  }, (table) => [
+    index("events_status_idx").on(table.status), 
+    index("events_starts_at_idx").on(table.startsAt), 
+    index("events_created_by_idx").on(table.createdBy),
+    foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.id],
+      name: "events_parent_id_fk"
+    })
+  ]);
 
 export const registrations = pgTable("registrations", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -155,6 +172,7 @@ export const registrations = pgTable("registrations", {
   attendanceMethod: text("attendanceMethod").default("qr"), // qr, qr+face, manual
   faceMatchDistance: real("faceMatchDistance"),
   needsFaceEnrollment: boolean("needsFaceEnrollment").default(false),
+  formResponses: jsonb("formResponses"), // DFD 34: Custom form answers
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (t) => [
   index("registrations_event_id_idx").on(t.eventId),

@@ -106,8 +106,8 @@ export const auth = betterAuth({
                         data: {
                             ...user,
                             email,
-                            role: isAdmin ? "owner" : (isUni ? "applicant" : "outsider")
-                            // Note: collegeDomain can be added here if schema is updated
+                            role: isAdmin ? "owner" : (isUni ? "member" : "user"),
+                            domain: domain
                         }
                     };
                 }
@@ -116,8 +116,8 @@ export const auth = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
-        requireEmailVerification: true,
-        autoSignIn: false,
+        requireEmailVerification: false, // UI handles verification banner
+        autoSignIn: true,
         minPasswordLength: 8,
         sendResetPassword: async ({ user, url }, request) => {
             await Mailer.sendPasswordReset(user.email, url);

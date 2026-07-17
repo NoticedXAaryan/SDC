@@ -24,7 +24,7 @@ export function StudentDashboard({ user, myRegistrations, myApplication }: any) 
                   <p className="text-xs text-muted-foreground">Upcoming Event</p>
                 </div>
                 <Link href={`/passes/${reg.eventId}`} className="flex items-center gap-2 text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-md hover:bg-primary/20 transition">
-                  <QrCode className="w-4 h-4" /> View Pass
+                  <QrCode className="w-4 h-4" /> Open pass
                 </Link>
               </div>
             ))
