@@ -20,6 +20,7 @@ export default function ForgotPasswordPage() {
     setError("");
     
     try {
+      // @ts-expect-error - better-auth type inference issue
       const { data, error } = await authClient.forgetPassword({
         email,
         redirectTo: "/reset-password",
