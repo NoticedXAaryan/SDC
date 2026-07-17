@@ -59,7 +59,10 @@ export function EventRegistrationsTab({ event }: { event: any }) {
                     <div className="text-sm text-muted-foreground">{reg.user.email}</div>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={reg.status} />
+                    <StatusBadge 
+                      variant={reg.status === "confirmed" ? "success" : reg.status === "cancelled" ? "destructive" : "warning"} 
+                      label={reg.status.charAt(0).toUpperCase() + reg.status.slice(1)} 
+                    />
                   </TableCell>
                   <TableCell>
                     {reg.checkedIn ? (

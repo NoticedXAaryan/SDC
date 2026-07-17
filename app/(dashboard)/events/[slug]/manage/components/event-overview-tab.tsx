@@ -58,13 +58,17 @@ export function EventOverviewTab({ event }: { event: any }) {
           </CardHeader>
           <CardContent>
             <ActivityTimeline 
-              items={[
+              activities={[
                 {
                   id: "1",
-                  title: "Event created",
-                  description: "You created this event",
-                  timestamp: new Date().toISOString(),
-                  type: "system"
+                  actor: {
+                    name: "System",
+                    initials: "SYS",
+                  },
+                  action: "created",
+                  summary: "Event created",
+                  timestamp: new Date(),
+                  details: "You created this event"
                 }
               ]}
             />

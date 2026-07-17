@@ -114,7 +114,7 @@ export function EventScannerTab({ event }: { event: any }) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Check-in Context</label>
-              <Select value={session} onValueChange={setSession}>
+              <Select value={session} onValueChange={(val) => setSession(val || "all")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select session" />
                 </SelectTrigger>

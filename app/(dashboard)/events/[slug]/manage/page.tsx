@@ -42,7 +42,7 @@ export default async function EventManagePage({
     <div className="space-y-6">
       <PageHeader
         title={`Manage: ${event.title}`}
-        description={`${event.status.toUpperCase()} • ${new Date(event.startsAt).toLocaleDateString()}`}
+        description={`${(event.status || "draft").toUpperCase()} • ${new Date(event.startsAt).toLocaleDateString()}`}
         primaryAction={
           <Button asChild variant="outline">
             <Link href={`/events/${event.slug}`}>
