@@ -1,22 +1,5 @@
 services:
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sdc}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sdc_dev_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-sdc_os}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sdc}"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    networks:
-      - default
-      - dokploy-network
-
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-password}"]
@@ -35,9 +18,6 @@ services:
       target: builder
     command: ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
     env_file: [.env]
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - default
       - dokploy-network
@@ -50,6 +30,12 @@ services:
       redis: 
         condition: service_healthy
     env_file: [.env]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sdc-app.rule=Host(`sdc.aaaryan.space`)"
+      - "traefik.http.services.sdc-app.loadbalancer.server.port=3000"
+      - "traefik.http.routers.sdc-app.entrypoints=websecure"
+      - "traefik.http.routers.sdc-app.tls.certresolver=letsencrypt"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 15s
@@ -74,9 +60,6 @@ services:
     networks:
       - default
       - dokploy-network
-
-volumes:
-  pgdata:
 
 networks:
   dokploy-network:
