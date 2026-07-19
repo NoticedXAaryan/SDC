@@ -32,16 +32,11 @@ services:
     env_file: [.env]
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sdc-app.rule=Host(`sdc.aaaryan.space`)"
-      - "traefik.http.services.sdc-app.loadbalancer.server.port=3000"
-      - "traefik.http.routers.sdc-app.entrypoints=websecure"
-      - "traefik.http.routers.sdc-app.tls.certresolver=letsencrypt"
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      - "traefik.http.routers.sdc-main-router.rule=Host(`sdc.aaaryan.space`)"
+      - "traefik.http.routers.sdc-main-router.entrypoints=websecure"
+      - "traefik.http.routers.sdc-main-router.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sdc-main-service.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
     networks:
       - default
       - dokploy-network
