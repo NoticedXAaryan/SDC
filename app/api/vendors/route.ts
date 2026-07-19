@@ -18,15 +18,11 @@ const vendorSchema = z.object({
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    const allVendors = await db.select().from(vendors).orderBy(desc(vendors.createdAt));
-    return NextResponse.json(allVendors);
-  } catch (error) {
-    console.error("[Vendors GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+export const GET = withApiHandler(async () => {
+  await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
+  const allVendors = await db.select().from(vendors).orderBy(desc(vendors.createdAt));
+  return NextResponse.json(allVendors);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);

@@ -13,20 +13,11 @@ export const dynamic = "force-dynamic";
  * GET /api/inventory
  * Requires lead, co_lead, finance_lead, admin, or owner.
  */
-export async function GET() {
-  try {
-    await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
-
-    const items = await db.select().from(inventory).orderBy(inventory.name);
-    return NextResponse.json(items);
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Inventory GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+export const GET = withApiHandler(async () => {
+  await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
+  const items = await db.select().from(inventory).orderBy(inventory.name);
+  return NextResponse.json(items);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireRole(["finance_lead", "admin", "owner"]);

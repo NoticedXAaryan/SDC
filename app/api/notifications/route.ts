@@ -29,29 +29,29 @@ const markReadSchema = z.object({
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
-const session = await auth.api.getSession({
-  headers: req.headers,
-});
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
 
-if (!session?.user) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
+  if (!session?.user) {
+    throw new AuthorizationError("Unauthorized");
+  }
 
-const body = await req.json();
-const parsed = markReadSchema.parse(body);
+  const body = await req.json();
+  const parsed = markReadSchema.parse(body);
 
-if (parsed.notificationIds.length === 0) {
-  return NextResponse.json({ message: "No notifications to update" });
-}
+  if (parsed.notificationIds.length === 0) {
+    return NextResponse.json({ message: "No notifications to update" });
+  }
 
-await db.update(notifications)
-  .set({ read: true })
-  .where(
-    and(
-      eq(notifications.userId, session.user.id),
-      inArray(notifications.id, parsed.notificationIds)
-    )
-  );
+  await db.update(notifications)
+    .set({ read: true })
+    .where(
+      and(
+        eq(notifications.userId, session.user.id),
+        inArray(notifications.id, parsed.notificationIds)
+      )
+    );
 
-return NextResponse.json({ message: "Notifications marked as read" });
+  return NextResponse.json({ message: "Notifications marked as read" });
 });

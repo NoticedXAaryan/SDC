@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { requireAdmin } from "@/lib/dal/auth";
+import { withApiHandler } from "@/lib/api-wrapper";
 
-export const POST = async (req: Request) => {
+export const POST = withApiHandler(async (req: NextRequest) => {
   await requireAdmin();
   const { reasonCode, context } = await req.json();
 
@@ -21,15 +22,10 @@ export const POST = async (req: Request) => {
     Keep it polite but firm. Do not include placeholders or generic greetings, just the explanation text.
   `;
 
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-4-turbo"),
-      prompt,
-    });
-    
-    return NextResponse.json({ note: text.trim() });
-  } catch (error) {
-    console.error("AI Generation failed:", error);
-    return NextResponse.json({ error: "Failed to generate note" }, { status: 500 });
-  }
-};
+  const { text } = await generateText({
+    model: openai("gpt-4-turbo"),
+    prompt,
+  });
+  
+  return NextResponse.json({ note: text.trim() });
+});

@@ -14,34 +14,26 @@ export const dynamic = "force-dynamic";
  * GET /api/finance/expenses
  * Requires lead, co_lead, finance_lead, admin, or owner.
  */
-export async function GET() {
-  try {
-    await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
+export const GET = withApiHandler(async () => {
+  await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
 
-    const allExpenses = await db.select({
-      id: expenses.id,
-      budgetId: expenses.budgetId,
-      amount: expenses.amount,
-      category: expenses.category,
-      receiptUrl: expenses.receiptUrl,
-      status: expenses.status,
-      createdAt: expenses.createdAt,
-      approvedBy: expenses.approvedBy,
-      approvedByName: user.name,
-    })
-    .from(expenses)
-    .leftJoin(user, eq(expenses.approvedBy, user.id))
-    .orderBy(desc(expenses.createdAt));
+  const allExpenses = await db.select({
+    id: expenses.id,
+    budgetId: expenses.budgetId,
+    amount: expenses.amount,
+    category: expenses.category,
+    receiptUrl: expenses.receiptUrl,
+    status: expenses.status,
+    createdAt: expenses.createdAt,
+    approvedBy: expenses.approvedBy,
+    approvedByName: user.name,
+  })
+  .from(expenses)
+  .leftJoin(user, eq(expenses.approvedBy, user.id))
+  .orderBy(desc(expenses.createdAt));
 
-    return NextResponse.json(allExpenses);
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Expenses GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  return NextResponse.json(allExpenses);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireRole(["co_lead", "lead", "finance_lead", "admin", "owner"]);

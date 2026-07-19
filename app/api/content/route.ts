@@ -18,28 +18,25 @@ const contentSchema = z.object({
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    const items = await db.select({
-      id: contentItems.id,
-      title: contentItems.title,
-      description: contentItems.description,
-      platform: contentItems.platform,
-      status: contentItems.status,
-      scheduledFor: contentItems.scheduledFor,
-      mediaUrls: contentItems.mediaUrls,
-      authorName: user.name,
-    })
-    .from(contentItems)
-    .leftJoin(user, eq(user.id, contentItems.authorId))
-    .orderBy(desc(contentItems.createdAt));
+export const GET = withApiHandler(async () => {
+  await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
-    return NextResponse.json(items);
-  } catch (error) {
-    console.error("[Content GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  const items = await db.select({
+    id: contentItems.id,
+    title: contentItems.title,
+    description: contentItems.description,
+    platform: contentItems.platform,
+    status: contentItems.status,
+    scheduledFor: contentItems.scheduledFor,
+    mediaUrls: contentItems.mediaUrls,
+    authorName: user.name,
+  })
+  .from(contentItems)
+  .leftJoin(user, eq(user.id, contentItems.authorId))
+  .orderBy(desc(contentItems.createdAt));
+
+  return NextResponse.json(items);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);

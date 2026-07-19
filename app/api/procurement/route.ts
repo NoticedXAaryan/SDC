@@ -23,29 +23,26 @@ const procurementReviewSchema = z.object({
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    const items = await db.select({
-      id: procurementRequests.id,
-      title: procurementRequests.title,
-      description: procurementRequests.description,
-      status: procurementRequests.status,
-      estimatedCost: procurementRequests.estimatedCost,
-      quotesUrl: procurementRequests.quotesUrl,
-      requesterName: user.name,
-      vendorName: vendors.name,
-    })
-    .from(procurementRequests)
-    .innerJoin(user, eq(user.id, procurementRequests.requestedBy))
-    .leftJoin(vendors, eq(vendors.id, procurementRequests.selectedVendorId))
-    .orderBy(desc(procurementRequests.createdAt));
+export const GET = withApiHandler(async () => {
+  await requireRole(["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"]);
 
-    return NextResponse.json(items);
-  } catch (error) {
-    console.error("[Procurement GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  const items = await db.select({
+    id: procurementRequests.id,
+    title: procurementRequests.title,
+    description: procurementRequests.description,
+    status: procurementRequests.status,
+    estimatedCost: procurementRequests.estimatedCost,
+    quotesUrl: procurementRequests.quotesUrl,
+    requesterName: user.name,
+    vendorName: vendors.name,
+  })
+  .from(procurementRequests)
+  .innerJoin(user, eq(user.id, procurementRequests.requestedBy))
+  .leftJoin(vendors, eq(vendors.id, procurementRequests.selectedVendorId))
+  .orderBy(desc(procurementRequests.createdAt));
+
+  return NextResponse.json(items);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const sessionAuth = await requireRole(["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"]);

@@ -13,31 +13,23 @@ export const dynamic = "force-dynamic";
  * GET /api/finance/incomes
  * Requires finance_lead, admin, or owner.
  */
-export async function GET() {
-  try {
-    await requireRole(["finance_lead", "admin", "owner"]);
+export const GET = withApiHandler(async () => {
+  await requireRole(["finance_lead", "admin", "owner"]);
 
-    const allIncomes = await db.select({
-      id: incomes.id,
-      eventId: incomes.eventId,
-      amount: incomes.amount,
-      source: incomes.source,
-      createdAt: incomes.createdAt,
-      eventTitle: events.title,
-    })
-    .from(incomes)
-    .leftJoin(events, eq(incomes.eventId, events.id))
-    .orderBy(desc(incomes.createdAt));
+  const allIncomes = await db.select({
+    id: incomes.id,
+    eventId: incomes.eventId,
+    amount: incomes.amount,
+    source: incomes.source,
+    createdAt: incomes.createdAt,
+    eventTitle: events.title,
+  })
+  .from(incomes)
+  .leftJoin(events, eq(incomes.eventId, events.id))
+  .orderBy(desc(incomes.createdAt));
 
-    return NextResponse.json(allIncomes);
-  } catch (error: any) {
-    if (error.name === "AuthorizationError") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    console.error("[Incomes GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+  return NextResponse.json(allIncomes);
+}, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireRole(["finance_lead", "admin", "owner"]);

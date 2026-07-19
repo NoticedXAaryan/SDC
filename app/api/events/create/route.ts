@@ -1,8 +1,9 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { withApiHandler, AuthorizationError } from "@/lib/api-wrapper";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -20,39 +21,34 @@ const createEventSchema = z.object({
   certificateTemplateId: z.string().optional(),
 });
 
-export async function POST(req: Request) {
-  try {
-    const session = await requireSession();
-    const userRole = session.user.role || "member";
-    
-    if (!isManagementRole(userRole)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const validated = createEventSchema.parse(body);
-
-    const inserted = await db.insert(events).values({
-      title: validated.title,
-      slug: validated.slug,
-      type: validated.type as any,
-      description: validated.description,
-      coverImage: validated.coverImage,
-      startsAt: new Date(validated.startsAt),
-      endsAt: new Date(validated.endsAt),
-      location: validated.location,
-      capacity: validated.capacity,
-      isPaid: validated.isPaid,
-      price: validated.price ? validated.price.toString() : "0",
-      status: userRole === "admin" ? "published" : "draft", // DFD 27: Lead requires approval
-      createdBy: session.user.id,
-      forms: validated.forms,
-      certificateTemplateId: validated.certificateTemplateId || null,
-    }).returning();
-
-    return NextResponse.json({ event: inserted[0] });
-  } catch (error: any) {
-    console.error("Create event error:", error);
-    return NextResponse.json({ error: error.message }, { status: 400 });
+export const POST = withApiHandler(async (req: NextRequest) => {
+  const session = await requireSession();
+  const userRole = session.user.role || "member";
+  
+  if (!isManagementRole(userRole)) {
+    throw new AuthorizationError("Unauthorized");
   }
-}
+
+  const body = await req.json();
+  const validated = createEventSchema.parse(body);
+
+  const inserted = await db.insert(events).values({
+    title: validated.title,
+    slug: validated.slug,
+    type: validated.type as any,
+    description: validated.description,
+    coverImage: validated.coverImage,
+    startsAt: new Date(validated.startsAt),
+    endsAt: new Date(validated.endsAt),
+    location: validated.location,
+    capacity: validated.capacity,
+    isPaid: validated.isPaid,
+    price: validated.price ? validated.price.toString() : "0",
+    status: userRole === "admin" ? "published" : "draft", // DFD 27: Lead requires approval
+    createdBy: session.user.id,
+    forms: validated.forms,
+    certificateTemplateId: validated.certificateTemplateId || null,
+  }).returning();
+
+  return NextResponse.json({ event: inserted[0] });
+});

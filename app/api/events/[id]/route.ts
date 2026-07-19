@@ -12,31 +12,26 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/events/[id] — Get single event by ID
  */
-export async function GET(
+export const GET = withApiHandler(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await requireSession();
-    const { id } = await params;
+) => {
+  const session = await requireSession();
+  const { id } = await params;
 
-    const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);
+  const [event] = await db.select().from(events).where(eq(events.id, id)).limit(1);
 
-    if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    const isManagement = isManagementRole(session.user.role as string);
-    if (event.status !== "published" && !isManagement) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    return NextResponse.json(event);
-  } catch (error: any) {
-    console.error("[Event GET]:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  if (!event) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
-}
+
+  const isManagement = isManagementRole(session.user.role as string);
+  if (event.status !== "published" && !isManagement) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return NextResponse.json(event);
+}, { requireRateLimit: false });
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
 const session = await requireRole(["lead", "co_lead", "admin", "owner"]);
