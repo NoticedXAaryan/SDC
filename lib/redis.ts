@@ -36,7 +36,7 @@ export function getRedisClient(): Redis {
 }
 
 export const getWorkerConfig = () => ({
-  connection: getRedisClient(),
+  connection: getRedisClient() as any,
   concurrency: 5,
   removeOnComplete: { age: 3600, count: 100 },
   removeOnFail: { age: 86400, count: 1000 },
