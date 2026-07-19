@@ -43,7 +43,7 @@ export function getRedisClient(): Redis {
   });
 
   _sharedClient.on("connect", () => logger.info("Redis connected"));
-  _sharedClient.on("error", (e) => {
+  _sharedClient.on("error", (e: Error) => {
     // Log but don't crash
     logger.warn({ err: e.message }, "Redis connection error (suppressed to prevent crash)");
   });
