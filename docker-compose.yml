@@ -9,7 +9,6 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - default
       - dokploy-network
 
   migrator:
@@ -19,7 +18,6 @@ services:
     command: ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
     env_file: [.env]
     networks:
-      - default
       - dokploy-network
 
   app:
@@ -38,7 +36,6 @@ services:
       - "traefik.http.services.sdc-main-service.loadbalancer.server.port=3000"
       - "traefik.docker.network=dokploy-network"
     networks:
-      - default
       - dokploy-network
 
   worker:
@@ -53,7 +50,6 @@ services:
     env_file: [.env]
     restart: unless-stopped
     networks:
-      - default
       - dokploy-network
 
 networks:
