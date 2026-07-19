@@ -29,9 +29,9 @@ await db.update(certificateTemplates)
 return NextResponse.json({ success: true });
 });
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const { id } = await params;
-  const session = await requireSession();
+  await requireSession();
   
   const templateRows = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, id)).limit(1);
   const template = templateRows[0];
@@ -41,4 +41,4 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   return NextResponse.json({ success: true, template });
-}
+}, { requireRateLimit: false });
