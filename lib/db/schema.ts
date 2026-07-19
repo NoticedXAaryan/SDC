@@ -546,12 +546,146 @@ export const inventoryLogsRelations = relations(inventoryLogs, ({ one }) => ({
 export const eventsRelations = relations(events, ({ many }) => ({
   sessions: many(eventSessions),
   incomes: many(incomes),
+  registrations: many(registrations),
+  budgets: many(budgets),
+  tasks: many(tasks),
+  certificates: many(certificates),
 }));
 
-export const eventSessionsRelations = relations(eventSessions, ({ one }) => ({
+export const eventSessionsRelations = relations(eventSessions, ({ one, many }) => ({
   event: one(events, {
     fields: [eventSessions.eventId],
     references: [events.id],
+  }),
+  attendance: many(sessionAttendance),
+}));
+
+// --- Missing relations added below ---
+
+export const userRelations = relations(user, ({ many }) => ({
+  registrations: many(registrations),
+  applications: many(applications),
+  notifications: many(notifications),
+  pointLogs: many(pointLogs),
+  achievementSubmissions: many(achievementSubmissions),
+  certificates: many(certificates),
+  certificatesV2: many(certificatesV2),
+  auditLogs: many(auditLogs),
+}));
+
+export const registrationsRelations = relations(registrations, ({ one }) => ({
+  event: one(events, {
+    fields: [registrations.eventId],
+    references: [events.id],
+  }),
+  user: one(user, {
+    fields: [registrations.userId],
+    references: [user.id],
+  }),
+}));
+
+export const sessionAttendanceRelations = relations(sessionAttendance, ({ one }) => ({
+  session: one(eventSessions, {
+    fields: [sessionAttendance.sessionId],
+    references: [eventSessions.id],
+  }),
+  user: one(user, {
+    fields: [sessionAttendance.userId],
+    references: [user.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(user, {
+    fields: [notifications.userId],
+    references: [user.id],
+  }),
+}));
+
+export const certificatesRelations = relations(certificates, ({ one }) => ({
+  user: one(user, {
+    fields: [certificates.userId],
+    references: [user.id],
+  }),
+  event: one(events, {
+    fields: [certificates.eventId],
+    references: [events.id],
+  }),
+  template: one(certificateTemplates, {
+    fields: [certificates.templateId],
+    references: [certificateTemplates.id],
+  }),
+}));
+
+export const interviewsRelations = relations(interviews, ({ one }) => ({
+  application: one(applications, {
+    fields: [interviews.applicantId],
+    references: [applications.id],
+  }),
+  interviewer: one(user, {
+    fields: [interviews.interviewerId],
+    references: [user.id],
+  }),
+}));
+
+export const pointLogsRelations = relations(pointLogs, ({ one }) => ({
+  user: one(user, {
+    fields: [pointLogs.userId],
+    references: [user.id],
+  }),
+}));
+
+export const achievementSubmissionsRelations = relations(achievementSubmissions, ({ one }) => ({
+  user: one(user, {
+    fields: [achievementSubmissions.userId],
+    references: [user.id],
+  }),
+  reviewer: one(user, {
+    fields: [achievementSubmissions.reviewedBy],
+    references: [user.id],
+  }),
+}));
+
+export const contentItemsRelations = relations(contentItems, ({ one }) => ({
+  author: one(user, {
+    fields: [contentItems.authorId],
+    references: [user.id],
+  }),
+}));
+
+export const procurementRequestsRelations = relations(procurementRequests, ({ one }) => ({
+  requestedByUser: one(user, {
+    fields: [procurementRequests.requestedBy],
+    references: [user.id],
+  }),
+  event: one(events, {
+    fields: [procurementRequests.eventId],
+    references: [events.id],
+  }),
+  vendor: one(vendors, {
+    fields: [procurementRequests.selectedVendorId],
+    references: [vendors.id],
+  }),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  actor: one(user, {
+    fields: [auditLogs.actorId],
+    references: [user.id],
+  }),
+}));
+
+export const researchPapersRelations = relations(researchPapers, ({ one }) => ({
+  user: one(user, {
+    fields: [researchPapers.userId],
+    references: [user.id],
+  }),
+}));
+
+export const competitionsRelations = relations(competitions, ({ one }) => ({
+  user: one(user, {
+    fields: [competitions.userId],
+    references: [user.id],
   }),
 }));
 
@@ -643,3 +777,45 @@ export const insights = pgTable("insights", {
   actionLink: text("action_link"),
   generatedAt: timestamp("generated_at").defaultNow(),
 });
+
+// Relations for tables defined in the v2 block above
+export const certificatesV2Relations = relations(certificatesV2, ({ one }) => ({
+  user: one(user, {
+    fields: [certificatesV2.userId],
+    references: [user.id],
+  }),
+}));
+
+export const applicationReviewsRelations = relations(applicationReviews, ({ one }) => ({
+  application: one(applications, {
+    fields: [applicationReviews.applicationId],
+    references: [applications.id],
+  }),
+  reviewer: one(user, {
+    fields: [applicationReviews.reviewerId],
+    references: [user.id],
+  }),
+}));
+
+export const formsRelations = relations(forms, ({ one, many }) => ({
+  fields: many(formFields),
+  responses: many(formResponses),
+}));
+
+export const formFieldsRelations = relations(formFields, ({ one }) => ({
+  form: one(forms, {
+    fields: [formFields.formId],
+    references: [forms.id],
+  }),
+}));
+
+export const formResponsesRelations = relations(formResponses, ({ one }) => ({
+  form: one(forms, {
+    fields: [formResponses.formId],
+    references: [forms.id],
+  }),
+  user: one(user, {
+    fields: [formResponses.userId],
+    references: [user.id],
+  }),
+}));
