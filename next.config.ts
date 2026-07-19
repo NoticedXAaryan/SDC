@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.159.148', 'localhost'],
-  serverExternalPackages: ['clawpdf', '@pdfme/converter', '@pdfme/ui', '@pdfme/common'],
+  serverExternalPackages: ['clawpdf', '@pdfme/converter', '@pdfme/ui', '@pdfme/common', 'ioredis', 'bullmq'],
   output: "standalone",
   webpack: (config, { isServer }) => {
     if (!isServer) {

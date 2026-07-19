@@ -2,9 +2,25 @@ import Redis from "ioredis";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
-let _sharedClient: Redis | null = null;
+let _sharedClient: any = null;
 
 export function getRedisClient(): Redis {
+  // Don't connect during Next.js build
+  if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.SKIP_REDIS === '1') {
+    if (!_sharedClient) {
+      _sharedClient = {
+        ping: async () => 'PONG',
+        get: async () => null,
+        set: async () => 'OK',
+        setex: async () => 'OK',
+        on: () => {},
+        quit: async () => {},
+        isMock: true
+      };
+    }
+    return _sharedClient as any;
+  }
+
   if (_sharedClient) return _sharedClient;
 
   const url = env.REDIS_URL || `redis://${env.REDIS_HOST || "localhost"}:${env.REDIS_PORT || "6379"}`;

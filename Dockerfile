@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -23,9 +23,11 @@ ENV NODE_ENV=production
 # even during static page generation. Real values are injected at runtime
 # via docker-compose.yml environment section.
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV REDIS_URL="redis://localhost:6379"
 ENV BETTER_AUTH_SECRET="build-time-placeholder-secret-not-used-at-runtime"
 ENV BETTER_AUTH_URL="http://localhost:3000"
 ENV PASS_SECRET="build-time-placeholder-secret-not-used-at-runtime"
+ENV SKIP_REDIS="1"
 
 # Build Next.js app
 RUN npm run build

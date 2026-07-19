@@ -23,8 +23,12 @@ export async function GET() {
 
   try {
     const redis = getRedisClient();
-    await redis.ping();
-    redisStatus = "connected";
+    if ((redis as any).isMock) {
+      redisStatus = "mock (build)";
+    } else {
+      await redis.ping();
+      redisStatus = "connected";
+    }
   } catch (error: any) {
     redisStatus = `degraded: ${error.message}`;
   }
