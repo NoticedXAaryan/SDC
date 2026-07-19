@@ -7,6 +7,7 @@ import { emailQueue } from "@/lib/queues/email";
 
 import crypto from "crypto";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { NotificationService } from "@/lib/services/notifications";
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
 const session = await requireLead();
@@ -41,6 +42,24 @@ if (status === "interviewing") {
       html: `<p>Hi ${applicant.name},</p><p>Congratulations! We have reviewed your application and would like to invite you to an interview.</p><p>Please check your student portal for scheduling details.</p>`,
     }, { jobId: crypto.createHash("sha256").update(`interview:${id}`).digest("hex") });
   }
+}
+
+// In-app notification for status changes
+const statusMessages: Record<string, { title: string; message: string }> = {
+  accepted: { title: "Application Accepted! 🎉", message: "Congratulations! Your application to join the club has been accepted." },
+  rejected: { title: "Application Update", message: "We appreciate your interest but were unable to accept your application at this time." },
+  interviewing: { title: "Interview Invitation", message: "You've been invited for an interview! Check your email for details." },
+  ai_graded: { title: "Application Under Review", message: "Your application is being reviewed. We'll notify you soon." },
+};
+
+if (statusMessages[status] && updatedApp?.userId) {
+  void NotificationService.sendInAppNotification({
+    userId: updatedApp.userId,
+    type: "system",
+    title: statusMessages[status].title,
+    message: statusMessages[status].message,
+    link: "/recruitment/apply",
+  });
 }
 
 return NextResponse.json({ success: true, data: updatedApp });

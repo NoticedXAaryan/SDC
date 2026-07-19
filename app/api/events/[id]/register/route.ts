@@ -10,6 +10,7 @@ import crypto from "crypto";
 
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { NotificationService } from "@/lib/services/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +146,17 @@ if (regStatus === "confirmed" && passToken) {
     }
   }, { jobId: crypto.createHash("sha256").update(`event_registration:${regId}`).digest("hex") });
 }
+
+// In-app notification
+void NotificationService.sendInAppNotification({
+  userId: session.user.id,
+  type: "event",
+  title: regStatus === "confirmed" ? "Registration Confirmed" : "Added to Waitlist",
+  message: regStatus === "confirmed"
+    ? `You're registered for "${event.title}". Your QR pass is ready.`
+    : `You've been added to the waitlist for "${event.title}".`,
+  link: `/events/${event.slug}`,
+});
 
 return NextResponse.json({
   success: true,

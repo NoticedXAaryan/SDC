@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { desc, or, eq, and, gt, lt, ilike } from "drizzle-orm";
+import { desc, or, eq, and, gt, lt, ilike, sql, inArray } from "drizzle-orm";
 import { EventFilters } from "@/components/events/event-filters";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { EmptyState } from "@/components/app/empty-state";
 import { Calendar, Plus } from "lucide-react";
 import { ResourceActionMenu } from "@/components/app/resource-action-menu";
+import { RelativeTime } from "@/components/app/relative-time";
 
 export const revalidate = 60; // DFD 15: ISR 60s (applies to parts not using headers)
 
@@ -122,6 +123,21 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
     );
   }
 
+  // Batch-fetch registration counts for all events with capacity
+  const eventIds = allEvents.map(e => e.id);
+  const regCounts = eventIds.length > 0 ? await db.select({
+    eventId: registrations.eventId,
+    count: sql<number>`count(*)`,
+  })
+    .from(registrations)
+    .where(and(
+      inArray(registrations.eventId, eventIds),
+      eq(registrations.status, "confirmed")
+    ))
+    .groupBy(registrations.eventId) : [];
+
+  const countMap = new Map(regCounts.map(r => [r.eventId, Number(r.count)]));
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {allEvents.map((event) => {
@@ -130,7 +146,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
         let capacityPercentage = 0;
         
         if (event.capacity && event.capacity > 0) {
-           const registered = (event as any).registeredCount || 0;
+           const registered = countMap.get(event.id) || 0;
            capacityPercentage = Math.min(100, Math.round((registered / event.capacity) * 100));
            if (capacityPercentage > 90) capacityColor = "bg-red-500";
            else if (capacityPercentage > 75) capacityColor = "bg-yellow-500";
@@ -177,7 +193,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
                     </span>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {new Date(event.startsAt).toLocaleDateString()}
+                    <RelativeTime date={event.startsAt} format="date" />
                   </span>
                 </div>
               </div>
@@ -197,15 +213,15 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
                   label={`Manage ${event.title}`}
                   actions={{
                     primary: [
-                      { label: "Manage", onClick: () => {} }, // In a real app this would use router.push
-                      { label: "Edit", onClick: () => {} },
+                      { label: "Manage", href: `/events/${event.slug}` },
+                      { label: "Edit", href: `/events/${event.slug}/edit` },
                     ],
                     management: [
-                      { label: "Open scanner", onClick: () => {} },
-                      { label: "Export roster", onClick: () => {} },
+                      { label: "Open scanner", href: `/scanner?event=${event.id}` },
+                      { label: "Export roster", href: `/api/events/${event.id}/export` },
                     ],
                     destructive: [
-                      { label: "Archive", onClick: () => {} },
+                      { label: "Archive", href: `/events/${event.slug}/archive` },
                     ]
                   }}
                 />

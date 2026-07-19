@@ -55,7 +55,7 @@ export default async function ProcurementPage() {
                       <div><span className="text-muted-foreground">Vendor:</span> {vendor.name}</div>
                     )}
                     {req.quotesUrl && (
-                      <div><a href={req.quotesUrl} target="_blank" className="text-blue-500 hover:underline">View Quotes</a></div>
+                      <div><a href={req.quotesUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View Quotes</a></div>
                     )}
                   </div>
                 </CardContent>

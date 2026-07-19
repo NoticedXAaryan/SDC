@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/dal/auth";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { NotificationService } from "@/lib/services/notifications";
 
 const submitSchema = z.object({
   title: z.string().min(5),
@@ -85,6 +86,17 @@ await db.transaction(async (tx) => {
       .set({ points: sql`${user.points} + ${points}` })
       .where(eq(user.id, sub.userId));
   }
+});
+
+// Notify the user about the review result
+void NotificationService.sendInAppNotification({
+  userId: sub.userId,
+  type: "achievement",
+  title: parsed.data.status === "approved" ? "Achievement Approved! 🎉" : "Achievement Not Approved",
+  message: parsed.data.status === "approved"
+    ? `Your achievement "${sub.title}" was approved! You earned ${points} points.`
+    : `Your achievement "${sub.title}" was not approved.`,
+  link: "/achievements",
 });
 
 return NextResponse.json({ success: true, message: `Submission ${parsed.data.status}` });

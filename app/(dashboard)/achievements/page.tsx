@@ -51,7 +51,7 @@ export default async function AchievementsPage() {
                   <p className="text-sm line-clamp-3 mb-2">{sub.description}</p>
                   <div className="flex justify-between items-center text-sm">
                     {sub.proofUrl ? (
-                      <a href={sub.proofUrl} target="_blank" className="text-blue-500 hover:underline">View Proof</a>
+                      <a href={sub.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View Proof</a>
                     ) : (
                       <span className="text-muted-foreground">No proof attached</span>
                     )}
@@ -79,7 +79,7 @@ export default async function AchievementsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">Authors: {p.authors}</p>
-                  {p.url && <a href={p.url} className="text-blue-500 text-sm hover:underline" target="_blank">Read Paper</a>}
+                  {p.url && <a href={p.url} className="text-blue-500 text-sm hover:underline" target="_blank" rel="noopener noreferrer">Read Paper</a>}
                 </CardContent>
               </Card>
             ))
@@ -100,7 +100,7 @@ export default async function AchievementsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm font-medium text-green-600">Position: {w.position}</p>
-                  {w.url && <a href={w.url} className="text-blue-500 text-sm hover:underline" target="_blank">View Details</a>}
+                  {w.url && <a href={w.url} className="text-blue-500 text-sm hover:underline" target="_blank" rel="noopener noreferrer">View Details</a>}
                 </CardContent>
               </Card>
             ))

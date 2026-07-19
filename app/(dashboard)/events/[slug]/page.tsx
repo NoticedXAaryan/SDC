@@ -8,6 +8,8 @@ import { generateSignedPass } from "@/lib/passes/qr";
 import { IssueCertificatesButton } from "@/components/events/issue-certificates-button";
 import { AdminEventControls } from "@/components/events/admin-event-controls";
 import { EventSessionsList } from "@/components/events/event-sessions";
+import { CancelRegistrationButton } from "@/components/events/cancel-registration-button";
+import { RelativeTime } from "@/components/app/relative-time";
 
 export const dynamic = "force-dynamic";
 
@@ -133,7 +135,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
             {event.registrationDeadline && (
               <div className="flex justify-between items-center py-2 border-b text-sm">
                 <span className="text-muted-foreground">Deadline</span>
-                <span className="font-medium text-right">{new Date(event.registrationDeadline).toLocaleDateString()}</span>
+                <span className="font-medium text-right"><RelativeTime date={event.registrationDeadline} format="date" /></span>
               </div>
             )}
             
@@ -165,6 +167,11 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                     <a href={`/passes/${event.id}`} className="text-sm font-medium text-blue-700 hover:underline">
                       View QR Pass →
                     </a>
+                  </div>
+                )}
+                {new Date() < new Date(event.startsAt) && registration.status !== "cancelled" && (
+                  <div className="pt-2 border-t border-blue-200 dark:border-blue-800 mt-2">
+                    <CancelRegistrationButton eventId={event.id} />
                   </div>
                 )}
               </div>

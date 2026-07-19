@@ -53,7 +53,7 @@ export default async function LeadAchievementsPage() {
               <CardContent className="space-y-4">
                 <p className="text-sm">{submission.description}</p>
                 {submission.proofUrl && (
-                  <a href={submission.proofUrl} target="_blank" className="text-blue-500 hover:underline text-sm font-medium block">
+                  <a href={submission.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm font-medium block">
                     View Attached Proof
                   </a>
                 )}
