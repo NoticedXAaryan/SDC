@@ -17,19 +17,21 @@ export async function GET() {
   try {
     await db.execute(sql`SELECT 1`);
     dbStatus = "connected";
-  } catch (error) {
-    dbStatus = "disconnected";
+  } catch (error: any) {
+    dbStatus = `fail: ${error.message}`;
   }
 
   try {
     const redis = getRedisClient();
     await redis.ping();
     redisStatus = "connected";
-  } catch (error) {
-    redisStatus = "disconnected";
+  } catch (error: any) {
+    redisStatus = `degraded: ${error.message}`;
   }
 
-  const isHealthy = dbStatus === "connected" && redisStatus === "connected";
+  // Next.js can still serve web pages (dashboard, etc.) even if background queues (Redis) are down.
+  // We only return 503 if the DB is completely down.
+  const isHealthy = dbStatus === "connected";
 
   return NextResponse.json({
     status: isHealthy ? "ok" : "degraded",

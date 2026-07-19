@@ -1,46 +1,44 @@
 import Redis from "ioredis";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
-/**
- * Shared Redis connection configuration.
- * Single source of truth for all Redis consumers (queues, workers, rate limiter).
- * 
- * Uses REDIS_URL if available (docker-compose sets this), falls back to host/port.
- */
-export function getRedisConfig(): { host: string; port: number } | { url: string } {
-  if (env.REDIS_URL) {
-    return { url: env.REDIS_URL };
-  }
-  return {
-    host: env.REDIS_HOST || "localhost",
-    port: parseInt(env.REDIS_PORT || "6379"),
-  };
-}
-
-/**
- * Create a shared Redis client for direct use (rate limiting, health checks).
- * Callers should NOT create new Redis instances — reuse this.
- */
 let _sharedClient: Redis | null = null;
 
 export function getRedisClient(): Redis {
   if (_sharedClient) return _sharedClient;
 
-  const config = getRedisConfig();
-  _sharedClient = "url" in config
-    ? new Redis(config.url, { enableOfflineQueue: false, lazyConnect: true, maxRetriesPerRequest: null })
-    : new Redis({ ...config, enableOfflineQueue: false, lazyConnect: true, maxRetriesPerRequest: null });
+  const url = env.REDIS_URL || `redis://${env.REDIS_HOST || "localhost"}:${env.REDIS_PORT || "6379"}`;
+  
+  _sharedClient = new Redis(url, {
+    maxRetriesPerRequest: null, // REQUIRED for BullMQ
+    enableReadyCheck: false,
+    lazyConnect: true, // Don't connect on creation, connect on first command
+    retryStrategy: (times) => {
+      if (times > 5) {
+        logger.error("Redis retry exhausted, giving up");
+        return null; // stop retrying, don't crash app
+      }
+      return Math.min(times * 200, 2000);
+    },
+    reconnectOnError: (err) => {
+      logger.error({ err }, "Redis reconnect error");
+      return true;
+    }
+  });
 
-  _sharedClient.on("error", (err) => {
-    // Suppress connection errors during build/startup
+  _sharedClient.on("connect", () => logger.info("Redis connected"));
+  _sharedClient.on("error", (e) => {
+    // Log but don't crash
+    logger.warn({ err: e.message }, "Redis connection error (suppressed to prevent crash)");
   });
 
   return _sharedClient;
 }
 
 export const getWorkerConfig = () => ({
-  connection: getRedisConfig() as any,
+  connection: getRedisClient(),
   concurrency: 5,
   removeOnComplete: { age: 3600, count: 100 },
   removeOnFail: { age: 86400, count: 1000 },
 });
+

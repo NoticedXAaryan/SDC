@@ -1,8 +1,8 @@
 import { Queue } from "bullmq";
-import { getRedisConfig } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis";
 
 export const aiQueue = new Queue("ai-queue", { 
-  connection: getRedisConfig(),
+  connection: getRedisClient(),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 2000 },

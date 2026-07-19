@@ -1,8 +1,8 @@
 import { Queue } from "bullmq";
-import { getRedisConfig } from "@/lib/redis";
+import { getRedisClient } from "@/lib/redis";
 
 export const gradingQueue = new Queue("ai-grading", { 
-  connection: getRedisConfig(),
+  connection: getRedisClient(),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },
