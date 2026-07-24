@@ -62,7 +62,6 @@ export function EventRegistrationsClient({ registrations }: { registrations: any
           label="View Member"
           isIconOnly 
           icon={<ExternalLink className="w-4 h-4" />} 
-          as={Link} 
           href={`/admin/members/${item.userId}`}
         />
       ),

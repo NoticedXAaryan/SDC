@@ -55,7 +55,7 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
                       <Text type="supporting" className="text-xs">5 pending reviews in Tech Domain</Text>
                     </VStack>
                   </HStack>
-                  <Button size="sm" as={Link} href="/manage/recruitment" label="View Applications" />
+                  <Button size="sm" href="/manage/recruitment" label="View Applications" />
                 </HStack>
                 <HStack justify="between" align="center" className="bg-white dark:bg-zinc-900 border border-border rounded-lg p-3">
                   <HStack align="center" gap={3}>
@@ -65,7 +65,7 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
                       <Text type="supporting" className="text-xs">Batch #452 needs approval</Text>
                     </VStack>
                   </HStack>
-                  <Button size="sm" variant="secondary" as={Link} href="/manage/certificates" label="Issue Certificates" />
+                  <Button size="sm" variant="secondary" href="/manage/certificates" label="Issue Certificates" />
                 </HStack>
               </VStack>
             </VStack>
@@ -98,10 +98,10 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
             <VStack gap={4}>
               <Heading level={2} className="font-semibold text-lg">Quick Actions</Heading>
               <VStack gap={2}>
-                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/events/new" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
-                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/forms" label="Form Builder" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
-                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/recruitment" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
-                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/settings" label="Settings" icon={<Settings className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" href="/manage/events/new" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" href="/manage/forms" label="Form Builder" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" href="/manage/recruitment" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" href="/manage/settings" label="Settings" icon={<Settings className="w-4 h-4 text-muted-foreground" />} />
               </VStack>
             </VStack>
           </Card>
@@ -129,8 +129,8 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
                         <Badge variant="neutral" label={event.type} />
                       </HStack>
                       <HStack gap={2} className="mt-2">
-                        <Button size="sm" variant="secondary" className="w-full text-xs h-7" as={Link} href={`/events/${event.slug}/manage`} label="Manage" />
-                        <Button size="sm" className="w-full text-xs h-7" as={Link} href={`/events/${event.slug}/manage?tab=scanner`} label="Scanner" />
+                        <Button size="sm" variant="secondary" className="w-full text-xs h-7" href={`/events/${event.slug}/manage`} label="Manage" />
+                        <Button size="sm" className="w-full text-xs h-7" href={`/events/${event.slug}/manage?tab=scanner`} label="Scanner" />
                       </HStack>
                     </VStack>
                   ))

@@ -52,7 +52,7 @@ async function PageHeaderSection() {
       title="Events"
       description="Discover and register for upcoming SDC events."
       primaryAction={canCreate ? (
-        <Button as={Link} href="/events/create" label="Create Event" icon={<Plus className="w-4 h-4" />} />
+        <Button href="/events/create" label="Create Event" icon={<Plus className="w-4 h-4" />} />
       ) : undefined}
     />
   );
@@ -113,7 +113,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
         }
         actions={
           canCreate && !query ? (
-            <Button as={Link} href="/events/create" label="Create your first event" />
+            <Button href="/events/create" label="Create your first event" />
           ) : undefined
         }
       />
@@ -200,7 +200,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
             </VStack>
             
             <HStack align="center" justify="between" gap={2} className="p-6 pt-0 mt-auto">
-              <Button variant="secondary" className="w-full" as={Link} href={`/events/${event.slug}`} label={canCreate ? "Manage Event" : "View Details"} />
+              <Button variant="secondary" className="w-full" href={`/events/${event.slug}`} label={canCreate ? "Manage Event" : "View Details"} />
               {canCreate && (
                 <ResourceActionMenu 
                   label={`Manage ${event.title}`}

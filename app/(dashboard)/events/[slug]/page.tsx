@@ -174,7 +174,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                   {signedPass && (
                     <VStack gap={3} className="pt-3 border-t border-blue-200/50 dark:border-blue-900/50">
                       <Text type="supporting" className="text-xs break-all opacity-80">Pass Token: {signedPass.substring(0, 20)}...</Text>
-                      <Button as={Link} href={`/passes/${event.id}`} variant="secondary" className="w-full bg-white dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300" label="View QR Pass" icon={<Ticket className="w-4 h-4" />} />
+                      <Button href={`/passes/${event.id}`} variant="secondary" className="w-full bg-white dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300" label="View QR Pass" icon={<Ticket className="w-4 h-4" />} />
                     </VStack>
                   )}
                   {new Date() < new Date(event.startsAt) && registration.status !== "cancelled" && (

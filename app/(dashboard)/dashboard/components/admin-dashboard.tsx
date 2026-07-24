@@ -103,7 +103,7 @@ export function AdminDashboard({ user, managementStats, upcomingEvents, insights
                   <Heading level={2} className="font-semibold text-lg">Recent Audit Logs</Heading>
                   <Text type="supporting">Real-time system activity stream</Text>
                 </VStack>
-                <Button variant="secondary" size="sm" as={Link} href="/admin/audit" label="View All" icon={<TerminalSquare className="w-4 h-4" />} />
+                <Button variant="secondary" size="sm" href="/admin/audit" label="View All" icon={<TerminalSquare className="w-4 h-4" />} />
               </HStack>
               
               <VStack gap={4}>
@@ -184,7 +184,7 @@ export function AdminDashboard({ user, managementStats, upcomingEvents, insights
                 </VStack>
                 <Badge variant="error" label="0 left" />
               </div>
-              <Button variant="secondary" className="w-full mt-2 text-xs" as={Link} href="/admin/inventory" label="Manage Inventory" icon={<Package className="w-4 h-4" />} />
+              <Button variant="secondary" className="w-full mt-2 text-xs" href="/admin/inventory" label="Manage Inventory" icon={<Package className="w-4 h-4" />} />
             </VStack>
           </Card>
         </VStack>

@@ -33,11 +33,11 @@ export default async function DashboardPage() {
         }
         primaryAction={
           isAdmin ? (
-            <Button as={Link} href={adminCtaLink} label={adminCtaLabel} />
+            <Button href={adminCtaLink} label={adminCtaLabel} />
           ) : isLead ? (
-            <Button as={Link} href="/events/create" label="Create event" />
+            <Button href="/events/create" label="Create event" />
           ) : (
-            <Button as={Link} href="/events" label="Explore events" />
+            <Button href="/events" label="Explore events" />
           )
         }
       />

@@ -28,7 +28,7 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication }: 
                     <Text weight="semibold" className="text-sm text-blue-900 dark:text-blue-100">{reg.eventTitle}</Text>
                     <Text type="supporting" className="text-xs text-blue-700 dark:text-blue-300">Upcoming Event</Text>
                   </VStack>
-                  <Button variant="secondary" size="sm" as={Link} href={`/passes/${reg.eventId}`} label="View Pass" />
+                  <Button variant="secondary" size="sm" href={`/passes/${reg.eventId}`} label="View Pass" />
                 </HStack>
               ))
             )}
@@ -38,7 +38,7 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication }: 
                 <Text weight="semibold" className="text-sm text-blue-900 dark:text-blue-100">Post-Event Feedback</Text>
                 <Text type="supporting" className="text-xs text-blue-700 dark:text-blue-300">Missing Info</Text>
               </VStack>
-              <Button size="sm" as={Link} href={`/forms/feedback`} className="bg-amber-600 hover:bg-amber-700 text-white border-0" label="Give Feedback" />
+              <Button size="sm" href={`/forms/feedback`} className="bg-amber-600 hover:bg-amber-700 text-white border-0" label="Give Feedback" />
             </HStack>
           </VStack>
         </VStack>

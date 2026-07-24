@@ -44,7 +44,7 @@ export default async function EventManagePage({
         title={`Manage: ${event.title}`}
         description={`${(event.status || "draft").toUpperCase()} • ${new Date(event.startsAt).toLocaleDateString()}`}
         primaryAction={
-          <Button as={Link} href={`/events/${event.slug}`} variant="secondary" label="View public page" icon={<ExternalLink className="w-4 h-4" />} />
+          <Button href={`/events/${event.slug}`} variant="secondary" label="View public page" icon={<ExternalLink className="w-4 h-4" />} />
         }
       />
 
