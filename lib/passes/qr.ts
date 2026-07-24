@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { IPassValidator } from "../interfaces/IPassValidator";
 
 // Ensure this secret is set in your .env.local
-const PASS_SECRET = process.env.PASS_SECRET;
+const PASS_SECRET = process.env.PASS_SECRET!;
 
 if (!PASS_SECRET) {
   throw new Error("PASS_SECRET is not defined in environment variables");
@@ -24,12 +24,12 @@ export function generateSignedPass(payload: PassPayload): string {
     userId: payload.userId, 
     passCode: payload.passCode,
     jti: crypto.randomUUID() 
-  }, process.env.QR_SECRET || process.env.PASS_SECRET || "fallback_secret", { expiresIn: "30s" });
+  }, PASS_SECRET, { expiresIn: "30s" });
   return token;
 }
 
 export class HMACPassValidator implements IPassValidator {
-  constructor(private secret: string = process.env.QR_SECRET || process.env.PASS_SECRET || "fallback_secret") {}
+  constructor(private secret: string = PASS_SECRET) {}
 
   async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
     try {
