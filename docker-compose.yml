@@ -28,7 +28,9 @@ services:
       - dokploy-network
 
   app:
-    build: .
+    build:
+      context: .
+      target: runner
     depends_on:
       redis: 
         condition: service_healthy
