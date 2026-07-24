@@ -25,6 +25,7 @@ services:
     restart: "no"
     networks:
       - default
+      - dokploy-network
 
   app:
     build: .
@@ -61,6 +62,7 @@ services:
     restart: unless-stopped
     networks:
       - default
+      - dokploy-network
 
 networks:
   dokploy-network:
