@@ -2,20 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { Button } from "@astryxdesign/core/Button";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Selector } from "@astryxdesign/core/Selector";
+import { FormLayout } from "@astryxdesign/core/FormLayout";
+import { useToast } from "@/components/astryx/toast-provider";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type Applicant = {
   id: string;
@@ -27,6 +19,7 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { success, error } = useToast();
 
   const [applicantId, setApplicantId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -35,7 +28,7 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!applicantId || !scheduledAt) {
-      toast.error("Please fill all required fields");
+      error("Please fill all required fields");
       return;
     }
 
@@ -59,7 +52,7 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
         throw new Error(data.error || "Failed to schedule interview");
       }
 
-      toast.success("Interview scheduled successfully");
+      success("Interview scheduled successfully");
       setOpen(false);
       
       // Reset form
@@ -69,74 +62,76 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
       
       router.refresh();
     } catch (err: any) {
-      toast.error(err.message);
+      error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const applicantOptions = applicants.map(app => ({
+    value: app.id,
+    label: `${app.name} (${app.email})`
+  }));
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button>Schedule Interview</Button>
+        <Button label="Schedule Interview" variant="primary" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
-            <DialogDescription>
-              Set up a meeting with a candidate currently in the interviewing stage.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="applicant">Applicant</Label>
-              <Select value={applicantId} onValueChange={(val) => setApplicantId(val || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select applicant" />
-                </SelectTrigger>
-                <SelectContent>
-                  {applicants.length === 0 ? (
-                    <SelectItem value="none" disabled>No applicants in interviewing stage</SelectItem>
-                  ) : (
-                    applicants.map(app => (
-                      <SelectItem key={app.id} value={app.id}>
-                        {app.name} ({app.email})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="datetime">Date & Time</Label>
-              <Input
-                id="datetime"
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                required
+        <DialogHeader>
+          <DialogTitle>Schedule Interview</DialogTitle>
+          <DialogDescription>
+            Set up a meeting with a candidate currently in the interviewing stage.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="pt-4">
+          <FormLayout>
+            <Selector
+              htmlName="applicant"
+              label="Applicant"
+              options={applicantOptions}
+              value={applicantId}
+              onChange={(val) => setApplicantId(val || "")}
+              isRequired
+              isDisabled={applicants.length === 0}
+            />
+            
+            <TextInput
+              htmlName="datetime"
+              label="Date & Time"
+              type="text"
+              value={scheduledAt}
+              onChange={setScheduledAt}
+              isRequired
+              placeholder="YYYY-MM-DDTHH:MM"
+            />
+            
+            <TextInput
+              htmlName="link"
+              label="Meeting Link (Optional)"
+              type="text"
+              placeholder="https://meet.google.com/..."
+              value={meetingLink}
+              onChange={setMeetingLink}
+            />
+            
+            <div className="flex justify-end pt-2 gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                label="Cancel" 
+                onClick={() => setOpen(false)} 
+                isDisabled={loading} 
+              />
+              <Button 
+                type="submit" 
+                variant="primary" 
+                label={loading ? "Scheduling..." : "Schedule"} 
+                isDisabled={loading || !applicantId || !scheduledAt} 
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="link">Meeting Link (Optional)</Label>
-              <Input
-                id="link"
-                type="url"
-                placeholder="https://meet.google.com/..."
-                value={meetingLink}
-                onChange={(e) => setMeetingLink(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading || !applicantId || !scheduledAt}>
-              {loading ? "Scheduling..." : "Schedule"}
-            </Button>
-          </DialogFooter>
+          </FormLayout>
         </form>
       </DialogContent>
     </Dialog>

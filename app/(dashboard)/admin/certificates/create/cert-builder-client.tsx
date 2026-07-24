@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { Button } from "@astryxdesign/core/Button";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Selector } from "@astryxdesign/core/Selector";
+import { Card } from "@astryxdesign/core/Card";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { useToast } from "@/components/astryx/toast-provider";
 import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 type Field = {
@@ -27,6 +29,7 @@ export function CertificateBuilderClient({ events }: { events: any[] }) {
   const [uploading, setUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fields, setFields] = useState<Field[]>([]);
+  const { success, error } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,7 +47,7 @@ export function CertificateBuilderClient({ events }: { events: any[] }) {
       const data = await res.json();
       setBackgroundUrl(data.url);
     } catch (err: any) {
-      toast.error(err.message || "Failed to upload image");
+      error(err.message || "Failed to upload image");
     } finally {
       setUploading(false);
     }
@@ -71,7 +74,7 @@ export function CertificateBuilderClient({ events }: { events: any[] }) {
 
   const handleSave = async () => {
     if (!name || !backgroundUrl) {
-      toast.error("Name and Background Image are required");
+      error("Name and Background Image are required");
       return;
     }
     setIsSaving(true);
@@ -88,102 +91,125 @@ export function CertificateBuilderClient({ events }: { events: any[] }) {
       });
       
       if (!res.ok) throw new Error(await res.text());
-      toast.success("Template saved successfully");
+      success("Template saved successfully");
       router.push("/admin/certificates");
     } catch (err: any) {
-      toast.error(err.message || "Failed to save template");
+      error(err.message || "Failed to save template");
     } finally {
       setIsSaving(false);
     }
   };
 
+  const eventOptions = [
+    { value: "none", label: "-- No Event --" },
+    ...events.map(ev => ({ value: ev.id, label: ev.title }))
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-      <div className="md:col-span-4 space-y-6">
-        <Card>
-          <CardHeader><CardTitle>Template Details</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Template Name</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Workshop Completion" required />
-            </div>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-4 space-y-6">
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Text weight="bold" className="text-xl">Template Details</Text>
             
-            <div className="space-y-2">
-              <Label>Link to Event (Optional)</Label>
-              <select value={eventId} onChange={e => setEventId(e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                <option value="none">-- No Event --</option>
-                {events.map(ev => (
-                  <option key={ev.id} value={ev.id}>{ev.title}</option>
-                ))}
-              </select>
-            </div>
+            <TextInput
+              htmlName="name"
+              label="Template Name"
+              value={name}
+              onChange={setName}
+              placeholder="e.g. Workshop Completion"
+              isRequired
+            />
+            
+            <Selector
+              htmlName="event"
+              label="Link to Event (Optional)"
+              options={eventOptions}
+              value={eventId}
+              onChange={setEventId}
+            />
 
             <div className="space-y-2">
-              <Label>Background Image</Label>
-              <div className="flex items-center gap-4 mt-2">
-                <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+              <Text weight="medium" className="text-sm">Background Image</Text>
+              <div className="mt-2">
+                <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-border bg-background hover:bg-muted/50 h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer w-full'}`}>
                   {uploading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</> : "Upload background"}
                   <input type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>
             </div>
-          </CardContent>
+          </VStack>
         </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Dynamic Fields</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Text weight="bold" className="text-xl">Dynamic Fields</Text>
+            
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => addField('USER_NAME')}>+ Name</Button>
-              <Button size="sm" variant="outline" onClick={() => addField('ISSUE_DATE')}>+ Date</Button>
-              <Button size="sm" variant="outline" onClick={() => addField('CERT_ID')}>+ ID</Button>
-              <Button size="sm" variant="outline" onClick={() => addField('EVENT_NAME')}>+ Event Name</Button>
+              <Button size="sm" variant="ghost" label="+ Name" onClick={() => addField('USER_NAME')} />
+              <Button size="sm" variant="ghost" label="+ Date" onClick={() => addField('ISSUE_DATE')} />
+              <Button size="sm" variant="ghost" label="+ ID" onClick={() => addField('CERT_ID')} />
+              <Button size="sm" variant="ghost" label="+ Event Name" onClick={() => addField('EVENT_NAME')} />
             </div>
             
             {fields.map((f, idx) => (
-              <div key={f.id} className="p-3 border rounded text-sm space-y-2 bg-muted/30">
-                <div className="flex justify-between items-center font-medium">
-                  {f.type.replace('_', ' ')}
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeField(f.id)}>×</Button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">X (%)</Label>
-                    <Input type="number" value={f.x} onChange={e => updateField(f.id, { x: Number(e.target.value) })} className="h-7 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Y (%)</Label>
-                    <Input type="number" value={f.y} onChange={e => updateField(f.id, { y: Number(e.target.value) })} className="h-7 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Font Size</Label>
-                    <Input type="number" value={f.fontSize} onChange={e => updateField(f.id, { fontSize: Number(e.target.value) })} className="h-7 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Color</Label>
-                    <Input type="color" value={f.color} onChange={e => updateField(f.id, { color: e.target.value })} className="h-7 p-0 px-1 text-xs w-full" />
-                  </div>
+              <div key={f.id} className="p-3 border border-border rounded-lg space-y-3 bg-muted/30">
+                <HStack justify="between" align="center">
+                  <Text weight="medium" className="text-sm">{f.type.replace('_', ' ')}</Text>
+                  <button onClick={() => removeField(f.id)} className="text-red-500 hover:text-red-700 font-bold">×</button>
+                </HStack>
+                <div className="grid grid-cols-2 gap-3">
+                  <TextInput
+                    htmlName={`x-${f.id}`}
+                    label="X (%)"
+                    type="text"
+                    value={f.x.toString()}
+                    onChange={(val) => updateField(f.id, { x: Number(val) })}
+                  />
+                  <TextInput
+                    htmlName={`y-${f.id}`}
+                    label="Y (%)"
+                    type="text"
+                    value={f.y.toString()}
+                    onChange={(val) => updateField(f.id, { y: Number(val) })}
+                  />
+                  <TextInput
+                    htmlName={`size-${f.id}`}
+                    label="Font Size"
+                    type="text"
+                    value={f.fontSize.toString()}
+                    onChange={(val) => updateField(f.id, { fontSize: Number(val) })}
+                  />
+                  <TextInput
+                    htmlName={`color-${f.id}`}
+                    label="Color"
+                    type="text"
+                    value={f.color}
+                    onChange={(val) => updateField(f.id, { color: val })}
+                  />
                 </div>
               </div>
             ))}
-          </CardContent>
+          </VStack>
         </Card>
       </div>
       
-      <div className="md:col-span-8 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="font-semibold text-lg">Preview</h2>
-          <Button onClick={handleSave} disabled={isSaving || !name || !backgroundUrl}>
-            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Template
-          </Button>
-        </div>
+      <div className="lg:col-span-8 space-y-4">
+        <HStack justify="between" align="center">
+          <Text weight="bold" className="text-xl">Preview</Text>
+          <Button 
+            variant="primary" 
+            label={isSaving ? "Saving..." : "Save Template"}
+            onClick={handleSave} 
+            isDisabled={isSaving || !name || !backgroundUrl} 
+          />
+        </HStack>
         
-        <div className="w-full aspect-[1.414/1] bg-muted/20 border-2 border-dashed rounded-lg relative overflow-hidden flex items-center justify-center">
+        <div className="w-full aspect-[1.414/1] bg-muted/20 border-2 border-dashed border-border rounded-lg relative overflow-hidden flex items-center justify-center">
           {backgroundUrl ? (
             <img src={backgroundUrl} alt="Certificate Background" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
           ) : (
-            <span className="text-muted-foreground">Upload a background image (A4 Landscape aspect ratio recommended)</span>
+            <Text type="supporting">Upload a background image (A4 Landscape aspect ratio recommended)</Text>
           )}
           
           {fields.map(f => (
@@ -201,7 +227,7 @@ export function CertificateBuilderClient({ events }: { events: any[] }) {
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">Tip: In this version, adjust X and Y coordinates manually using the fields panel on the left.</p>
+        <Text type="supporting" className="text-xs">Tip: In this version, adjust X and Y coordinates manually using the fields panel on the left.</Text>
       </div>
     </div>
   );

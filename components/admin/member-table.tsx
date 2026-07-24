@@ -1,22 +1,27 @@
 "use client";
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { 
+  Table, 
+  useTablePagination,
+  proportional,
+  type TableColumn,
+} from "@astryxdesign/core/Table";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Button } from "@astryxdesign/core/Button";
+import { Selector } from "@astryxdesign/core/Selector";
+import { useToast } from "@/components/astryx/toast-provider";
+
 const SDC_ROLES = [
-  "applicant",
-  "alumni", 
-  "member", 
-  "faculty_coordinator",
-  "co_lead", 
-  "volunteer_lead",
-  "finance_lead", 
-  "tech_lead",
-  "marketing_lead",
-  "content_lead",
-  "event_lead",
-  "vice_lead",
-  "lead", 
-  "admin", 
-  "owner"
+  "applicant", "alumni", "member", "faculty_coordinator",
+  "co_lead", "volunteer_lead", "finance_lead", "tech_lead",
+  "marketing_lead", "content_lead", "event_lead", "vice_lead",
+  "lead", "admin", "owner"
 ] as const;
+
 type Member = {
   id: string;
   name: string;
@@ -32,17 +37,17 @@ type Member = {
   image: string | null;
 };
 
-function getRoleColor(role: string | null): string {
-  const colors: Record<string, string> = {
-    owner: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    admin: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    lead: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    co_lead: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
-    finance_lead: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-    member: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300",
-    alumni: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  };
-  return colors[role || "member"] || colors.member;
+function getRoleVariant(role: string | null): "neutral" | "success" | "warning" | "error" | "blue" | "teal" | "purple" | "pink" | "orange" {
+  switch (role) {
+    case "owner": return "purple";
+    case "admin": return "error";
+    case "lead": return "blue";
+    case "co_lead": return "teal";
+    case "finance_lead": return "success";
+    case "member": return "neutral";
+    case "alumni": return "warning";
+    default: return "neutral";
+  }
 }
 
 export function MemberTable({
@@ -56,14 +61,17 @@ export function MemberTable({
   currentUserRole: string;
   currentUserId: string;
 }) {
+  const { error, success } = useToast();
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [changingRole, setChangingRole] = useState<string | null>(null);
+  
+  // Server-side pagination state
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(total);
+  const pageSize = 20;
 
-  const totalPages = Math.ceil(totalCount / 20);
   const canChangeRoles = ["admin", "owner"].includes(currentUserRole);
 
   async function fetchMembers(searchTerm?: string, pageNum?: number) {
@@ -72,7 +80,7 @@ export function MemberTable({
       const params = new URLSearchParams();
       if (searchTerm) params.set("search", searchTerm);
       if (pageNum) params.set("page", String(pageNum));
-      params.set("limit", "20");
+      params.set("limit", String(pageSize));
 
       const res = await fetch(`/api/admin/members?${params}`);
       const data = await res.json();
@@ -81,8 +89,9 @@ export function MemberTable({
         setMembers(data.members);
         setTotalCount(data.pagination.total);
       }
-    } catch (error) {
-      console.error("Failed to fetch members:", error);
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
+      error("Failed to load members");
     } finally {
       setLoading(false);
     }
@@ -91,11 +100,11 @@ export function MemberTable({
   async function handleRoleChange(userId: string, newRole: string) {
     if (!canChangeRoles) return;
     if (userId === currentUserId) {
-      alert("You cannot change your own role.");
+      error("Cannot change your own role");
       return;
     }
 
-    const confirmed = confirm(`Change this member's role to "${newRole}"?`);
+    const confirmed = confirm(`Change this member's role to "${newRole.replace(/_/g, " ")}"?`);
     if (!confirmed) return;
 
     setChangingRole(userId);
@@ -112,11 +121,12 @@ export function MemberTable({
         setMembers(prev =>
           prev.map(m => m.id === userId ? { ...m, role: newRole } : m)
         );
+        success("Role updated");
       } else {
-        alert(data.error || "Failed to update role");
+        error(data.error || "Failed to update role");
       }
-    } catch (error) {
-      alert("Network error. Please try again.");
+    } catch (err) {
+      error("Network error. Please try again.");
     } finally {
       setChangingRole(null);
     }
@@ -127,134 +137,148 @@ export function MemberTable({
     fetchMembers(search, 1);
   }
 
-  function handlePageChange(newPage: number) {
-    setPage(newPage);
-    fetchMembers(search, newPage);
-  }
+  const paginationPlugin = useTablePagination<Record<string, unknown>>({
+    page,
+    onPageChange: (newPage) => {
+      setPage(newPage);
+      fetchMembers(search, newPage);
+    },
+    totalItems: totalCount,
+    pageSize,
+  });
+
+  const columns = useMemo<TableColumn<Record<string, unknown>>[]>(() => {
+    const cols: TableColumn<Record<string, unknown>>[] = [
+      {
+        key: "name",
+        header: "Name",
+        width: proportional(2),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return (
+            <VStack gap={0}>
+              <Text weight="medium">{m.name}</Text>
+              {m.username && <Text type="supporting">@{m.username}</Text>}
+            </VStack>
+          );
+        },
+      },
+      {
+        key: "email",
+        header: "Email",
+        width: proportional(2),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return <Text type="supporting">{m.email}</Text>;
+        },
+      },
+      {
+        key: "role",
+        header: "Role",
+        width: proportional(1),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return (
+            <Badge 
+              variant={getRoleVariant(m.role)} 
+              label={(m.role || "member").replace(/_/g, " ")} 
+            />
+          );
+        },
+      },
+      {
+        key: "year",
+        header: "Year",
+        width: proportional(1),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return <Text type="supporting">{m.year ? String(m.year) : "—"}</Text>;
+        },
+      },
+      {
+        key: "points",
+        header: "Points",
+        width: proportional(1),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return <Text type="supporting">{m.points ?? 0}</Text>;
+        },
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: proportional(1),
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          return (
+            <Text type="supporting" className={m.banned ? "text-red-500 font-medium" : "text-green-500 font-medium"}>
+              {m.banned ? "Banned" : "Active"}
+            </Text>
+          );
+        },
+      },
+    ];
+
+    if (canChangeRoles) {
+      cols.push({
+        key: "actions",
+        header: "Actions",
+        width: proportional(1),
+        align: "end",
+        renderCell: (item) => {
+          const m = item as unknown as Member;
+          if (m.id === currentUserId) {
+            return <Text type="supporting" className="italic text-xs">You</Text>;
+          }
+          return (
+            <Selector
+              label="Change Role"
+              htmlName={`role-${m.id}`}
+              options={SDC_ROLES.map(r => ({ value: r, label: r.replace(/_/g, " ") }))}
+              value={m.role || "member"}
+              onChange={(val) => {
+                if (val) handleRoleChange(m.id, val);
+              }}
+              isDisabled={changingRole === m.id}
+            />
+          );
+        },
+      });
+    }
+
+    return cols;
+  }, [canChangeRoles, currentUserId, changingRole]);
 
   return (
-    <div className="space-y-4">
-      {/* Search bar */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Search by name, email, or username..."
-          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        <button
+    <VStack gap={4}>
+      <HStack gap={2} align="center">
+        <div className="max-w-md w-full">
+          <TextInput
+            label="Search"
+            htmlName="search"
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by name, email, or username..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
+          />
+        </div>
+        <Button
+          label={loading ? "Searching..." : "Search"}
+          variant="primary"
+          isDisabled={loading}
           onClick={handleSearch}
-          disabled={loading}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {loading ? "Searching..." : "Search"}
-        </button>
-      </div>
+        />
+      </HStack>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Role</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Year</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Points</th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                {canChangeRoles && (
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {members.map((member) => (
-                <tr key={member.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{member.name}</div>
-                    {member.username && (
-                      <div className="text-xs text-muted-foreground">@{member.username}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleColor(member.role)}`}>
-                      {member.role || "member"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{member.year || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{member.points ?? 0}</td>
-                  <td className="px-4 py-3">
-                    {member.banned ? (
-                      <span className="text-xs text-red-500 font-medium">Banned</span>
-                    ) : (
-                      <span className="text-xs text-green-500 font-medium">Active</span>
-                    )}
-                  </td>
-                  {canChangeRoles && (
-                    <td className="px-4 py-3">
-                      {member.id !== currentUserId ? (
-                        <select
-                          value={member.role || "member"}
-                          onChange={(e) => handleRoleChange(member.id, e.target.value)}
-                          disabled={changingRole === member.id}
-                          className="rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
-                        >
-                          {SDC_ROLES.map((r) => (
-                            <option key={r} value={r}>
-                              {r.replace(/_/g, " ")}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">You</span>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-              {members.length === 0 && (
-                <tr>
-                  <td colSpan={canChangeRoles ? 7 : 6} className="px-4 py-8 text-center text-muted-foreground">
-                    No members found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, totalCount)} of {totalCount}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page <= 1 || loading}
-              className="rounded-md border px-3 py-1 text-sm disabled:opacity-50 hover:bg-muted"
-            >
-              Previous
-            </button>
-            <span className="flex items-center px-3 text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page >= totalPages || loading}
-              className="rounded-md border px-3 py-1 text-sm disabled:opacity-50 hover:bg-muted"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      <Table
+        data={members as unknown as Record<string, unknown>[]}
+        columns={columns}
+        plugins={{ pagination: paginationPlugin }}
+        hasHover
+        dividers="rows"
+      />
+    </VStack>
   );
 }

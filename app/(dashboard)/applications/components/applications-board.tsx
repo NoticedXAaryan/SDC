@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
 import { useRouter } from "next/navigation";
 import { RejectModal } from "@/components/reject-modal";
 
@@ -43,65 +48,85 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
 
   return (
     <>
-    <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-200px)]">
-      {COLUMNS.map(col => (
-        <div key={col.id} className="min-w-[320px] bg-muted/30 rounded-lg p-4 flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-sm">{col.label}</h3>
-            <span className="text-xs bg-muted px-2 py-1 rounded-full">
-              {data.filter(app => app.status === col.id).length}
-            </span>
-          </div>
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-250px)]">
+        {COLUMNS.map(col => (
+          <div key={col.id} className="min-w-[320px] w-[320px] bg-muted/30 rounded-xl p-4 flex flex-col border border-border">
+            <HStack justify="between" align="center" className="mb-4 px-1">
+              <Text weight="semibold" className="text-sm">{col.label}</Text>
+              <Badge 
+                variant="neutral" 
+                label={data.filter(app => app.status === col.id).length.toString()} 
+              />
+            </HStack>
 
-          <div className="flex-1 space-y-3 overflow-y-auto">
-            {data.filter(app => app.status === col.id).map(app => (
-              <div key={app.id} className="bg-card border rounded-lg p-4 shadow-sm text-sm flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{app.user.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.user.email}</p>
-                  </div>
-                  {app.aiScore !== null && (
-                    <div className={`px-2 py-1 rounded text-xs font-bold ${
-                      app.aiScore >= 80 ? 'bg-green-100 text-green-800' : 
-                      app.aiScore >= 50 ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {app.aiScore}/100
+            <VStack gap={3} className="flex-1 overflow-y-auto pr-1">
+              {data.filter(app => app.status === col.id).map(app => (
+                <Card key={app.id} padding={4}>
+                  <VStack gap={3}>
+                    <HStack justify="between" align="start">
+                      <VStack gap={0}>
+                        <Text weight="medium">{app.user?.name || "Unknown"}</Text>
+                        <Text type="supporting" className="text-xs">{app.user?.email}</Text>
+                      </VStack>
+                      {app.aiScore !== null && (
+                        <Badge 
+                          variant={
+                            app.aiScore >= 80 ? "success" : 
+                            app.aiScore >= 50 ? "warning" : "error"
+                          }
+                          label={`${app.aiScore}/100`}
+                        />
+                      )}
+                    </HStack>
+
+                    {app.aiFeedback && (
+                      <Text type="supporting" className="text-xs line-clamp-2 italic">
+                        "{app.aiFeedback}"
+                      </Text>
+                    )}
+
+                    <div className="pt-3 border-t border-border mt-auto">
+                      {col.id === "applied" && (
+                        <Button 
+                          variant="ghost" 
+                          label="Simulate AI Grade" 
+                          onClick={() => handleStatusChange(app.id, "ai_graded")}
+                          isDisabled={loading === app.id}
+                        />
+                      )}
+                      {col.id === "ai_graded" && (
+                        <Button 
+                          variant="primary" 
+                          label="Invite to Interview" 
+                          onClick={() => handleStatusChange(app.id, "interviewing")}
+                          isDisabled={loading === app.id}
+                        />
+                      )}
+                      {col.id === "interviewing" && (
+                        <HStack gap={2}>
+                          <Button 
+                            variant="primary" 
+                            label="Accept" 
+                            onClick={() => handleStatusChange(app.id, "accepted")}
+                            isDisabled={loading === app.id}
+                          />
+                          <Button 
+                            variant="destructive" 
+                            label="Reject" 
+                            onClick={() => setRejectAppId(app.id)}
+                            isDisabled={loading === app.id}
+                          />
+                        </HStack>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {app.aiFeedback && (
-                  <p className="text-xs text-muted-foreground line-clamp-2 italic">
-                    "{app.aiFeedback}"
-                  </p>
-                )}
-
-                <div className="flex gap-2 mt-auto pt-2 border-t flex-wrap">
-                  {col.id === "applied" && (
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleStatusChange(app.id, "ai_graded")}>
-                      Simulate AI Grade
-                    </Button>
-                  )}
-                  {col.id === "ai_graded" && (
-                    <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange(app.id, "interviewing")}>
-                      Invite to Interview
-                    </Button>
-                  )}
-                  {col.id === "interviewing" && (
-                    <div className="flex gap-2 w-full">
-                      <Button variant="default" size="sm" className="flex-1" onClick={() => handleStatusChange(app.id, "accepted")}>Accept</Button>
-                      <Button variant="destructive" size="sm" className="flex-1" onClick={() => setRejectAppId(app.id)}>Reject</Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </VStack>
+                </Card>
+              ))}
+            </VStack>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      
       <RejectModal
         isOpen={!!rejectAppId}
         onOpenChange={(open) => !open && setRejectAppId(null)}

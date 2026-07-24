@@ -1,13 +1,14 @@
-import { requireAdmin } from "@/lib/dal/auth";
+import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { forms, formFields } from "@/lib/db/schema";
 import FormBuilderClient from "./components/form-builder-client";
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export const dynamic = "force-dynamic";
 
 export default async function FormsAdminPage() {
-  const session = await requireAdmin();
+  await requireRole(["admin", "owner", "tech_lead", "lead"]);
 
   // Fetch all forms with their fields
   const allForms = await db.select().from(forms).orderBy(desc(forms.createdAt));
@@ -19,11 +20,12 @@ export default async function FormsAdminPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Form Templates</h1>
-        <p className="text-muted-foreground">Manage dynamic application forms (Google Forms style).</p>
-      </div>
+    <div className="space-y-8 max-w-6xl mx-auto">
+      <PageHeader 
+        title="Form Templates" 
+        description="Manage dynamic application forms."
+      />
+      
       <FormBuilderClient initialTemplates={formsWithFields as any} />
     </div>
   );

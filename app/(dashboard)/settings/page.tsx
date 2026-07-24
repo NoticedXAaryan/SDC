@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useSession, authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { Avatar } from "@astryxdesign/core/Avatar";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
+import { HStack } from "@astryxdesign/core/HStack";
 import { Loader2, AtSign, CheckCircle2 } from "lucide-react";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export default function SettingsPage() {
   const { data: session, isPending } = useSession();
@@ -86,7 +89,11 @@ export default function SettingsPage() {
   };
 
   if (isPending) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (!session) {
@@ -138,30 +145,27 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+    <div className="mx-auto max-w-4xl space-y-8">
+      <PageHeader title="Settings" description="Manage your account preferences." />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Details</CardTitle>
-          <CardDescription>Manage your account settings and profile picture.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <Card padding={6}>
+        <VStack gap={6}>
+          <VStack gap={1}>
+            <Text weight="bold" className="text-xl">Profile Details</Text>
+            <Text type="supporting" className="text-sm">Manage your account settings and profile picture.</Text>
+          </VStack>
           
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={user.image || ""} alt={user.name || "User"} />
-              <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-            </Avatar>
+          <HStack gap={6} align="center">
+            <Avatar size="lg" src={user.image || undefined} name={user.name || initials} />
 
-            <div className="space-y-2">
-              <h3 className="font-medium text-lg">Profile Picture</h3>
-              <p className="text-sm text-muted-foreground">
+            <VStack gap={2}>
+              <Text weight="medium" className="text-lg">Profile Picture</Text>
+              <Text type="supporting" className="text-sm">
                 Upload a new profile picture. Recommended size is 256x256px. Max 5MB.
-              </p>
+              </Text>
               
-              <div className="flex items-center gap-4 mt-2">
-                <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+              <div className="mt-2">
+                <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                   {uploading ? "Uploading..." : "Upload new picture"}
                   <input 
                     type="file" 
@@ -173,67 +177,68 @@ export default function SettingsPage() {
                 </label>
               </div>
               
-              {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
-              {success && <p className="text-sm text-green-500 font-medium">{success}</p>}
+              {error && <Text className="text-sm text-red-500 font-medium">{error}</Text>}
+              {success && <Text className="text-sm text-green-500 font-medium">{success}</Text>}
+            </VStack>
+          </HStack>
+
+          <div className="space-y-4 pt-6 border-t border-border">
+            <div className="grid gap-2">
+              <Text type="supporting" className="font-medium text-sm">Name</Text>
+              <Text weight="medium">{user.name}</Text>
+            </div>
+            <div className="grid gap-2">
+              <Text type="supporting" className="font-medium text-sm">Email</Text>
+              <Text weight="medium">{user.email}</Text>
+            </div>
+            <div className="grid gap-2">
+              <Text type="supporting" className="font-medium text-sm">Role</Text>
+              <Text weight="medium" className="capitalize">{user.role?.replace("_", " ")}</Text>
             </div>
           </div>
-
-          <div className="space-y-4 pt-4 border-t">
-            <div className="grid gap-2">
-              <div className="font-medium text-sm text-muted-foreground">Name</div>
-              <div className="font-medium">{user.name}</div>
-            </div>
-            <div className="grid gap-2">
-              <div className="font-medium text-sm text-muted-foreground">Email</div>
-              <div className="font-medium">{user.email}</div>
-            </div>
-            <div className="grid gap-2">
-              <div className="font-medium text-sm text-muted-foreground">Role</div>
-              <div className="font-medium capitalize">{user.role?.replace("_", " ")}</div>
-            </div>
-          </div>
-
-        </CardContent>
+        </VStack>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Username Handle</CardTitle>
-          <CardDescription>Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Card padding={6}>
+        <VStack gap={6}>
+          <VStack gap={1}>
+            <Text weight="bold" className="text-xl">Username Handle</Text>
+            <Text type="supporting" className="text-sm">Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</Text>
+          </VStack>
+          
           <div className="space-y-2 max-w-md">
-            <Label htmlFor="username">Username</Label>
             <div className="relative">
-              <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="username"
+              <AtSign className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground z-10" />
+              <TextInput
+                htmlName="username"
+                label="Username"
                 className="pl-9"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                onChange={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               />
             </div>
             
             <div className="h-5">
-              {isChecking && <p className="text-sm text-muted-foreground flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</p>}
+              {isChecking && <Text type="supporting" className="text-sm flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</Text>}
               {!isChecking && isAvailable === true && username !== currentUsername && (
-                <p className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</p>
+                <Text className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</Text>
               )}
-              {!isChecking && usernameError && <p className="text-sm text-red-500">{usernameError}</p>}
-              {!isChecking && usernameSuccess && <p className="text-sm text-green-600">{usernameSuccess}</p>}
+              {!isChecking && usernameError && <Text className="text-sm text-red-500">{usernameError}</Text>}
+              {!isChecking && usernameSuccess && <Text className="text-sm text-green-600">{usernameSuccess}</Text>}
             </div>
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            onClick={handleUpdateUsername} 
-            disabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
-          >
-            {isUpdating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Update Handle
-          </Button>
-        </CardFooter>
+          
+          <div className="pt-2">
+            <Button 
+              label="Update Handle"
+              onClick={handleUpdateUsername} 
+              isDisabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
+              icon={isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+            />
+          </div>
+        </VStack>
       </Card>
+      
       <ActiveSessionsCard />
     </div>
   );
@@ -277,41 +282,47 @@ function ActiveSessionsCard() {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Active Sessions</CardTitle>
-          <CardDescription>Manage your active devices and sessions.</CardDescription>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={handleRevokeAllOther}
-          disabled={revokingAll || !activeSessions || activeSessions.length <= 1}
-        >
-          {revokingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Logout other devices
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isPending ? (
-          <div className="flex items-center"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading sessions...</div>
-        ) : (
-          <div className="space-y-4">
-            {activeSessions?.map((s: any) => (
-              <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">{s.userAgent || "Unknown Device"}</p>
-                  <p className="text-sm text-muted-foreground">IP: {s.ipAddress || "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Started: {new Date(s.createdAt).toLocaleString()}</p>
+    <Card padding={6}>
+      <VStack gap={6}>
+        <HStack justify="between" align="start">
+          <VStack gap={1}>
+            <Text weight="bold" className="text-xl">Active Sessions</Text>
+            <Text type="supporting" className="text-sm">Manage your active devices and sessions.</Text>
+          </VStack>
+          <Button 
+            variant="ghost" 
+            label="Logout other devices"
+            onClick={handleRevokeAllOther}
+            isDisabled={revokingAll || !activeSessions || activeSessions.length <= 1}
+            icon={revokingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          />
+        </HStack>
+        
+        <div className="space-y-4">
+          {isPending ? (
+            <div className="flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading sessions...</div>
+          ) : (
+            <div className="space-y-4">
+              {activeSessions?.map((s: any) => (
+                <div key={s.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/10">
+                  <div>
+                    <Text weight="medium">{s.userAgent || "Unknown Device"}</Text>
+                    <Text type="supporting" className="text-sm">IP: {s.ipAddress || "Unknown"}</Text>
+                    <Text type="supporting" className="text-xs mt-1">Started: {new Date(s.createdAt).toLocaleString()}</Text>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                    isDisabled={revoking === s.token} 
+                    onClick={() => handleRevoke(s.token)}
+                    label={revoking === s.token ? "Revoking..." : "Revoke"}
+                  />
                 </div>
-                <Button variant="destructive" size="sm" disabled={revoking === s.token} onClick={() => handleRevoke(s.token)}>
-                  {revoking === s.token ? "Revoking..." : "Revoke"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
+              ))}
+            </div>
+          )}
+        </div>
+      </VStack>
     </Card>
   );
 }

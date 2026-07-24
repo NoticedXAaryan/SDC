@@ -2,15 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
+import { HStack } from "@astryxdesign/core/HStack";
+import { useToast } from "@/components/astryx/toast-provider";
 import { AlertTriangle, Download, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export default function CompliancePage() {
   const [loadingExport, setLoadingExport] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
   const router = useRouter();
+  const { success, error } = useToast();
 
   const handleExportData = async () => {
     setLoadingExport(true);
@@ -28,16 +33,16 @@ export default function CompliancePage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      toast.success("Data exported successfully!");
+      success("Data exported successfully!");
     } catch (err: any) {
-      toast.error(err.message);
+      error(err.message);
     } finally {
       setLoadingExport(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("Are you absolutely sure you want to delete your account? This action cannot be undone and will erase all your data immediately.")) {
+    if (!window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone and will erase all your data immediately.")) {
       return;
     }
     
@@ -48,61 +53,75 @@ export default function CompliancePage() {
       });
       if (!res.ok) throw new Error("Failed to delete account");
       
-      toast.success("Account deleted successfully.");
+      success("Account deleted successfully.");
       router.push("/");
     } catch (err: any) {
-      toast.error(err.message);
+      error(err.message);
       setLoadingDelete(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto py-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Privacy & Compliance</h1>
-        <p className="text-muted-foreground">Manage your personal data in accordance with GDPR regulations.</p>
-      </div>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <PageHeader 
+        title="Privacy & Compliance" 
+        description="Manage your personal data in accordance with GDPR regulations."
+      />
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5" />
-              Export My Data
-            </CardTitle>
-            <CardDescription>
-              Download a complete copy of all your personal data, applications, and logs stored on our servers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            The data will be provided in JSON format, which is machine-readable and portable.
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleExportData} disabled={loadingExport}>
-              {loadingExport ? "Preparing Export..." : "Request Data Export"}
-            </Button>
-          </CardFooter>
+        <Card padding={6}>
+          <VStack gap={4}>
+            <VStack gap={2}>
+              <HStack gap={2} align="center">
+                <Download className="w-5 h-5 text-primary" />
+                <Text weight="bold" className="text-xl">Export My Data</Text>
+              </HStack>
+              <Text type="supporting" className="text-sm">
+                Download a complete copy of all your personal data, applications, and logs stored on our servers.
+              </Text>
+            </VStack>
+            
+            <Text className="text-sm text-muted-foreground border-t border-border pt-4">
+              The data will be provided in JSON format, which is machine-readable and portable.
+            </Text>
+            
+            <div className="mt-2">
+              <Button 
+                variant="ghost" 
+                onClick={handleExportData} 
+                isDisabled={loadingExport}
+                label={loadingExport ? "Preparing Export..." : "Request Data Export"}
+              />
+            </div>
+          </VStack>
         </Card>
 
-        <Card className="border-destructive/50 border">
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              Delete Account
-            </CardTitle>
-            <CardDescription>
-              Permanently delete your account and all associated data. This action is irreversible.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Once deleted, your profile, applications, and settings will be removed from our active database within 30 days.
-          </CardContent>
-          <CardFooter>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={loadingDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              {loadingDelete ? "Deleting..." : "Delete Account"}
-            </Button>
-          </CardFooter>
+        <Card padding={6} className="border-red-500/50 bg-red-500/5">
+          <VStack gap={4}>
+            <VStack gap={2}>
+              <HStack gap={2} align="center" className="text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                <Text weight="bold" className="text-xl">Delete Account</Text>
+              </HStack>
+              <Text type="supporting" className="text-sm">
+                Permanently delete your account and all associated data. This action is irreversible.
+              </Text>
+            </VStack>
+            
+            <Text className="text-sm text-muted-foreground border-t border-border pt-4">
+              Once deleted, your profile, applications, and settings will be removed from our active database within 30 days.
+            </Text>
+            
+            <div className="mt-2">
+              <Button 
+                variant="destructive" 
+                onClick={handleDeleteAccount} 
+                isDisabled={loadingDelete}
+                label={loadingDelete ? "Deleting..." : "Delete Account"}
+                icon={<Trash2 className="w-4 h-4" />}
+              />
+            </div>
+          </VStack>
         </Card>
       </div>
     </div>

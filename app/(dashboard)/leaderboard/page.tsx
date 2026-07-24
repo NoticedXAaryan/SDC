@@ -2,8 +2,12 @@ import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@astryxdesign/core/Card";
+import { Avatar } from "@astryxdesign/core/Avatar";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Text } from "@astryxdesign/core/Text";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export default async function LeaderboardPage() {
   await requireSession();
@@ -20,41 +24,47 @@ export default async function LeaderboardPage() {
   .limit(50);
 
   return (
-    <div className="max-w-4xl mx-auto py-12 space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Global Leaderboard</h1>
-        <p className="text-muted-foreground">Top contributors and active members based on SDC Points.</p>
-      </div>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <PageHeader 
+        title="Global Leaderboard" 
+        description="Top contributors and active members based on SDC Points." 
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Top 50 Members</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {topUsers.map((u, index) => (
-              <div key={u.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 text-center font-bold text-lg text-muted-foreground">
+      <Card padding={0} className="overflow-hidden">
+        <div className="bg-muted/30 border-b border-border p-4">
+          <Text weight="semibold">Top 50 Members</Text>
+        </div>
+        <div className="divide-y divide-border">
+          {topUsers.map((u, index) => (
+            <HStack 
+              key={u.id} 
+              justify="between" 
+              align="center" 
+              className="p-4 hover:bg-muted/50 transition-colors"
+            >
+              <HStack gap={4} align="center">
+                <div className="w-8 text-center">
+                  <Text type="supporting" weight="bold" className="text-lg">
                     #{index + 1}
-                  </div>
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={u.image || ""} />
-                    <AvatarFallback>{u.name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{u.name}</p>
-                    <p className="text-sm text-muted-foreground">Level {u.level}</p>
-                  </div>
+                  </Text>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg">{u.points || 0}</p>
-                  <p className="text-xs text-muted-foreground">Points</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
+                <Avatar 
+                  name={u.name || "User"} 
+                  src={u.image || undefined} 
+                  size="lg" 
+                />
+                <VStack gap={0}>
+                  <Text weight="semibold">{u.name}</Text>
+                  <Text type="supporting">Level {u.level}</Text>
+                </VStack>
+              </HStack>
+              <VStack gap={0} align="end">
+                <Text weight="bold" className="text-lg">{u.points || 0}</Text>
+                <Text type="supporting" className="text-xs uppercase tracking-wider">Points</Text>
+              </VStack>
+            </HStack>
+          ))}
+        </div>
       </Card>
     </div>
   );

@@ -2,14 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Card, 
+  Button, 
+  Heading, 
+  Text, 
+  HStack, 
+  VStack, 
+  Badge,
+  TextInput,
+  TextArea,
+  CheckboxInput,
+  Selector,
+  FormLayout,
+  IconButton
+} from "@astryxdesign/core";
+import { X } from "lucide-react";
 
 export function CreateEventWizard() {
   const [step, setStep] = useState(1);
@@ -68,176 +77,243 @@ export function CreateEventWizard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {step === 1 && "Step 1: Basic Details"}
-          {step === 2 && "Step 2: Ticketing & Capacity"}
-          {step === 3 && "Step 3: Registration Form Builder"}
-          {step === 4 && "Step 4: Certificate Settings"}
-          {step === 5 && "Step 5: Review & Publish"}
-        </CardTitle>
-        <CardDescription>
-          Progress: {step}/5
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {step === 1 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input value={formData.title} onChange={e => updateForm("title", e.target.value)} placeholder="Event Title" />
-              </div>
-              <div className="space-y-2">
-                <Label>Slug</Label>
-                <Input value={formData.slug} onChange={e => updateForm("slug", e.target.value)} placeholder="event-slug" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={formData.description} onChange={e => updateForm("description", e.target.value)} placeholder="Event description..." />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Start Time</Label>
-                <Input type="datetime-local" value={formData.startsAt} onChange={e => updateForm("startsAt", e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>End Time</Label>
-                <Input type="datetime-local" value={formData.endsAt} onChange={e => updateForm("endsAt", e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-                <Label>Location</Label>
-                <Input value={formData.location} onChange={e => updateForm("location", e.target.value)} placeholder="Venue or Meet link" />
-            </div>
-            <div className="space-y-2">
-              <Label>Cover Image URL</Label>
-              <Input value={formData.coverImage} onChange={e => updateForm("coverImage", e.target.value)} placeholder="https://..." />
-            </div>
-          </div>
-        )}
+    <Card padding={6} className="max-w-3xl mx-auto">
+      <VStack gap={6}>
+        <VStack gap={1}>
+          <HStack justify="between" align="center">
+            <Heading level={2} className="font-semibold text-2xl">
+              {step === 1 && "Basic Details"}
+              {step === 2 && "Ticketing & Capacity"}
+              {step === 3 && "Registration Form Builder"}
+              {step === 4 && "Certificate Settings"}
+              {step === 5 && "Review & Publish"}
+            </Heading>
+            <Badge variant="blue" label={`Step ${step} of 5`} />
+          </HStack>
+          <Text type="supporting">
+            {step === 1 && "Start by providing the essential information about your event."}
+            {step === 2 && "Configure attendee limits and pricing structures."}
+            {step === 3 && "Customize the data you collect during registration."}
+            {step === 4 && "Link a certificate template for automated issuance."}
+            {step === 5 && "Review all details before publishing."}
+          </Text>
+        </VStack>
 
-        {step === 2 && (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Total Capacity</Label>
-              <Input type="number" min="0" value={formData.capacity} onChange={e => updateForm("capacity", parseInt(e.target.value) || 0)} />
-              <p className="text-xs text-muted-foreground">Set to 0 for unlimited.</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="isPaid" checked={formData.isPaid} onCheckedChange={c => updateForm("isPaid", c)} />
-              <Label htmlFor="isPaid">This is a paid event</Label>
-            </div>
-            {formData.isPaid && (
-              <div className="space-y-2 border-l-2 pl-4 ml-2">
-                <Label>Price (INR)</Label>
-                <Input type="number" min="0" value={formData.price} onChange={e => updateForm("price", parseFloat(e.target.value) || 0)} />
+        <div className="py-4 border-t border-b border-border min-h-[400px]">
+          {step === 1 && (
+            <FormLayout>
+              <div className="grid grid-cols-2 gap-4">
+                <TextInput 
+                  label="Title" 
+                  htmlName="title"
+                  value={formData.title} 
+                  onChange={v => updateForm("title", v)} 
+                  placeholder="Event Title" 
+                />
+                <TextInput 
+                  label="Slug" 
+                  htmlName="slug"
+                  value={formData.slug} 
+                  onChange={v => updateForm("slug", v)} 
+                  placeholder="event-slug" 
+                />
               </div>
-            )}
-          </div>
-        )}
+              <TextArea 
+                label="Description" 
+                htmlName="description"
+                value={formData.description} 
+                onChange={v => updateForm("description", v)} 
+                placeholder="Event description..." 
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <TextInput 
+                  type="text" 
+                  label="Start Time" 
+                  htmlName="startsAt"
+                  value={formData.startsAt} 
+                  onChange={v => updateForm("startsAt", v)} 
+                  placeholder="YYYY-MM-DDTHH:MM"
+                />
+                <TextInput 
+                  type="text" 
+                  label="End Time" 
+                  htmlName="endsAt"
+                  value={formData.endsAt} 
+                  onChange={v => updateForm("endsAt", v)} 
+                  placeholder="YYYY-MM-DDTHH:MM"
+                />
+              </div>
+              <TextInput 
+                label="Location" 
+                htmlName="location"
+                value={formData.location} 
+                onChange={v => updateForm("location", v)} 
+                placeholder="Venue or Meet link" 
+              />
+              <TextInput 
+                label="Cover Image URL" 
+                htmlName="coverImage"
+                value={formData.coverImage} 
+                onChange={v => updateForm("coverImage", v)} 
+                placeholder="https://..." 
+              />
+            </FormLayout>
+          )}
 
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <Label>Custom Registration Questions</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addFormField}>+ Add Field</Button>
-            </div>
-            {formData.forms.length === 0 ? (
-              <div className="text-center p-8 bg-muted/20 border rounded-lg text-sm text-muted-foreground">
-                No custom fields added. Default fields (Name, Email, Phone) will be automatically collected.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {formData.forms.map((field, idx) => (
-                  <div key={field.id} className="p-4 border rounded-lg space-y-4 bg-muted/10 relative">
-                    <Button variant="ghost" size="sm" className="absolute top-2 right-2 h-6 w-6 p-0 text-red-500" 
-                      onClick={() => setFormData(prev => ({ ...prev, forms: prev.forms.filter((_, i) => i !== idx) }))}>&times;</Button>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2 space-y-2">
-                        <Label>Question Label</Label>
-                        <Input value={field.question} onChange={e => {
-                          const newForms = [...formData.forms];
-                          newForms[idx].question = e.target.value;
-                          updateForm("forms", newForms);
-                        }} placeholder="e.g. T-Shirt Size" />
+          {step === 2 && (
+            <FormLayout>
+              <TextInput 
+                type="text"
+                label="Total Capacity" 
+                htmlName="capacity"
+                value={formData.capacity.toString()} 
+                onChange={v => updateForm("capacity", parseInt(v) || 0)} 
+                description="Set to 0 for unlimited."
+              />
+              <CheckboxInput 
+                label="This is a paid event" 
+                htmlName="isPaid"
+                value={formData.isPaid} 
+                onChange={v => updateForm("isPaid", v)} 
+              />
+              {formData.isPaid && (
+                <div className="border-l-2 border-blue-500 pl-4 ml-2 mt-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-r-md">
+                  <TextInput 
+                    type="text"
+                    label="Price (INR)" 
+                    htmlName="price"
+                    value={formData.price.toString()} 
+                    onChange={v => updateForm("price", parseFloat(v) || 0)} 
+                  />
+                </div>
+              )}
+            </FormLayout>
+          )}
+
+          {step === 3 && (
+            <VStack gap={6}>
+              <HStack justify="between" align="center">
+                <Text weight="medium">Custom Registration Questions</Text>
+                <Button type="button" variant="secondary" size="sm" onClick={addFormField} label="+ Add Field" />
+              </HStack>
+              {formData.forms.length === 0 ? (
+                <div className="text-center p-8 bg-muted/20 border rounded-lg text-sm text-muted-foreground">
+                  No custom fields added. Default fields (Name, Email, Phone) will be automatically collected.
+                </div>
+              ) : (
+                <VStack gap={4}>
+                  {formData.forms.map((field, idx) => (
+                    <Card key={field.id} padding={4} className="relative bg-muted/10 border-muted">
+                      <div className="absolute top-2 right-2">
+                        <IconButton
+                          variant="ghost" 
+                          icon={<X className="w-4 h-4 text-red-500" />} 
+                          label="Remove field"
+                          onClick={() => setFormData(prev => ({ ...prev, forms: prev.forms.filter((_, i) => i !== idx) }))}
+                        />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Type</Label>
-                        <Select value={field.type} onValueChange={v => {
-                          if (!v) return;
-                          const newForms = [...formData.forms];
-                          newForms[idx].type = v;
-                          updateForm("forms", newForms);
-                        }}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="text">Short Text</SelectItem>
-                            <SelectItem value="textarea">Long Text</SelectItem>
-                            <SelectItem value="dropdown">Dropdown</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    {field.type === "dropdown" && (
-                      <div className="space-y-2">
-                        <Label>Options (comma separated)</Label>
-                        <Input value={(field.options || []).join(",")} onChange={e => {
-                           const newForms = [...formData.forms];
-                           newForms[idx].options = e.target.value.split(",");
-                           updateForm("forms", newForms);
-                        }} placeholder="S, M, L, XL" />
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id={`req-${idx}`} checked={field.required} onCheckedChange={c => {
-                         const newForms = [...formData.forms];
-                         newForms[idx].required = !!c;
-                         updateForm("forms", newForms);
-                      }} />
-                      <Label htmlFor={`req-${idx}`}>Required field</Label>
-                    </div>
-                  </div>
-                ))}
+                      <FormLayout>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-2">
+                            <TextInput 
+                              label="Question Label" 
+                              htmlName={`question-${idx}`}
+                              value={field.question} 
+                              onChange={v => {
+                                const newForms = [...formData.forms];
+                                newForms[idx].question = v;
+                                updateForm("forms", newForms);
+                              }} 
+                              placeholder="e.g. T-Shirt Size" 
+                            />
+                          </div>
+                          <div>
+                            <Selector 
+                              label="Type"
+                              value={field.type} 
+                              onChange={v => {
+                                if (!v) return;
+                                const newForms = [...formData.forms];
+                                newForms[idx].type = v;
+                                updateForm("forms", newForms);
+                              }}
+                              options={[
+                                { value: "text", label: "Short Text" },
+                                { value: "textarea", label: "Long Text" },
+                                { value: "dropdown", label: "Dropdown" },
+                              ]}
+                            />
+                          </div>
+                        </div>
+                        {field.type === "dropdown" && (
+                          <TextInput 
+                            label="Options (comma separated)" 
+                            htmlName={`options-${idx}`}
+                            value={(field.options || []).join(",")} 
+                            onChange={v => {
+                               const newForms = [...formData.forms];
+                               newForms[idx].options = v.split(",");
+                               updateForm("forms", newForms);
+                            }} 
+                            placeholder="S, M, L, XL" 
+                          />
+                        )}
+                        <CheckboxInput 
+                          label="Required field" 
+                          htmlName={`required-${idx}`}
+                          value={field.required} 
+                          onChange={v => {
+                             const newForms = [...formData.forms];
+                             newForms[idx].required = v;
+                             updateForm("forms", newForms);
+                          }} 
+                        />
+                      </FormLayout>
+                    </Card>
+                  ))}
+                </VStack>
+              )}
+            </VStack>
+          )}
+
+          {step === 4 && (
+            <FormLayout>
+              <TextInput 
+                label="Link Certificate Template" 
+                htmlName="templateId"
+                description="Select a template to automatically issue certificates upon event completion."
+                value={formData.certificateTemplateId} 
+                onChange={v => updateForm("certificateTemplateId", v)} 
+                placeholder="Template ID (optional)" 
+              />
+            </FormLayout>
+          )}
+
+          {step === 5 && (
+            <VStack gap={4}>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
+                <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title || "—"}</span>
+                <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? new Date(formData.startsAt).toLocaleString() : "—"}</span>
+                <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>
+                <span className="text-muted-foreground">Price:</span> <span className="font-medium">{formData.isPaid ? `₹${formData.price}` : "Free"}</span>
+                <span className="text-muted-foreground">Custom Fields:</span> <span className="font-medium">{formData.forms.length}</span>
               </div>
-            )}
-          </div>
-        )}
+              <p className="text-sm text-muted-foreground bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 p-4 rounded-md">
+                By clicking publish, this event will be submitted for review. Once approved by an admin, it will go live on the dashboard.
+              </p>
+            </VStack>
+          )}
+        </div>
 
-        {step === 4 && (
-          <div className="space-y-6">
-            <Label>Link Certificate Template</Label>
-            <p className="text-sm text-muted-foreground">Select a template to automatically issue certificates upon event completion.</p>
-            <Input value={formData.certificateTemplateId} onChange={e => updateForm("certificateTemplateId", e.target.value)} placeholder="Template ID (optional)" />
-          </div>
-        )}
-
-        {step === 5 && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Review & Publish</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm border p-4 rounded-lg bg-muted/10">
-              <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title}</span>
-              <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt}</span>
-              <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>
-              <span className="text-muted-foreground">Price:</span> <span className="font-medium">{formData.isPaid ? `₹${formData.price}` : "Free"}</span>
-              <span className="text-muted-foreground">Custom Fields:</span> <span className="font-medium">{formData.forms.length}</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              By clicking publish, this event will be submitted for review. Once approved by an admin, it will go live on the dashboard.
-            </p>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={handlePrev} disabled={step === 1}>Back</Button>
-        {step < 5 ? (
-          <Button onClick={handleNext}>Continue</Button>
-        ) : (
-          <Button onClick={submitEvent} disabled={isSubmitting}>{isSubmitting ? "Publishing..." : "Publish Event"}</Button>
-        )}
-      </CardFooter>
+        <HStack justify="between" align="center">
+          <Button variant="secondary" onClick={handlePrev} isDisabled={step === 1} label="Back" />
+          {step < 5 ? (
+            <Button onClick={handleNext} label="Continue" />
+          ) : (
+            <Button onClick={submitEvent} isDisabled={isSubmitting} label={isSubmitting ? "Publishing..." : "Publish Event"} />
+          )}
+        </HStack>
+      </VStack>
     </Card>
   );
 }

@@ -2,9 +2,14 @@ import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { achievementSubmissions, user } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@astryxdesign/core/Card";
+import { Avatar } from "@astryxdesign/core/Avatar";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Text } from "@astryxdesign/core/Text";
+import { PageHeader } from "@/components/astryx/page-header";
+import { EmptyState } from "@/components/astryx/empty-state";
 import { ReviewActions } from "@/components/achievements/review-actions";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default async function LeadAchievementsPage() {
   await requireRole(["event_lead", "lead", "admin", "owner"]);
@@ -23,48 +28,61 @@ export default async function LeadAchievementsPage() {
   .orderBy(desc(achievementSubmissions.createdAt));
 
   return (
-    <div className="max-w-5xl mx-auto py-12 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Review Achievements</h1>
-        <p className="text-muted-foreground">Approve or reject member achievement submissions to award points.</p>
-      </div>
+    <div className="max-w-5xl mx-auto space-y-8">
+      <PageHeader 
+        title="Review Achievements" 
+        description="Approve or reject member achievement submissions to award points." 
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {pending.length === 0 ? (
-          <Card className="col-span-full border-dashed">
-            <CardContent className="p-8 text-center text-muted-foreground">
-              No pending achievements to review.
-            </CardContent>
-          </Card>
-        ) : (
-          pending.map(({ submission, user }) => (
+      {pending.length === 0 ? (
+        <EmptyState
+          title="All caught up"
+          description="No pending achievements to review."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {pending.map(({ submission, user }) => (
             <Card key={submission.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.image || ""} />
-                    <AvatarFallback>{user.name?.substring(0, 2).toUpperCase() || "US"}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium text-sm">{user.name}</span>
-                </div>
-                <CardTitle className="text-lg">{submission.title}</CardTitle>
-                <CardDescription className="text-xs">{new Date(submission.createdAt).toLocaleDateString()}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm">{submission.description}</p>
+              <VStack gap={4}>
+                <HStack gap={3} align="center">
+                  <Avatar 
+                    name={user.name || "User"} 
+                    src={user.image || undefined} 
+                    size="sm" 
+                  />
+                  <Text weight="medium">{user.name}</Text>
+                </HStack>
+                
+                <VStack gap={1}>
+                  <Text weight="semibold" className="text-lg">{submission.title}</Text>
+                  <Text type="supporting" className="text-xs">
+                    {new Date(submission.createdAt).toLocaleDateString()}
+                  </Text>
+                </VStack>
+                
+                <Text type="supporting" className="text-sm">
+                  {submission.description}
+                </Text>
+                
                 {submission.proofUrl && (
-                  <a href={submission.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm font-medium block">
+                  <a 
+                    href={submission.proofUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-500 hover:underline text-sm font-medium"
+                  >
                     View Attached Proof
                   </a>
                 )}
-                <div className="pt-4 border-t">
+                
+                <div className="pt-4 border-t border-border">
                   <ReviewActions submissionId={submission.id} />
                 </div>
-              </CardContent>
+              </VStack>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

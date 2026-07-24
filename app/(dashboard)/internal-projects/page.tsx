@@ -1,8 +1,9 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { projects, user } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import ProjectsClient from "./projects-client";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +23,16 @@ export default async function ProjectsPage() {
   .orderBy(desc(projects.createdAt));
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects Kanban</h1>
-          <p className="text-muted-foreground">Manage internal and club projects.</p>
-        </div>
+    <div className="space-y-8 max-w-[1600px] mx-auto h-[calc(100vh-80px)] overflow-hidden flex flex-col">
+      <div className="shrink-0">
+        <PageHeader 
+          title="Projects Kanban" 
+          description="Manage internal and club projects."
+        />
       </div>
-      <ProjectsClient initialProjects={allProjects as any} />
+      <div className="flex-1 overflow-hidden">
+        <ProjectsClient initialProjects={allProjects as any} />
+      </div>
     </div>
   );
 }

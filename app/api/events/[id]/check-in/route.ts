@@ -8,7 +8,7 @@ import { withApiHandler, AuthorizationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
 
-export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ slug: string }> }) => {
+export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
   
   // Check if the user is a lead, owner, or admin
@@ -16,7 +16,7 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
     throw new AuthorizationError("Unauthorized scanner");
   }
 
-  const { slug } = await params;
+  const { id } = await params;
   const body = await req.json();
   const { signedPass } = body;
 
@@ -38,7 +38,7 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
   }
 
   // Get event id from slug
-  const eventData = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
+  const eventData = await db.select().from(events).where(eq(events.slug, id)).limit(1);
   if (!eventData.length) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }

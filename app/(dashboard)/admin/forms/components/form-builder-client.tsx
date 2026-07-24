@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Selector } from "@astryxdesign/core/Selector";
+import { Switch } from "@astryxdesign/core/Switch";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { FormLayout } from "@astryxdesign/core/FormLayout";
+import { Badge } from "@astryxdesign/core/Badge";
+import { useToast } from "@/components/astryx/toast-provider";
 import { useFieldArray, useForm } from "react-hook-form";
-import { Trash, Plus, GripVertical, Settings2, Save, FileText } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Trash, Plus, Settings2, Save, FileText } from "lucide-react";
 
 type FormTemplate = {
   id: string;
@@ -28,11 +32,30 @@ type FormTemplate = {
   fields: any[];
 };
 
+const STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "published", label: "Published" },
+  { value: "closed", label: "Closed" },
+  { value: "archived", label: "Archived" }
+];
+
+const FIELD_TYPE_OPTIONS = [
+  { value: "short_text", label: "Short Text" },
+  { value: "long_text", label: "Paragraph" },
+  { value: "email", label: "Email" },
+  { value: "number", label: "Number" },
+  { value: "dropdown", label: "Dropdown" },
+  { value: "checkbox", label: "Multiple Choice (Checkbox)" },
+  { value: "file", label: "File Upload" },
+  { value: "date", label: "Date" }
+];
+
 export default function FormBuilderClient({ initialTemplates }: { initialTemplates: FormTemplate[] }) {
   const [templates, setTemplates] = useState<FormTemplate[]>(initialTemplates);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const { success, error } = useToast();
 
-  const { register, control, handleSubmit, reset, watch, setValue } = useForm({
+  const { register, control, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm({
     defaultValues: {
       title: "",
       description: "",
@@ -78,11 +101,11 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
         setTemplates([saved, ...templates]);
       }
       
-      toast.success("Form saved successfully");
+      success("Form saved successfully");
       setEditingIndex(null);
       reset({ title: "", description: "", status: "draft", settings: { allowExternal: false, requireLogin: true, allowMultiple: false, autoFillProfile: true, quotaPerUser: 1, quotaPerForm: 1000, collegeDomainOnly: true }, fields: [] });
     } catch (e: any) {
-      toast.error(e.message || "Failed to save form");
+      error(e.message || "Failed to save form");
     }
   };
 
@@ -101,220 +124,277 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
     });
   };
 
-  const settingsWatch = watch("settings");
+  const formValues = watch();
+  const settingsWatch = formValues.settings;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-      <div className="md:col-span-4 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Existing Forms</CardTitle>
-            <CardDescription>Manage and edit your form templates.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {templates.map((t, idx) => (
-              <div key={t.id} className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors flex justify-between items-start cursor-pointer" onClick={() => editTemplate(idx)}>
-                <div>
-                  <div className="font-medium text-sm">{t.title}</div>
-                  <div className="text-xs text-muted-foreground capitalize mt-1">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] mr-2 ${t.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-secondary text-secondary-foreground'}`}>
-                      {t.status}
-                    </span>
-                    {t.fields.length} questions
-                  </div>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-4 space-y-4">
+        <Card padding={4}>
+          <VStack gap={4}>
+            <VStack gap={1}>
+              <Text weight="bold" className="text-xl">Existing Forms</Text>
+              <Text type="supporting" className="text-sm">Manage and edit your form templates.</Text>
+            </VStack>
+            
+            <VStack gap={3}>
+              {templates.map((t, idx) => (
+                <div 
+                  key={t.id} 
+                  className={`p-3 border rounded-xl bg-card hover:bg-accent/50 transition-colors flex justify-between items-start cursor-pointer ${editingIndex === idx ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`} 
+                  onClick={() => editTemplate(idx)}
+                >
+                  <VStack gap={1}>
+                    <Text weight="medium" className="text-sm">{t.title}</Text>
+                    <HStack gap={2} align="center" className="mt-1">
+                      <Badge 
+                        variant={t.status === 'published' ? 'success' : 'neutral'}
+                        label={t.status}
+                      />
+                      <Text type="supporting" className="text-xs">{t.fields.length} questions</Text>
+                    </HStack>
+                  </VStack>
                 </div>
-              </div>
-            ))}
-            {templates.length === 0 && (
-              <div className="text-sm text-muted-foreground text-center py-4">No forms created yet.</div>
-            )}
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" variant="outline" onClick={() => { setEditingIndex(null); reset({ title: "", description: "", status: "draft", settings: { allowExternal: false, requireLogin: true, allowMultiple: false, autoFillProfile: true, quotaPerUser: 1, quotaPerForm: 1000, collegeDomainOnly: true }, fields: [] }); }}>
-              <Plus className="w-4 h-4 mr-2" /> Create New Form
-            </Button>
-          </CardFooter>
+              ))}
+              {templates.length === 0 && (
+                <Text type="supporting" className="text-sm text-center py-4">No forms created yet.</Text>
+              )}
+            </VStack>
+            
+            <Button 
+              className="w-full justify-center" 
+              variant="ghost" 
+              label="Create New Form"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => { 
+                setEditingIndex(null); 
+                reset({ title: "", description: "", status: "draft", settings: { allowExternal: false, requireLogin: true, allowMultiple: false, autoFillProfile: true, quotaPerUser: 1, quotaPerForm: 1000, collegeDomainOnly: true }, fields: [] }); 
+              }} 
+            />
+          </VStack>
         </Card>
       </div>
 
-      <div className="md:col-span-8">
-        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>{editingIndex !== null ? "Edit Form" : "Create Form"}</CardTitle>
-                <CardDescription>Configure your form settings and questions.</CardDescription>
-              </div>
-              <Button type="submit">
-                <Save className="w-4 h-4 mr-2" /> Save Form
-              </Button>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="space-y-4 border-b pb-6">
-                <div className="grid gap-2">
-                  <Label>Form Title</Label>
-                  <Input {...register("title")} placeholder="e.g. 2026 Recruitment App" required />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Description</Label>
-                  <Input {...register("description")} placeholder="Brief description of this form..." />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Status</Label>
-                    <select {...register("status")} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                      <option value="closed">Closed</option>
-                      <option value="archived">Archived</option>
-                    </select>
+      <div className="lg:col-span-8">
+        <form onSubmit={handleSubmit(onSubmit as any)}>
+          <Card padding={6}>
+            <VStack gap={6}>
+              <HStack justify="between" align="center">
+                <VStack gap={1}>
+                  <Text weight="bold" className="text-xl">{editingIndex !== null ? "Edit Form" : "Create Form"}</Text>
+                  <Text type="supporting" className="text-sm">Configure your form settings and questions.</Text>
+                </VStack>
+                <Button 
+                  type="submit" 
+                  variant="primary" 
+                  label="Save Form"
+                  icon={<Save className="w-4 h-4" />}
+                  isDisabled={isSubmitting}
+                />
+              </HStack>
+              
+              <div className="space-y-4 border-b border-border pb-6">
+                <FormLayout>
+                  <TextInput
+                    htmlName="title"
+                    label="Form Title"
+                    value={formValues.title}
+                    onChange={(val) => setValue("title", val, { shouldValidate: true })}
+                    placeholder="e.g. 2026 Recruitment App"
+                    isRequired
+                  />
+                  <TextInput
+                    htmlName="description"
+                    label="Description"
+                    value={formValues.description || ""}
+                    onChange={(val) => setValue("description", val, { shouldValidate: true })}
+                    placeholder="Brief description of this form..."
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Selector
+                      htmlName="status"
+                      label="Status"
+                      options={STATUS_OPTIONS}
+                      value={formValues.status}
+                      onChange={(val) => setValue("status", val as any, { shouldValidate: true })}
+                    />
                   </div>
-                </div>
+                </FormLayout>
               </div>
 
-              <div className="space-y-6 border-b pb-6">
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <Settings2 className="w-5 h-5" /> Settings
-                </div>
+              <div className="space-y-6 border-b border-border pb-6">
+                <HStack gap={2} align="center" className="text-lg font-semibold">
+                  <Settings2 className="w-5 h-5" /> 
+                  <Text weight="semibold">Settings</Text>
+                </HStack>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Require Login</Label>
-                      <p className="text-xs text-muted-foreground">User must be signed in</p>
-                    </div>
+                  <HStack justify="between" align="center">
+                    <VStack gap={0}>
+                      <Text weight="medium" className="text-sm">Require Login</Text>
+                      <Text type="supporting" className="text-xs">User must be signed in</Text>
+                    </VStack>
                     <Switch 
-                      checked={settingsWatch.requireLogin} 
-                      onCheckedChange={(c: any) => setValue("settings.requireLogin", c)} 
+                      label="Require Login"
+                      value={settingsWatch.requireLogin} 
+                      onChange={(c) => setValue("settings.requireLogin", c, { shouldValidate: true })} 
                     />
-                  </div>
+                  </HStack>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Allow External</Label>
-                      <p className="text-xs text-muted-foreground">Allow non-college users</p>
-                    </div>
+                  <HStack justify="between" align="center">
+                    <VStack gap={0}>
+                      <Text weight="medium" className="text-sm">Allow External</Text>
+                      <Text type="supporting" className="text-xs">Allow non-college users</Text>
+                    </VStack>
                     <Switch 
-                      checked={settingsWatch.allowExternal} 
-                      onCheckedChange={(c: any) => setValue("settings.allowExternal", c)} 
+                      label="Allow External"
+                      value={settingsWatch.allowExternal} 
+                      onChange={(c) => setValue("settings.allowExternal", c, { shouldValidate: true })} 
                     />
-                  </div>
+                  </HStack>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Auto-fill Profile</Label>
-                      <p className="text-xs text-muted-foreground">Skip irrelevant questions (name, email)</p>
-                    </div>
+                  <HStack justify="between" align="center">
+                    <VStack gap={0}>
+                      <Text weight="medium" className="text-sm">Auto-fill Profile</Text>
+                      <Text type="supporting" className="text-xs">Skip irrelevant questions (name, email)</Text>
+                    </VStack>
                     <Switch 
-                      checked={settingsWatch.autoFillProfile} 
-                      onCheckedChange={(c: any) => setValue("settings.autoFillProfile", c)} 
+                      label="Auto-fill Profile"
+                      value={settingsWatch.autoFillProfile} 
+                      onChange={(c) => setValue("settings.autoFillProfile", c, { shouldValidate: true })} 
                     />
-                  </div>
+                  </HStack>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Allow Multiple</Label>
-                      <p className="text-xs text-muted-foreground">User can submit multiple times</p>
-                    </div>
+                  <HStack justify="between" align="center">
+                    <VStack gap={0}>
+                      <Text weight="medium" className="text-sm">Allow Multiple</Text>
+                      <Text type="supporting" className="text-xs">User can submit multiple times</Text>
+                    </VStack>
                     <Switch 
-                      checked={settingsWatch.allowMultiple} 
-                      onCheckedChange={(c: any) => setValue("settings.allowMultiple", c)} 
+                      label="Allow Multiple"
+                      value={settingsWatch.allowMultiple} 
+                      onChange={(c) => setValue("settings.allowMultiple", c, { shouldValidate: true })} 
                     />
-                  </div>
+                  </HStack>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="grid gap-2">
-                    <Label>Quota Per User</Label>
-                    <Input type="number" {...register("settings.quotaPerUser", { valueAsNumber: true })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Max Submissions (Form Quota)</Label>
-                    <Input type="number" {...register("settings.quotaPerForm", { valueAsNumber: true })} />
-                  </div>
+                  <TextInput
+                    htmlName="quotaPerUser"
+                    label="Quota Per User"
+                    type="text"
+                    value={settingsWatch.quotaPerUser?.toString() || "1"}
+                    onChange={(val) => setValue("settings.quotaPerUser", parseInt(val) || 1, { shouldValidate: true })}
+                  />
+                  <TextInput
+                    htmlName="quotaPerForm"
+                    label="Max Submissions (Form Quota)"
+                    type="text"
+                    value={settingsWatch.quotaPerForm?.toString() || "1000"}
+                    onChange={(val) => setValue("settings.quotaPerForm", parseInt(val) || 1000, { shouldValidate: true })}
+                  />
                 </div>
               </div>
 
               <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-lg font-semibold">
-                    <FileText className="w-5 h-5" /> Fields
-                  </div>
+                <HStack justify="between" align="center">
+                  <HStack gap={2} align="center" className="text-lg font-semibold">
+                    <FileText className="w-5 h-5" /> 
+                    <Text weight="semibold">Fields</Text>
+                  </HStack>
                   <Button 
                     type="button" 
-                    variant="outline" 
-                    size="sm"
+                    variant="ghost" 
+                    label="Add Field"
+                    icon={<Plus className="w-4 h-4" />}
                     onClick={() => append({ id: crypto.randomUUID(), type: "short_text", label: "", required: false })}
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Add Field
-                  </Button>
-                </div>
+                  />
+                </HStack>
 
-                {fields.map((field, index) => {
-                  const typeWatch = watch(`fields.${index}.type`);
-                  return (
-                    <Card key={field.id} className="relative bg-muted/20">
-                      <CardContent className="p-4 space-y-4">
-                        <div className="flex gap-4">
-                          <div className="flex-1 grid gap-2">
-                            <Label>Question Label</Label>
-                            <Input {...register(`fields.${index}.label`)} placeholder="e.g. Why do you want to join?" required />
-                          </div>
-                          <div className="w-1/3 grid gap-2">
-                            <Label>Field Type</Label>
-                            <select {...register(`fields.${index}.type`)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                              <option value="short_text">Short Text</option>
-                              <option value="long_text">Paragraph</option>
-                              <option value="email">Email</option>
-                              <option value="number">Number</option>
-                              <option value="dropdown">Dropdown</option>
-                              <option value="checkbox">Multiple Choice (Checkbox)</option>
-                              <option value="file">File Upload</option>
-                              <option value="date">Date</option>
-                            </select>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between pt-2">
+                <VStack gap={4}>
+                  {fields.map((field, index) => {
+                    const typeWatch = watch(`fields.${index}.type`);
+                    return (
+                      <Card key={field.id} padding={4} className="bg-muted/20">
+                        <VStack gap={4}>
                           <div className="flex gap-4">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" {...register(`fields.${index}.required`)} /> Required
-                            </label>
-                            
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs text-muted-foreground">Auto-fill Key (optional)</Label>
-                              <Input {...register(`fields.${index}.autoFillKey`)} placeholder="e.g. name, email, year" className="h-7 text-xs w-32" />
+                            <div className="flex-1">
+                              <TextInput
+                                htmlName={`fields.${index}.label`}
+                                label="Question Label"
+                                value={watch(`fields.${index}.label`)}
+                                onChange={(val) => setValue(`fields.${index}.label`, val, { shouldValidate: true })}
+                                placeholder="e.g. Why do you want to join?"
+                                isRequired
+                              />
+                            </div>
+                            <div className="w-1/3">
+                              <Selector
+                                htmlName={`fields.${index}.type`}
+                                label="Field Type"
+                                options={FIELD_TYPE_OPTIONS}
+                                value={typeWatch}
+                                onChange={(val) => setValue(`fields.${index}.type`, val, { shouldValidate: true })}
+                              />
                             </div>
                           </div>
+                          
+                          <HStack justify="between" align="center" className="pt-2">
+                            <HStack gap={4}>
+                              <HStack gap={2} align="center">
+                                <Switch 
+                                  label="Required"
+                                  value={watch(`fields.${index}.required`)} 
+                                  onChange={(val) => setValue(`fields.${index}.required`, val, { shouldValidate: true })}
+                                />
+                                <Text weight="medium" className="text-sm">Required</Text>
+                              </HStack>
+                              
+                              <HStack gap={2} align="center">
+                                <Text type="supporting" className="text-xs">Auto-fill Key (optional)</Text>
+                                <div className="w-32">
+                                  <TextInput
+                                    htmlName={`fields.${index}.autoFillKey`}
+                                    label="Auto-fill Key"
+                                    value={watch(`fields.${index}.autoFillKey`) || ""}
+                                    onChange={(val) => setValue(`fields.${index}.autoFillKey`, val, { shouldValidate: true })}
+                                    placeholder="e.g. name, email"
+                                  />
+                                </div>
+                              </HStack>
+                            </HStack>
 
-                          <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="h-8 w-8 text-destructive">
-                            <Trash className="w-4 h-4" />
-                          </Button>
-                        </div>
+                            <button type="button" onClick={() => remove(index)} className="text-red-500 hover:text-red-700 p-2">
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </HStack>
 
-                        {(typeWatch === "dropdown" || typeWatch === "checkbox") && (
-                          <div className="grid gap-2 border-t pt-4 mt-2">
-                            <Label>Options</Label>
-                            <Input 
-                              placeholder="Comma separated options (e.g. Option 1, Option 2)" 
-                              {...register(`fields.${index}.options`)}
-                            />
-                            <p className="text-[10px] text-muted-foreground">Separate options with commas. Upon saving they will be parsed.</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                          {(typeWatch === "dropdown" || typeWatch === "checkbox") && (
+                            <div className="border-t border-border pt-4 mt-2">
+                              <TextInput 
+                                htmlName={`fields.${index}.options`}
+                                label="Options"
+                                placeholder="Comma separated options (e.g. Option 1, Option 2)" 
+                                value={watch(`fields.${index}.options`) || ""}
+                                onChange={(val) => setValue(`fields.${index}.options`, val, { shouldValidate: true })}
+                              />
+                              <Text type="supporting" className="text-[10px] mt-1">Separate options with commas. Upon saving they will be parsed.</Text>
+                            </div>
+                          )}
+                        </VStack>
+                      </Card>
+                    );
+                  })}
+                </VStack>
                 
                 {fields.length === 0 && (
-                  <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
-                    No fields added yet. Click 'Add Field' to start building your form.
+                  <div className="text-center p-8 border border-dashed border-border rounded-lg text-muted-foreground">
+                    <Text type="supporting">No fields added yet. Click 'Add Field' to start building your form.</Text>
                   </div>
                 )}
               </div>
-            </CardContent>
+            </VStack>
           </Card>
         </form>
       </div>

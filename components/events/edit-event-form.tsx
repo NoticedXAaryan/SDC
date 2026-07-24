@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, Button, Heading, Text, HStack, VStack, TextInput, TextArea, Selector, Switch } from "@astryxdesign/core";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const EVENT_TYPES = [
@@ -36,34 +33,46 @@ export function EditEventForm({ event }: { event: any }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPaid, setIsPaid] = useState(event.isPaid || false);
+
+  const [formData, setFormData] = useState({
+    title: event.title || "",
+    type: event.type || "workshop",
+    domain: event.domain || "",
+    description: event.description || "",
+    location: event.location || "",
+    startsAt: formatDateForInput(event.startsAt),
+    endsAt: formatDateForInput(event.endsAt),
+    registrationDeadline: formatDateForInput(event.registrationDeadline),
+    capacity: event.capacity?.toString() || "",
+    visibility: event.visibility || "public",
+    isPaid: event.isPaid || false,
+    price: event.price?.toString() || "",
+  });
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const form = new FormData(e.currentTarget);
-
-    const parseDate = (val: FormDataEntryValue | null) => {
-      if (!val || typeof val !== "string") return undefined;
+    const parseDate = (val: string | null) => {
+      if (!val) return undefined;
       const d = new Date(val);
       return isNaN(d.getTime()) ? undefined : d.toISOString();
     };
 
     const body = {
-      title: form.get("title") as string,
-      type: form.get("type") as string,
-      domain: form.get("domain") as string || undefined,
-      description: form.get("description") as string,
-      location: form.get("location") as string || undefined,
-      capacity: form.get("capacity") ? Number(form.get("capacity")) : null,
-      startsAt: parseDate(form.get("startsAt")),
-      endsAt: parseDate(form.get("endsAt")),
-      registrationDeadline: parseDate(form.get("registrationDeadline")),
-      isPaid,
-      price: isPaid ? Number(form.get("price")) : null,
-      visibility: form.get("visibility") as string,
+      title: formData.title,
+      type: formData.type,
+      domain: formData.domain || undefined,
+      description: formData.description,
+      location: formData.location || undefined,
+      capacity: formData.capacity ? Number(formData.capacity) : null,
+      startsAt: parseDate(formData.startsAt),
+      endsAt: parseDate(formData.endsAt),
+      registrationDeadline: parseDate(formData.registrationDeadline),
+      isPaid: formData.isPaid,
+      price: formData.isPaid && formData.price ? Number(formData.price) : null,
+      visibility: formData.visibility,
     };
 
     try {
@@ -91,10 +100,10 @@ export function EditEventForm({ event }: { event: any }) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Edit Event</h1>
-        <p className="text-muted-foreground mt-1">Update details for {event.title}.</p>
-      </div>
+      <VStack gap={1}>
+        <Heading level={1} className="text-3xl font-bold tracking-tight">Edit Event</Heading>
+        <Text type="supporting">Update details for {event.title}.</Text>
+      </VStack>
 
       {error && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
@@ -103,148 +112,124 @@ export function EditEventForm({ event }: { event: any }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                name="title"
-                required
-                minLength={3}
-                maxLength={200}
-                defaultValue={event.title}
+        <Card padding={6}>
+          <VStack gap={6}>
+            <Heading level={3}>Basic Information</Heading>
+            <VStack gap={4}>
+              <TextInput
+                label="Title *"
+                htmlName="title"
+                value={formData.title}
+                onChange={(value) => setFormData(prev => ({...prev, title: value}))}
+                isRequired
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
-                <select
-                  id="type"
-                  name="type"
-                  required
-                  defaultValue={event.type}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  {EVENT_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="domain">Domain</Label>
-                <Input
-                  id="domain"
-                  name="domain"
-                  defaultValue={event.domain || ""}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Selector
+                  label="Type *"
+                  htmlName="type"
+                  options={EVENT_TYPES.map(t => ({ value: t.value, label: t.label }))}
+                  value={formData.type}
+                  onChange={(value) => setFormData(prev => ({...prev, type: value || "workshop"}))}
+                  isRequired
+                />
+                <TextInput
+                  label="Domain"
+                  htmlName="domain"
+                  value={formData.domain}
+                  onChange={(value) => setFormData(prev => ({...prev, domain: value}))}
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                name="description"
-                required
-                minLength={10}
+              <TextArea
+                label="Description *"
+                htmlName="description"
+                value={formData.description}
+                onChange={(value) => setFormData(prev => ({...prev, description: value}))}
+                isRequired
                 rows={4}
-                defaultValue={event.description || ""}
-                className="resize-y"
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                name="location"
-                defaultValue={event.location || ""}
+              <TextInput
+                label="Location"
+                htmlName="location"
+                value={formData.location}
+                onChange={(value) => setFormData(prev => ({...prev, location: value}))}
               />
-            </div>
-          </CardContent>
+            </VStack>
+          </VStack>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Schedule & Capacity</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startsAt">Start Date & Time *</Label>
-                <Input id="startsAt" name="startsAt" type="datetime-local" required defaultValue={formatDateForInput(event.startsAt)} />
+        <Card padding={6}>
+          <VStack gap={6}>
+            <Heading level={3}>Schedule & Capacity</Heading>
+            <VStack gap={4}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="startsAt" className="text-sm font-medium">Start Date & Time *</Label>
+                  <Input id="startsAt" name="startsAt" type="datetime-local" required value={formData.startsAt} onChange={(e) => setFormData(prev => ({...prev, startsAt: e.target.value}))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="endsAt" className="text-sm font-medium">End Date & Time *</Label>
+                  <Input id="endsAt" name="endsAt" type="datetime-local" required value={formData.endsAt} onChange={(e) => setFormData(prev => ({...prev, endsAt: e.target.value}))} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="endsAt">End Date & Time *</Label>
-                <Input id="endsAt" name="endsAt" type="datetime-local" required defaultValue={formatDateForInput(event.endsAt)} />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="registrationDeadline">Registration Deadline</Label>
-                <Input id="registrationDeadline" name="registrationDeadline" type="datetime-local" defaultValue={formatDateForInput(event.registrationDeadline)} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="registrationDeadline" className="text-sm font-medium">Registration Deadline</Label>
+                  <Input id="registrationDeadline" name="registrationDeadline" type="datetime-local" value={formData.registrationDeadline} onChange={(e) => setFormData(prev => ({...prev, registrationDeadline: e.target.value}))} />
+                </div>
+                <TextInput
+                  label="Capacity (max attendees)"
+                  htmlName="capacity"
+                  type="text"
+                  value={formData.capacity}
+                  onChange={(value) => setFormData(prev => ({...prev, capacity: value}))}
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Capacity (max attendees)</Label>
-                <Input id="capacity" name="capacity" type="number" min="1" max="10000" defaultValue={event.capacity || ""} />
-              </div>
-            </div>
-          </CardContent>
+            </VStack>
+          </VStack>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Visibility & Pricing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2 max-w-sm">
-              <Label htmlFor="visibility">Visibility</Label>
-              <select 
-                id="visibility" 
-                name="visibility"
-                defaultValue={event.visibility}
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              >
-                {VISIBILITY_OPTIONS.map(v => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="isPaid" 
-                name="isPaid" 
-                checked={isPaid} 
-                onCheckedChange={(c) => setIsPaid(c as boolean)} 
-                value="true"
+        <Card padding={6}>
+          <VStack gap={6}>
+            <Heading level={3}>Visibility & Pricing</Heading>
+            <VStack gap={6}>
+              <Selector
+                label="Visibility"
+                htmlName="visibility"
+                options={VISIBILITY_OPTIONS.map(v => ({ value: v.value, label: v.label }))}
+                value={formData.visibility}
+                onChange={(value) => setFormData(prev => ({...prev, visibility: value || "public"}))}
               />
-              <Label htmlFor="isPaid" className="cursor-pointer font-normal">This is a paid event</Label>
-            </div>
 
-            {isPaid && (
-              <div className="space-y-2 max-w-sm">
-                <Label htmlFor="price">Price (INR) *</Label>
-                <Input id="price" name="price" type="number" min="1" step="0.01" required defaultValue={event.price || ""} />
-              </div>
-            )}
-          </CardContent>
+              <Switch 
+                label="This is a paid event"
+                value={formData.isPaid}
+                onChange={(checked) => setFormData(prev => ({...prev, isPaid: checked}))}
+              />
+
+              {formData.isPaid && (
+                <div className="space-y-2 max-w-sm">
+                  <TextInput
+                    label="Price (INR) *"
+                    htmlName="price"
+                    type="text"
+                    value={formData.price}
+                    onChange={(value) => setFormData(prev => ({...prev, price: value}))}
+                    isRequired
+                  />
+                </div>
+              )}
+            </VStack>
+          </VStack>
         </Card>
 
-        <div className="flex items-center gap-4">
-          <Button type="submit" disabled={loading} size="lg">
-            {loading ? "Saving..." : "Save Changes"}
-          </Button>
-          <Button type="button" variant="outline" size="lg" onClick={() => router.back()} disabled={loading}>
-            Cancel
-          </Button>
-        </div>
+        <HStack align="center" gap={4}>
+          <Button type="submit" isDisabled={loading} label={loading ? "Saving..." : "Save Changes"} />
+          <Button type="button" variant="secondary" onClick={() => router.back()} isDisabled={loading} label="Cancel" />
+        </HStack>
       </form>
     </div>
   );

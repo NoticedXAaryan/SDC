@@ -1,10 +1,13 @@
 import { db } from "@/lib/db";
 import { projects } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@astryxdesign/core/Card";
+import { Button } from "@astryxdesign/core/Button";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
+import { HStack } from "@astryxdesign/core/HStack";
+import { EmptyState } from "@/components/astryx/empty-state";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Globe } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +18,13 @@ export default async function ProjectsPage() {
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">Featured Projects</h1>
           <p className="text-xl text-muted-foreground">Discover amazing things built by our community.</p>
         </div>
         <div>
-          <Link href="/projects/submit" className={cn(buttonVariants({ size: "lg" }))}>
-            Submit a Project
+          <Link href="/projects/submit" passHref legacyBehavior>
+            <Button variant="primary" label="Submit a Project" />
           </Link>
         </div>
       </div>
@@ -30,7 +33,7 @@ export default async function ProjectsPage() {
         {allProjects.map(project => {
           const images = project.images as string[] || [];
           return (
-            <Card key={project.id} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
+            <Card key={project.id} padding={0} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow border-border">
               {images.length > 0 ? (
                 <div className="aspect-video bg-muted relative">
                   <img src={images[0]} alt={project.title} className="w-full h-full object-cover" />
@@ -40,32 +43,36 @@ export default async function ProjectsPage() {
                   <span className="text-blue-200 text-4xl font-bold">{project.title.charAt(0)}</span>
                 </div>
               )}
-              <CardHeader>
-                <CardTitle>{project.title}</CardTitle>
-                <CardDescription className="line-clamp-2">{project.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                {/* Additional content could go here */}
-              </CardContent>
-              <CardFooter className="flex justify-between border-t p-4 bg-gray-50/50">
+              
+              <VStack gap={4} className="p-6 flex-1">
+                <VStack gap={2}>
+                  <Text weight="bold" className="text-xl">{project.title}</Text>
+                  <Text type="supporting" className="line-clamp-2 text-sm">{project.description}</Text>
+                </VStack>
+              </VStack>
+              
+              <div className="flex justify-between border-t border-border p-4 bg-muted/10">
                 <div className="flex gap-2">
                   {project.liveUrl && (
-                    <Link href={project.liveUrl} target="_blank" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-                      <Globe className="w-4 h-4" />
+                    <Link href={project.liveUrl} target="_blank" passHref legacyBehavior>
+                      <Button variant="ghost" label="Live Demo" icon={<Globe className="w-4 h-4" />} />
                     </Link>
                   )}
                 </div>
-                <Link href={`/projects/${project.id}`} className={cn(buttonVariants({ variant: "outline" }))}>View Details</Link>
-              </CardFooter>
+                <Link href={`/projects/${project.id}`} passHref legacyBehavior>
+                  <Button variant="secondary" label="View Details" />
+                </Link>
+              </div>
             </Card>
           );
         })}
       </div>
       
       {allProjects.length === 0 && (
-        <div className="text-center p-12 bg-muted/50 rounded-lg border border-dashed">
-          <p className="text-muted-foreground">No projects have been featured yet.</p>
-        </div>
+        <EmptyState 
+          title="No projects featured yet" 
+          description="Check back later for amazing community projects."
+        />
       )}
     </div>
   );

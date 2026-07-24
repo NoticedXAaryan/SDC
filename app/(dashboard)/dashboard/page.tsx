@@ -4,8 +4,8 @@ import { StudentDashboard } from "./components/student-dashboard";
 import { LeadDashboard } from "./components/lead-dashboard";
 import { AdminDashboard } from "./components/admin-dashboard";
 
-import { PageHeader } from "@/components/app/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/astryx/page-header";
+import { Button } from "@astryxdesign/core";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +33,11 @@ export default async function DashboardPage() {
         }
         primaryAction={
           isAdmin ? (
-            <Button asChild><Link href={adminCtaLink}>{adminCtaLabel}</Link></Button>
+            <Button as={Link} href={adminCtaLink} label={adminCtaLabel} />
           ) : isLead ? (
-            <Button asChild><Link href="/events/create">Create event</Link></Button>
+            <Button as={Link} href="/events/create" label="Create event" />
           ) : (
-            <Button asChild><Link href="/events">Explore events</Link></Button>
+            <Button as={Link} href="/events" label="Explore events" />
           )
         }
       />

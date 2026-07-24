@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 import { interviews, applications, user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@astryxdesign/core/Card";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { PageHeader } from "@/components/astryx/page-header";
+import { EmptyState } from "@/components/astryx/empty-state";
 import { ScheduleInterviewDialog } from "./components/schedule-interview-dialog";
 
 export default async function InterviewsPage() {
@@ -34,36 +39,48 @@ export default async function InterviewsPage() {
   .where(eq(applications.status, "interviewing"));
 
   return (
-    <div className="max-w-5xl mx-auto py-12 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Interview Schedule</h1>
-        <ScheduleInterviewDialog applicants={interviewingApplicants} />
-      </div>
+    <div className="max-w-5xl mx-auto space-y-8">
+      <PageHeader 
+        title="Interview Schedule" 
+        description="Manage and schedule interviews with prospective club members."
+        primaryAction={
+          <ScheduleInterviewDialog applicants={interviewingApplicants as any[]} />
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allInterviews.map((interview) => (
-          <Card key={interview.id}>
-            <CardHeader>
-              <CardTitle>Interview with {interview.applicantName}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm">
-                <span className="font-medium">Time:</span> {new Date(interview.scheduledAt).toLocaleString()}
-              </p>
-              {interview.meetingLink && (
-                <p className="text-sm">
-                  <span className="font-medium">Link:</span> <a href={interview.meetingLink} className="text-blue-500 hover:underline">{interview.meetingLink}</a>
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        {allInterviews.length === 0 && (
-          <div className="col-span-full p-8 text-center border border-dashed rounded-lg text-muted-foreground">
-            No interviews scheduled.
-          </div>
-        )}
-      </div>
+      {allInterviews.length === 0 ? (
+        <EmptyState
+          title="No interviews"
+          description="There are currently no interviews scheduled."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allInterviews.map((interview) => (
+            <Card key={interview.id}>
+              <VStack gap={4}>
+                <Text weight="semibold" className="text-lg">
+                  Interview with {interview.applicantName}
+                </Text>
+                
+                <VStack gap={1}>
+                  <Text type="supporting" className="text-sm">
+                    <Text as="span" weight="medium">Time: </Text>
+                    {new Date(interview.scheduledAt).toLocaleString()}
+                  </Text>
+                  {interview.meetingLink && (
+                    <Text type="supporting" className="text-sm">
+                      <Text as="span" weight="medium">Link: </Text>
+                      <a href={interview.meetingLink} className="text-blue-500 hover:underline">
+                        {interview.meetingLink}
+                      </a>
+                    </Text>
+                  )}
+                </VStack>
+              </VStack>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

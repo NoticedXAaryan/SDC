@@ -3,16 +3,16 @@ import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { PageHeader } from "@/components/app/page-header";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/astryx/page-header";
+import { Button } from "@astryxdesign/core";
 import Link from "next/link";
 import { ExternalLink, Camera, FileText, LayoutTemplate, Settings, Users } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EventOverviewTab } from "./components/event-overview-tab";
 import { EventRegistrationsTab } from "./components/event-registrations-tab";
 import { EventScannerTab } from "./components/event-scanner-tab";
 import { EventCommunicationsTab } from "./components/event-communications-tab";
 import { EventCertificatesTab } from "./components/event-certificates-tab";
+import { EventManageTabsNav } from "./components/event-manage-tabs-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -44,47 +44,25 @@ export default async function EventManagePage({
         title={`Manage: ${event.title}`}
         description={`${(event.status || "draft").toUpperCase()} • ${new Date(event.startsAt).toLocaleDateString()}`}
         primaryAction={
-          <Button asChild variant="outline">
-            <Link href={`/events/${event.slug}`}>
-              View public page <ExternalLink className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
+          <Button as={Link} href={`/events/${event.slug}`} variant="secondary" label="View public page" icon={<ExternalLink className="w-4 h-4" />} />
         }
       />
 
-      <Tabs defaultValue={tab} className="w-full">
-        <TabsList className="mb-4 flex-wrap h-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="registrations">Registrations</TabsTrigger>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
-          <TabsTrigger value="scanner">Scanner</TabsTrigger>
-          <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="certificates">Certificates</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview">
-          <EventOverviewTab event={event} />
-        </TabsContent>
-        <TabsContent value="registrations">
-          <EventRegistrationsTab event={event} />
-        </TabsContent>
-        <TabsContent value="sessions">
+      <EventManageTabsNav currentTab={tab} />
+
+      <div className="w-full">
+        {tab === "overview" && <EventOverviewTab event={event} />}
+        {tab === "registrations" && <EventRegistrationsTab event={event} />}
+        {tab === "sessions" && (
           <div className="p-6 border rounded-lg bg-card text-center text-muted-foreground">Sessions management coming soon</div>
-        </TabsContent>
-        <TabsContent value="scanner">
-          <EventScannerTab event={event} />
-        </TabsContent>
-        <TabsContent value="communications">
-          <EventCommunicationsTab event={event} />
-        </TabsContent>
-        <TabsContent value="certificates">
-          <EventCertificatesTab event={event} />
-        </TabsContent>
-        <TabsContent value="settings">
+        )}
+        {tab === "scanner" && <EventScannerTab event={event} />}
+        {tab === "communications" && <EventCommunicationsTab event={event} />}
+        {tab === "certificates" && <EventCertificatesTab event={event} />}
+        {tab === "settings" && (
           <div className="p-6 border rounded-lg bg-card text-center text-muted-foreground">Event settings coming soon</div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }

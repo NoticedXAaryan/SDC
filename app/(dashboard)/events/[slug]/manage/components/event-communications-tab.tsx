@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, Button, Heading, Text, HStack, VStack } from "@astryxdesign/core"
 import { Mail, MessageSquare, Send } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,76 +11,74 @@ export function EventCommunicationsTab({ event }: { event: any }) {
   return (
     <div className="grid gap-6 md:grid-cols-3">
       <div className="md:col-span-2 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Send Announcement</CardTitle>
-            <CardDescription>Send an email update to event attendees</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">To</label>
-              <Select defaultValue="all">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select recipients" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Registered (including waitlist)</SelectItem>
-                  <SelectItem value="confirmed">Confirmed Only</SelectItem>
-                  <SelectItem value="waitlist">Waitlist Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Subject</label>
-              <Input placeholder="Update regarding [Event Name]" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Message</label>
-              <Textarea placeholder="Type your message here..." className="min-h-[150px]" />
-            </div>
-            <Button className="w-full sm:w-auto">
-              <Send className="w-4 h-4 mr-2" /> Send Announcement
-            </Button>
-          </CardContent>
+        <Card padding={6}>
+          <VStack gap={6}>
+            <VStack gap={1}>
+              <Heading level={3} className="text-lg">Send Announcement</Heading>
+              <Text type="supporting">Send an email update to event attendees</Text>
+            </VStack>
+            <VStack gap={4}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">To</label>
+                <Select defaultValue="all">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select recipients" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Registered (including waitlist)</SelectItem>
+                    <SelectItem value="confirmed">Confirmed Only</SelectItem>
+                    <SelectItem value="waitlist">Waitlist Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Subject</label>
+                <Input placeholder="Update regarding [Event Name]" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Message</label>
+                <Textarea placeholder="Type your message here..." className="min-h-[150px]" />
+              </div>
+              <div>
+                <Button label="Send Announcement" icon={<Send className="w-4 h-4" />} className="w-full sm:w-auto" />
+              </div>
+            </VStack>
+          </VStack>
         </Card>
       </div>
 
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Communication History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex flex-col items-center justify-center p-6 text-center border rounded-lg border-dashed">
-                <MessageSquare className="w-8 h-8 text-muted-foreground opacity-50 mb-2" />
-                <p className="text-sm font-medium">No previous communications</p>
-                <p className="text-xs text-muted-foreground mt-1">Announcements sent will appear here</p>
-              </div>
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Heading level={3} className="text-lg">Communication History</Heading>
+            <div className="flex flex-col items-center justify-center p-6 text-center border rounded-lg border-dashed">
+              <MessageSquare className="w-8 h-8 text-muted-foreground opacity-50 mb-2" />
+              <p className="text-sm font-medium text-foreground">No previous communications</p>
+              <p className="text-xs text-muted-foreground mt-1">Announcements sent will appear here</p>
             </div>
-          </CardContent>
+          </VStack>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Automated Emails</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="text-sm font-medium">Registration Confirmation</div>
-                <div className="text-xs text-muted-foreground">Sent upon successful signup</div>
-              </div>
-              <Button variant="outline" size="sm">Edit</Button>
-            </div>
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="space-y-0.5">
-                <div className="text-sm font-medium">Reminder (24h)</div>
-                <div className="text-xs text-muted-foreground">Sent 24 hours before event</div>
-              </div>
-              <Button variant="outline" size="sm">Edit</Button>
-            </div>
-          </CardContent>
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Heading level={3} className="text-lg">Automated Emails</Heading>
+            <VStack gap={4}>
+              <HStack align="center" justify="between">
+                <VStack gap={1}>
+                  <Text weight="medium" className="text-sm">Registration Confirmation</Text>
+                  <Text type="supporting" className="text-xs">Sent upon successful signup</Text>
+                </VStack>
+                <Button variant="secondary" size="sm" label="Edit" />
+              </HStack>
+              <HStack align="center" justify="between" className="pt-4 border-t">
+                <VStack gap={1}>
+                  <Text weight="medium" className="text-sm">Reminder (24h)</Text>
+                  <Text type="supporting" className="text-xs">Sent 24 hours before event</Text>
+                </VStack>
+                <Button variant="secondary" size="sm" label="Edit" />
+              </HStack>
+            </VStack>
+          </VStack>
         </Card>
       </div>
     </div>

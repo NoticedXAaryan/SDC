@@ -1,19 +1,18 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations } from "@/lib/db/schema";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { desc, or, eq, and, gt, lt, ilike, sql, inArray } from "drizzle-orm";
 import { EventFilters } from "@/components/events/event-filters";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/app/page-header";
-import { EmptyState } from "@/components/app/empty-state";
+import { PageHeader } from "@/components/astryx/page-header";
+
 import { Calendar, Plus } from "lucide-react";
 import { ResourceActionMenu } from "@/components/app/resource-action-menu";
 import { RelativeTime } from "@/components/app/relative-time";
+import { Card, Heading, Text, Button, Badge, HStack, VStack, EmptyState } from "@astryxdesign/core";
 
 export const revalidate = 60; // DFD 15: ISR 60s (applies to parts not using headers)
 
@@ -27,7 +26,7 @@ export default async function EventsPage({
   const query = (resolvedSearchParams.q as string) || "";
 
   return (
-    <div className="space-y-6">
+    <VStack gap={6}>
       <Suspense fallback={<Skeleton className="h-10 w-full mb-8" />}>
         <PageHeaderSection />
       </Suspense>
@@ -39,7 +38,7 @@ export default async function EventsPage({
       <Suspense fallback={<EventsSkeleton />}>
         <EventsList filter={filter} query={query} />
       </Suspense>
-    </div>
+    </VStack>
   );
 }
 
@@ -53,7 +52,7 @@ async function PageHeaderSection() {
       title="Events"
       description="Discover and register for upcoming SDC events."
       primaryAction={canCreate ? (
-        <Button asChild><Link href="/events/create"><Plus className="w-4 h-4 mr-2" /> Create Event</Link></Button>
+        <Button as={Link} href="/events/create" label="Create Event" icon={<Plus className="w-4 h-4" />} />
       ) : undefined}
     />
   );
@@ -105,18 +104,16 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
   if (allEvents.length === 0) {
     return (
       <EmptyState
-        icon={Calendar}
+        icon={<Calendar className="w-8 h-8 opacity-50 mb-4" />}
         title="No events found"
         description={
           canCreate && !query
             ? "Create your first event to get started!"
             : "Try adjusting your filters or search query."
         }
-        action={
+        actions={
           canCreate && !query ? (
-            <Button asChild>
-              <Link href="/events/create">Create Event</Link>
-            </Button>
+            <Button as={Link} href="/events/create" label="Create your first event" />
           ) : undefined
         }
       />
@@ -153,7 +150,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
         }
 
         return (
-          <Card key={event.id} className="flex flex-col overflow-hidden group">
+          <Card key={event.id} className="flex flex-col overflow-hidden group p-0">
             {event.coverImage ? (
               <div className="h-48 w-full overflow-hidden bg-muted relative">
                 {/* Blur placeholder effect */}
@@ -181,33 +178,29 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
               </div>
             )}
 
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 px-2 py-1 rounded-full">
-                  {event.type}
-                </span>
-                <div className="flex items-center gap-2">
+            <VStack gap={4} className="p-6 grow">
+              <HStack justify="between" align="center">
+                <Badge variant="blue" className="uppercase tracking-wider" label={event.type} />
+                <HStack align="center" gap={2}>
                   {event.status !== "published" && (
-                    <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 px-2 py-0.5 rounded-full capitalize">
-                      {event.status}
-                    </span>
+                    <Badge variant={event.status === "draft" ? "neutral" : "warning"} className="capitalize" label={event.status} />
                   )}
-                  <span className="text-xs text-muted-foreground">
+                  <Text type="supporting" className="text-xs">
                     <RelativeTime date={event.startsAt} format="date" />
-                  </span>
-                </div>
-              </div>
-              <CardTitle className="mt-2 text-xl line-clamp-1">{event.title}</CardTitle>
-              <CardDescription className="line-clamp-2">
-                {event.description || "No description provided."}
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="mt-auto pt-6 flex items-center justify-between gap-2">
-              <Button asChild className="w-full">
-                <Link href={`/events/${event.slug}`}>
-                  {canCreate ? "Manage Event" : "View Details"}
-                </Link>
-              </Button>
+                  </Text>
+                </HStack>
+              </HStack>
+              
+              <VStack gap={1}>
+                <Heading level={3} className="text-xl line-clamp-1">{event.title}</Heading>
+                <Text type="supporting" className="line-clamp-2">
+                  {event.description || "No description provided."}
+                </Text>
+              </VStack>
+            </VStack>
+            
+            <HStack align="center" justify="between" gap={2} className="p-6 pt-0 mt-auto">
+              <Button variant="secondary" className="w-full" as={Link} href={`/events/${event.slug}`} label={canCreate ? "Manage Event" : "View Details"} />
               {canCreate && (
                 <ResourceActionMenu 
                   label={`Manage ${event.title}`}
@@ -226,7 +219,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
                   }}
                 />
               )}
-            </CardFooter>
+            </HStack>
           </Card>
         );
       })}
@@ -238,21 +231,21 @@ function EventsSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <Card key={i} className="flex flex-col overflow-hidden">
+        <Card key={i} className="flex flex-col overflow-hidden p-0">
           <Skeleton className="h-48 w-full rounded-none" />
-          <CardHeader>
-            <div className="flex justify-between items-center">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
               <Skeleton className="h-6 w-20 rounded-full" />
               <Skeleton className="h-4 w-24" />
             </div>
             <Skeleton className="h-6 w-3/4 mt-4" />
             <Skeleton className="h-4 w-full mt-2" />
             <Skeleton className="h-4 w-2/3 mt-1" />
-          </CardHeader>
-          <CardFooter className="mt-auto pt-6 flex items-center justify-between gap-2">
+          </div>
+          <div className="p-6 pt-0 mt-auto flex items-center justify-between gap-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
-          </CardFooter>
+          </div>
         </Card>
       ))}
     </div>

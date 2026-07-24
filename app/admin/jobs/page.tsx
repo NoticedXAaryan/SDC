@@ -3,8 +3,12 @@ import { emailQueue } from "@/lib/queues/email";
 import { aiQueue } from "@/lib/queues/ai";
 import { gradingQueue } from "@/lib/queues/grading";
 import { certificateQueue } from "@/lib/queues/certificates";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@astryxdesign/core/Card";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
+import { HStack } from "@astryxdesign/core/HStack";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export default async function AdminJobsPage() {
   await requireAdmin();
@@ -32,34 +36,41 @@ export default async function AdminJobsPage() {
   );
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Failed Jobs (Dead Letter Queue)</h1>
+    <div className="max-w-4xl mx-auto py-8 space-y-8">
+      <PageHeader 
+        title="Failed Jobs (Dead Letter Queue)" 
+        description="Monitor and manage background task failures."
+      />
+      
       <div className="grid gap-6">
         {failedJobs.map((q) => (
-          <Card key={q.queueName}>
-            <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <span>{q.queueName} Queue</span>
-                <Badge variant="destructive">{q.jobs.length} Failed</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {q.jobs.length === 0 ? (
-                <p className="text-muted-foreground">No failed jobs.</p>
-              ) : (
-                <ul className="space-y-4">
-                  {q.jobs.map((job) => (
-                    <li key={job.id} className="border-b pb-4 last:border-0 last:pb-0">
-                      <div className="font-medium">{job.name} (ID: {job.id})</div>
-                      <div className="text-sm text-red-500 mt-1">{job.failedReason}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(job.timestamp).toLocaleString()}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
+          <Card key={q.queueName} padding={6}>
+            <VStack gap={4}>
+              <HStack justify="between" align="center" className="border-b border-border pb-4">
+                <Text weight="bold" className="text-xl">{q.queueName} Queue</Text>
+                <Badge variant="error" label={`${q.jobs.length} Failed`} />
+              </HStack>
+              
+              <div>
+                {q.jobs.length === 0 ? (
+                  <Text type="supporting">No failed jobs.</Text>
+                ) : (
+                  <ul className="space-y-4">
+                    {q.jobs.map((job) => (
+                      <li key={job.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                        <VStack gap={1}>
+                          <Text weight="medium">{job.name} (ID: {job.id})</Text>
+                          <Text className="text-sm text-red-500">{job.failedReason}</Text>
+                          <Text type="supporting" className="text-xs">
+                            {new Date(job.timestamp).toLocaleString()}
+                          </Text>
+                        </VStack>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </VStack>
           </Card>
         ))}
       </div>

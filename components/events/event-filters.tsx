@@ -2,9 +2,10 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Input } from "@/components/ui/input";
+import { TextInput } from "@astryxdesign/core";
+import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
+import { HStack } from "@astryxdesign/core";
 import { Search } from "lucide-react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export function EventFilters() {
   const router = useRouter();
@@ -54,38 +55,30 @@ export function EventFilters() {
   return (
     <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center justify-between">
       <div className="relative w-full sm:w-72">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search events..."
-          className="w-full pl-9 bg-background"
+        <TextInput
+          label="Search events"
+          isLabelHidden
+          htmlName="search-events"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
+          placeholder="Search events..."
+          startIcon={<Search className="w-4 h-4" />}
+          isLoading={isPending}
+          hasClear
         />
-        {isPending && (
-          <div className="absolute right-3 top-2.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        )}
       </div>
 
-      <ToggleGroup
-        type="single"
+      <SegmentedControl
         value={currentFilter}
-        onValueChange={handleFilterChange}
-        className="justify-start w-full sm:w-auto"
+        onChange={handleFilterChange}
+        label="Filter events"
+        size="sm"
       >
-        <ToggleGroupItem value="upcoming" aria-label="Upcoming">
-          Upcoming
-        </ToggleGroupItem>
-        <ToggleGroupItem value="ongoing" aria-label="Ongoing">
-          Ongoing
-        </ToggleGroupItem>
-        <ToggleGroupItem value="past" aria-label="Past">
-          Past
-        </ToggleGroupItem>
-        <ToggleGroupItem value="my-registrations" aria-label="My Registrations">
-          My Registrations
-        </ToggleGroupItem>
-      </ToggleGroup>
+        <SegmentedControlItem value="upcoming" label="Upcoming" />
+        <SegmentedControlItem value="ongoing" label="Ongoing" />
+        <SegmentedControlItem value="past" label="Past" />
+        <SegmentedControlItem value="my-registrations" label="My Registrations" />
+      </SegmentedControl>
     </div>
   );
 }

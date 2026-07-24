@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@astryxdesign/core/Card";
+import { Selector } from "@astryxdesign/core/Selector";
+import { Text } from "@astryxdesign/core/Text";
+import { HStack } from "@astryxdesign/core/HStack";
+import { VStack } from "@astryxdesign/core/VStack";
+import { Badge } from "@astryxdesign/core/Badge";
+import { useToast } from "@/components/astryx/toast-provider";
 
 type Project = {
   id: string;
@@ -19,64 +21,75 @@ type Project = {
 
 const statuses = ["pending", "approved", "rejected"];
 
+const STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" }
+];
+
 export default function ProjectsClient({ initialProjects }: { initialProjects: Project[] }) {
   const [projects, setProjects] = useState(initialProjects);
   const [loading, setLoading] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   const updateStatus = async (projectId: string, newStatus: string) => {
     setLoading(projectId);
     try {
       // Optimistically update
       setProjects(projects.map(p => p.id === projectId ? { ...p, status: newStatus as any } : p));
-      toast.success("Status updated");
+      success("Status updated");
     } catch (e: any) {
-      toast.error("Failed to update status");
+      error("Failed to update status");
     } finally {
       setLoading(null);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-4 overflow-x-auto pb-4 h-full">
       {statuses.map(status => (
-        <div key={status} className="flex flex-col gap-3 min-w-[280px]">
-          <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border">
-            <h3 className="font-semibold capitalize">{status}</h3>
-            <Badge variant="secondary">{projects.filter(p => (p.status || "pending") === status).length}</Badge>
-          </div>
+        <div key={status} className="flex flex-col gap-3 min-w-[320px] w-[320px] bg-muted/30 p-4 rounded-xl border border-border h-full">
+          <HStack justify="between" align="center" className="mb-2 px-1">
+            <Text weight="semibold" className="text-sm capitalize">{status}</Text>
+            <Badge 
+              variant="neutral"
+              label={projects.filter(p => (p.status || "pending") === status).length.toString()} 
+            />
+          </HStack>
           
-          <div className="flex flex-col gap-3">
+          <VStack gap={3} className="flex-1 overflow-y-auto pr-1">
             {projects.filter(p => (p.status || "pending") === status).map(project => (
-              <Card key={project.id} className="shadow-sm cursor-grab active:cursor-grabbing border-muted-foreground/20">
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-base">{project.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                  <p className="line-clamp-2">{project.description || "No description"}</p>
-                  <div className="mt-3 flex gap-2">
-                    {project.githubUrl && <a href={project.githubUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">GitHub</a>}
-                    {project.liveUrl && <a href={project.liveUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">Demo</a>}
-                  </div>
-                </CardContent>
-                <CardFooter className="p-2 border-t flex justify-end bg-muted/20">
-                  <Select
-                    disabled={loading === project.id}
+              <Card key={project.id} padding={0} className="shadow-sm cursor-grab active:cursor-grabbing">
+                <VStack gap={3} className="p-4">
+                  <Text weight="semibold" className="text-base">{project.title}</Text>
+                  
+                  <Text type="supporting" className="text-sm line-clamp-3">
+                    {project.description || "No description"}
+                  </Text>
+                  
+                  <HStack gap={3}>
+                    {project.githubUrl && (
+                      <a href={project.githubUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline font-medium">GitHub</a>
+                    )}
+                    {project.liveUrl && (
+                      <a href={project.liveUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline font-medium">Demo</a>
+                    )}
+                  </HStack>
+                </VStack>
+                
+                <div className="p-3 border-t border-border bg-muted/10">
+                  <Selector
+                    htmlName={`status-${project.id}`}
+                    label=""
+                    options={STATUS_OPTIONS}
                     value={project.status || "pending"}
-                    onValueChange={(val) => updateStatus(project.id as string, val as string)}
-                  >
-                    <SelectTrigger className="h-7 text-xs w-[110px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </CardFooter>
+                    onChange={(val) => updateStatus(project.id as string, val)}
+                    isDisabled={loading === project.id}
+                  />
+                </div>
               </Card>
             ))}
-          </div>
+          </VStack>
         </div>
       ))}
     </div>

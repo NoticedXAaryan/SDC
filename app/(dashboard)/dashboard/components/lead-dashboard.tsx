@@ -1,180 +1,145 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
-import { Users, Calendar, ClipboardList, CheckSquare, Activity, Plus, FileText, Settings, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+"use client";
 
-export function LeadDashboard({ user, managementStats, upcomingEvents }: any) {
+import React from "react";
+import Link from "next/link";
+import { Users, Calendar, ClipboardList, CheckSquare, Activity, Plus, FileText, Settings } from "lucide-react";
+import { Card, Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
+import { MetricCard } from "@/components/astryx/metric-card";
+import { StatusBadge } from "@/components/astryx/status-badge";
+
+export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: any) {
   return (
-    <div className="space-y-6">
+    <VStack gap={6}>
       
       {/* 2. Domain KPIs */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Domain Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{managementStats?.totalMembers || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active in your domain</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{managementStats?.activeEvents || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Ongoing or upcoming</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Responses</CardTitle>
-            <ClipboardList className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{managementStats?.totalRegistrations || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all active forms</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-            <CheckSquare className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">12</div>
-            <p className="text-xs text-muted-foreground mt-1">Requires your attention</p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Domain Members"
+          value={managementStats?.totalMembers || 0}
+          icon={<Users />}
+        />
+        <MetricCard
+          title="Active Events"
+          value={managementStats?.activeEvents || 0}
+          icon={<Calendar />}
+        />
+        <MetricCard
+          title="Total Responses"
+          value={managementStats?.totalRegistrations || 0}
+          icon={<ClipboardList />}
+        />
+        <MetricCard
+          title="Pending Tasks"
+          value="12"
+          icon={<CheckSquare />}
+          variant="orange"
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
+        <VStack gap={6} className="md:col-span-2">
           {/* 1. Active Tasks (Reviews pending, approvals, interviews) */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Tasks</CardTitle>
-              <CardDescription>Items that need your review or approval</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border rounded-lg p-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-amber-100 text-amber-600 p-2 rounded-full"><ClipboardList className="w-4 h-4" /></div>
-                  <div>
-                    <p className="font-semibold text-sm">Application Reviews</p>
-                    <p className="text-xs text-muted-foreground">5 pending reviews in Tech Domain</p>
-                  </div>
-                </div>
-                <Button size="sm" asChild>
-                  <Link href="/manage/recruitment">Review</Link>
-                </Button>
-              </div>
-              <div className="flex items-center justify-between bg-white dark:bg-zinc-900 border rounded-lg p-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 text-blue-600 p-2 rounded-full"><FileText className="w-4 h-4" /></div>
-                  <div>
-                    <p className="font-semibold text-sm">Certificate Generation</p>
-                    <p className="text-xs text-muted-foreground">Batch #452 needs approval</p>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href="/manage/certificates">Manage</Link>
-                </Button>
-              </div>
-            </CardContent>
+          <Card padding={4}>
+            <VStack gap={4}>
+              <VStack gap={0}>
+                <Heading level={2} className="font-semibold text-lg">Active Tasks</Heading>
+                <Text type="supporting">Items that need your review or approval</Text>
+              </VStack>
+              
+              <VStack gap={4}>
+                <HStack justify="between" align="center" className="bg-white dark:bg-zinc-900 border border-border rounded-lg p-3">
+                  <HStack align="center" gap={3}>
+                    <div className="bg-amber-100 text-amber-600 p-2 rounded-full"><ClipboardList className="w-4 h-4" /></div>
+                    <VStack gap={0}>
+                      <Text weight="semibold" className="text-sm">Application Reviews</Text>
+                      <Text type="supporting" className="text-xs">5 pending reviews in Tech Domain</Text>
+                    </VStack>
+                  </HStack>
+                  <Button size="sm" as={Link} href="/manage/recruitment" label="View Applications" />
+                </HStack>
+                <HStack justify="between" align="center" className="bg-white dark:bg-zinc-900 border border-border rounded-lg p-3">
+                  <HStack align="center" gap={3}>
+                    <div className="bg-blue-100 text-blue-600 p-2 rounded-full"><FileText className="w-4 h-4" /></div>
+                    <VStack gap={0}>
+                      <Text weight="semibold" className="text-sm">Certificate Generation</Text>
+                      <Text type="supporting" className="text-xs">Batch #452 needs approval</Text>
+                    </VStack>
+                  </HStack>
+                  <Button size="sm" variant="secondary" as={Link} href="/manage/certificates" label="Issue Certificates" />
+                </HStack>
+              </VStack>
+            </VStack>
           </Card>
 
           {/* 4. Team Activity Feed */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative border-l border-muted ml-3 space-y-6">
+          <Card padding={4}>
+            <VStack gap={4}>
+              <Heading level={2} className="font-semibold text-lg">Team Activity</Heading>
+              
+              <div className="relative border-l border-border ml-3 space-y-6">
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
-                  <h4 className="font-semibold text-sm">Event Created</h4>
-                  <p className="text-xs text-muted-foreground">Aaryan created "Tech Talk 2026" • 2h ago</p>
+                  <Text weight="semibold" className="text-sm">Event Created</Text>
+                  <Text type="supporting" className="text-xs">Aaryan created "Tech Talk 2026" • 2h ago</Text>
                 </div>
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
-                  <h4 className="font-semibold text-sm">Form Published</h4>
-                  <p className="text-xs text-muted-foreground">Jane published "Feedback Form" • 5h ago</p>
+                  <Text weight="semibold" className="text-sm">Form Published</Text>
+                  <Text type="supporting" className="text-xs">Jane published "Feedback Form" • 5h ago</Text>
                 </div>
               </div>
-            </CardContent>
+            </VStack>
           </Card>
-        </div>
+        </VStack>
 
         {/* 3. Quick Actions */}
-        <div className="space-y-6">
-          <Card className="h-max">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 flex flex-col">
-              <Button variant="outline" className="justify-start h-auto py-3" asChild>
-                <Link href="/manage/events/new">
-                  <Plus className="mr-2 h-4 w-4" /> Create Event
-                </Link>
-              </Button>
-              <Button variant="outline" className="justify-start h-auto py-3" asChild>
-                <Link href="/manage/forms">
-                  <FileText className="mr-2 h-4 w-4" /> Manage Forms
-                </Link>
-              </Button>
-              <Button variant="outline" className="justify-start h-auto py-3" asChild>
-                <Link href="/manage/recruitment">
-                  <Users className="mr-2 h-4 w-4" /> Recruitment
-                </Link>
-              </Button>
-              <Button variant="outline" className="justify-start h-auto py-3" asChild>
-                <Link href="/manage/settings">
-                  <Settings className="mr-2 h-4 w-4" /> Domain Settings
-                </Link>
-              </Button>
-            </CardContent>
+        <VStack gap={6}>
+          <Card padding={4}>
+            <VStack gap={4}>
+              <Heading level={2} className="font-semibold text-lg">Quick Actions</Heading>
+              <VStack gap={2}>
+                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/events/new" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/forms" label="Form Builder" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/recruitment" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
+                <Button variant="secondary" className="justify-start w-full py-3" as={Link} href="/manage/settings" label="Settings" icon={<Settings className="w-4 h-4 text-muted-foreground" />} />
+              </VStack>
+            </VStack>
           </Card>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Upcoming Events (Next 7 Days)</CardTitle>
-              <Link href="/events" className="text-sm text-primary hover:underline font-medium">View all</Link>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upcomingEvents.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4">No events in the next 7 days.</div>
-              ) : (
-                upcomingEvents.map((event: any) => (
-                  <div key={event.id} className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-sm">{event.title}</h4>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(event.startsAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge variant="outline">{event.type}</Badge>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="w-full text-xs h-7" asChild>
-                        <Link href={`/events/${event.slug}/manage`}>Manage</Link>
-                      </Button>
-                      <Button size="sm" className="w-full text-xs h-7" asChild>
-                        <Link href={`/events/${event.slug}/manage?tab=scanner`}>Open scanner</Link>
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
+          <Card padding={4}>
+            <VStack gap={4}>
+              <HStack justify="between" align="center">
+                <Heading level={2} className="font-semibold text-lg">Upcoming Events</Heading>
+                <Link href="/events" className="text-sm text-blue-600 hover:underline font-medium">View all</Link>
+              </HStack>
+              
+              <VStack gap={4}>
+                {upcomingEvents.length === 0 ? (
+                  <Text type="supporting" className="text-center py-4">No events in the next 7 days.</Text>
+                ) : (
+                  upcomingEvents.map((event: any) => (
+                    <VStack key={event.id} gap={2} className="p-3 bg-muted/50 rounded-lg">
+                      <HStack justify="between" align="start">
+                        <VStack gap={0}>
+                          <Text weight="semibold" className="text-sm">{event.title}</Text>
+                          <Text type="supporting" className="text-xs">
+                            {new Date(event.startsAt).toLocaleDateString()}
+                          </Text>
+                        </VStack>
+                        <Badge variant="neutral" label={event.type} />
+                      </HStack>
+                      <HStack gap={2} className="mt-2">
+                        <Button size="sm" variant="secondary" className="w-full text-xs h-7" as={Link} href={`/events/${event.slug}/manage`} label="Manage" />
+                        <Button size="sm" className="w-full text-xs h-7" as={Link} href={`/events/${event.slug}/manage?tab=scanner`} label="Scanner" />
+                      </HStack>
+                    </VStack>
+                  ))
+                )}
+              </VStack>
+            </VStack>
           </Card>
-        </div>
+        </VStack>
       </div>
-    </div>
+    </VStack>
   );
 }

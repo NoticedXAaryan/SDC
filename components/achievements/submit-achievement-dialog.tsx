@@ -2,35 +2,35 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Button } from "@astryxdesign/core/Button";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { FormLayout } from "@astryxdesign/core/FormLayout";
+import { useToast } from "@/components/astryx/toast-provider";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function SubmitAchievementDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [proofUrl, setProofUrl] = useState("");
+  
   const router = useRouter();
+  const { error, success } = useToast();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (title.length < 5) {
+      error("Title must be at least 5 characters");
+      return;
+    }
+    if (description.length < 10) {
+      error("Description must be at least 10 characters");
+      return;
+    }
+
     setLoading(true);
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const proofUrl = formData.get("proofUrl") as string;
-
     try {
       const res = await fetch("/api/achievements", {
         method: "POST",
@@ -43,10 +43,14 @@ export function SubmitAchievementDialog() {
         throw new Error(data.error || "Failed to submit achievement");
       }
 
+      success("Achievement submitted successfully!");
       setOpen(false);
+      setTitle("");
+      setDescription("");
+      setProofUrl("");
       router.refresh();
     } catch (err: any) {
-      setError(err.message);
+      error(err.message);
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,7 @@ export function SubmitAchievementDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button>Submit Achievement</Button>
+        <Button label="Submit Achievement" variant="primary" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -64,25 +68,41 @@ export function SubmitAchievementDialog() {
             Report a new milestone, project, or competition win to earn points.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" required minLength={5} placeholder="e.g. 1st Place at Hackathon" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" required minLength={10} placeholder="Describe what you did..." />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="proofUrl">Proof URL (Optional)</Label>
-            <Input id="proofUrl" name="proofUrl" type="url" placeholder="https://..." />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex justify-end pt-2">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Submitting..." : "Submit"}
-            </Button>
-          </div>
+        <form onSubmit={onSubmit} className="pt-4">
+          <FormLayout>
+            <TextInput
+              label="Title"
+              htmlName="title"
+              value={title}
+              onChange={setTitle}
+              placeholder="e.g. 1st Place at Hackathon"
+              isRequired
+            />
+            <TextArea
+              label="Description"
+              htmlName="description"
+              value={description}
+              onChange={setDescription}
+              placeholder="Describe what you did..."
+              isRequired
+            />
+            <TextInput
+              label="Proof URL (Optional)"
+              htmlName="proofUrl"
+              type="text"
+              value={proofUrl}
+              onChange={setProofUrl}
+              placeholder="https://..."
+            />
+            <div className="flex justify-end pt-2">
+              <Button 
+                type="submit" 
+                label={loading ? "Submitting..." : "Submit"} 
+                variant="primary" 
+                isDisabled={loading} 
+              />
+            </div>
+          </FormLayout>
         </form>
       </DialogContent>
     </Dialog>

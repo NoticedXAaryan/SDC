@@ -1,23 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CookieBanner } from "@/components/global/cookie-banner";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import { PostHogPageView } from "@/components/providers/posthog-pageview";
 import { PostHogIdentify } from "@/components/providers/posthog-identify";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AstryxProvider } from "@/components/providers/astryx-provider";
 import { Toaster } from "sonner";
 import { Suspense } from "react";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "SDC OS | Student Developer Club",
@@ -32,7 +22,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="font-sans h-full antialiased"
       suppressHydrationWarning
       data-astryx-theme="astryx"
     >
@@ -48,7 +38,9 @@ export default function RootLayout({
             <Suspense fallback={null}>
               <PostHogPageView />
             </Suspense>
-            {children}
+            <AstryxProvider>
+              {children}
+            </AstryxProvider>
             <CookieBanner />
           </PostHogProvider>
           <Toaster position="top-right" />

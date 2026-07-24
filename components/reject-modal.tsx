@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Button } from "@astryxdesign/core/Button";
+import { Selector } from "@astryxdesign/core/Selector";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { FormLayout } from "@astryxdesign/core/FormLayout";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sparkles, Loader2 } from "lucide-react";
 
 interface RejectModalProps {
@@ -15,6 +15,15 @@ interface RejectModalProps {
   title?: string;
   description?: string;
 }
+
+const REASON_CODES = [
+  { value: "INCOMPLETE_PROFILE", label: "Incomplete profile / missing resume" },
+  { value: "SKILL_MISMATCH", label: "Skill mismatch for this role" },
+  { value: "EXPERIENCE", label: "Experience criteria not met" },
+  { value: "PLAGIARISM", label: "Plagiarism / AI generated" },
+  { value: "DEADLINE", label: "Applied after deadline" },
+  { value: "OTHER", label: "Other - custom reason" }
+];
 
 export function RejectModal({ isOpen, onOpenChange, onConfirm, title = "Reject Request", description = "Please provide a reason for rejection." }: RejectModalProps) {
   const [reasonCode, setReasonCode] = useState<string>("");
@@ -51,55 +60,62 @@ export function RejectModal({ isOpen, onOpenChange, onConfirm, title = "Reject R
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Reason Code</Label>
-            <Select value={reasonCode} onValueChange={(val: any) => setReasonCode(val)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="INCOMPLETE_PROFILE">Incomplete profile / missing resume</SelectItem>
-                <SelectItem value="SKILL_MISMATCH">Skill mismatch for this role</SelectItem>
-                <SelectItem value="EXPERIENCE">Experience criteria not met</SelectItem>
-                <SelectItem value="PLAGIARISM">Plagiarism / AI generated</SelectItem>
-                <SelectItem value="DEADLINE">Applied after deadline</SelectItem>
-                <SelectItem value="OTHER">Other - custom reason</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Additional Notes (Optional)</Label>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 text-xs text-primary" 
-                onClick={handleGenerateAI}
-                disabled={!reasonCode || isGenerating}
-                type="button"
-              >
-                {isGenerating ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                Draft with AI
-              </Button>
-            </div>
-            <Textarea 
-              value={reasonNote} 
-              onChange={e => setReasonNote(e.target.value)} 
-              placeholder="Provide more context..."
-              rows={3}
+        <div className="pt-4">
+          <FormLayout>
+            <Selector
+              htmlName="reasonCode"
+              label="Reason Code"
+              options={REASON_CODES}
+              value={reasonCode}
+              onChange={setReasonCode}
+              isRequired
             />
-          </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-[-12px] z-10 relative px-1">
+                {/* Visual alignment with TextArea label */}
+                <span /> 
+                <button 
+                  type="button"
+                  className="flex items-center text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  onClick={handleGenerateAI}
+                  disabled={!reasonCode || isGenerating}
+                >
+                  {isGenerating ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                  Draft with AI
+                </button>
+              </div>
+              <TextArea 
+                htmlName="reasonNote"
+                label="Additional Notes (Optional)"
+                value={reasonNote} 
+                onChange={setReasonNote} 
+                placeholder="Provide more context..."
+              />
+            </div>
+            
+            <div className="flex justify-end pt-2 gap-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                label="Cancel" 
+                onClick={() => onOpenChange(false)} 
+              />
+              <Button 
+                type="button" 
+                variant="destructive" 
+                label="Reject" 
+                onClick={handleConfirm} 
+                isDisabled={!reasonCode} 
+              />
+            </div>
+          </FormLayout>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={!reasonCode}>Reject</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

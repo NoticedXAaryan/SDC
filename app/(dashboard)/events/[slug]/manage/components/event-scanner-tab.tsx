@@ -1,57 +1,53 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, Button, Heading, Text, HStack, VStack } from "@astryxdesign/core"
 import { QrCode, ScanLine, Keyboard, WifiOff, CheckCircle2, XCircle } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TextInput, Selector } from "@astryxdesign/core"
 
 export function EventScannerTab({ event }: { event: any }) {
   const [mode, setMode] = React.useState<"camera" | "hardware" | "manual">("camera")
   const [session, setSession] = React.useState<string>("all")
+  const [hardwareInput, setHardwareInput] = React.useState("")
+  const [manualInput, setManualInput] = React.useState("")
   
   return (
     <div className="grid gap-6 md:grid-cols-3">
       <div className="md:col-span-2 space-y-6">
-        <Card className="overflow-hidden">
-          <CardHeader className="bg-muted/30 border-b">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg">Scanner Interface</CardTitle>
-                <CardDescription>Scan passes or look up attendees</CardDescription>
-              </div>
+        <Card padding={0} className="overflow-hidden">
+          <div className="bg-muted/30 border-b p-6">
+            <HStack align="center" justify="between" className="flex-col md:flex-row gap-4">
+              <VStack gap={1}>
+                <Heading level={3} className="text-lg">Scanner Interface</Heading>
+                <Text type="supporting">Scan passes or look up attendees</Text>
+              </VStack>
               
-              <div className="flex bg-muted p-1 rounded-lg">
+              <HStack align="center" className="bg-muted p-1 rounded-lg">
                 <Button 
                   variant={mode === "camera" ? "secondary" : "ghost"} 
                   size="sm" 
                   onClick={() => setMode("camera")}
-                  className="px-3"
-                >
-                  <QrCode className="w-4 h-4 mr-2" /> Camera
-                </Button>
+                  label="Camera"
+                  icon={<QrCode className="w-4 h-4" />}
+                />
                 <Button 
                   variant={mode === "hardware" ? "secondary" : "ghost"} 
                   size="sm" 
                   onClick={() => setMode("hardware")}
-                  className="px-3"
-                >
-                  <ScanLine className="w-4 h-4 mr-2" /> Hardware
-                </Button>
+                  label="Hardware"
+                  icon={<ScanLine className="w-4 h-4" />}
+                />
                 <Button 
                   variant={mode === "manual" ? "secondary" : "ghost"} 
                   size="sm" 
                   onClick={() => setMode("manual")}
-                  className="px-3"
-                >
-                  <Keyboard className="w-4 h-4 mr-2" /> Manual
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
+                  label="Manual"
+                  icon={<Keyboard className="w-4 h-4" />}
+                />
+              </HStack>
+            </HStack>
+          </div>
+          <div>
             {mode === "camera" && (
               <div className="aspect-video bg-black flex flex-col items-center justify-center relative">
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -63,15 +59,6 @@ export function EventScannerTab({ event }: { event: any }) {
                   </div>
                 </div>
                 <p className="text-white/70 text-sm mt-72">Requesting camera access...</p>
-                
-                {/* Mock successful scan overlay for demonstration */}
-                {/* 
-                <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm flex flex-col items-center justify-center">
-                  <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-white">Valid Pass</h3>
-                  <p className="text-white/80">Aaryan (Member)</p>
-                </div>
-                */}
               </div>
             )}
             
@@ -82,17 +69,16 @@ export function EventScannerTab({ event }: { event: any }) {
                   <h3 className="font-medium text-lg">Ready to scan</h3>
                   <p className="text-sm text-muted-foreground">Click the input below and use your hardware scanner.</p>
                 </div>
-                <Input placeholder="Scan barcode here..." className="max-w-md text-center" autoFocus />
+                <TextInput label="Scanner Input" htmlName="scanner-input" placeholder="Scan QR code here..." className="max-w-md text-center" hasAutoFocus value={hardwareInput} onChange={setHardwareInput} />
               </div>
             )}
             
             {mode === "manual" && (
               <div className="p-8 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Pass Code or Email</label>
                   <div className="flex gap-2">
-                    <Input placeholder="e.g. SDC-12345 or email@example.com" />
-                    <Button>Lookup</Button>
+                    <TextInput label="Pass Code or Email" htmlName="lookup" placeholder="e.g. SDC-12345 or email@example.com" value={manualInput} onChange={setManualInput} />
+                    <Button label="Lookup" />
                   </div>
                 </div>
                 
@@ -102,78 +88,73 @@ export function EventScannerTab({ event }: { event: any }) {
                 </div>
               </div>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
       
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Scanner Options</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Heading level={3} className="text-lg">Scanner Options</Heading>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Check-in Context</label>
-              <Select value={session} onValueChange={(val) => setSession(val || "all")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select session" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Entire Event (General Admission)</SelectItem>
-                  <SelectItem value="session-1">Opening Keynote</SelectItem>
-                  <SelectItem value="session-2">Workshop A</SelectItem>
-                </SelectContent>
-              </Select>
+              <Selector 
+                label="Check-in Context"
+                value={session} 
+                onChange={(val) => setSession(val || "all")}
+                options={[
+                  { value: "all", label: "Entire Event (General Admission)" },
+                  { value: "session-1", label: "Opening Keynote" },
+                  { value: "session-2", label: "Workshop A" },
+                ]}
+              />
             </div>
             
-            <div className="pt-4 border-t flex justify-between items-center text-sm">
+            <HStack justify="between" align="center" className="pt-4 border-t text-sm">
               <span className="text-muted-foreground">Offline Sync</span>
-              <div className="flex items-center gap-2">
+              <HStack align="center" gap={2}>
                 <WifiOff className="w-4 h-4 text-amber-500" />
                 <span className="font-medium">2 pending</span>
-                <Button variant="outline" size="sm" className="ml-2 h-7 text-xs">Sync</Button>
-              </div>
-            </div>
-          </CardContent>
+                <Button variant="ghost" size="sm" className="ml-2 h-7 text-xs" label="Sync" />
+              </HStack>
+            </HStack>
+          </VStack>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Scans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <div className="flex items-center gap-3">
+        <Card padding={6}>
+          <VStack gap={4}>
+            <Heading level={3} className="text-lg">Recent Scans</Heading>
+            <VStack gap={4}>
+              <HStack align="center" justify="between" className="border-b pb-3">
+                <HStack align="center" gap={3}>
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">Aaryan</p>
-                    <p className="text-xs text-muted-foreground">General Admission • 10:42 AM</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs h-7">Undo</Button>
-              </div>
-              <div className="flex items-center justify-between border-b pb-3">
-                <div className="flex items-center gap-3">
+                  <VStack gap={0}>
+                    <Text weight="medium" className="text-sm">Aaryan</Text>
+                    <Text type="supporting" className="text-xs">General Admission • 10:42 AM</Text>
+                  </VStack>
+                </HStack>
+                <Button variant="ghost" size="sm" className="text-xs h-7" label="Undo" />
+              </HStack>
+              <HStack align="center" justify="between" className="border-b pb-3">
+                <HStack align="center" gap={3}>
                   <XCircle className="w-5 h-5 text-red-500" />
-                  <div>
-                    <p className="text-sm font-medium">Unknown Code</p>
-                    <p className="text-xs text-muted-foreground">SDC-99999 • 10:40 AM</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                  <VStack gap={0}>
+                    <Text weight="medium" className="text-sm">Unknown Code</Text>
+                    <Text type="supporting" className="text-xs">SDC-99999 • 10:40 AM</Text>
+                  </VStack>
+                </HStack>
+              </HStack>
+              <HStack align="center" justify="between">
+                <HStack align="center" gap={3}>
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">Jane Smith</p>
-                    <p className="text-xs text-muted-foreground">General Admission • 10:35 AM</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs h-7">Undo</Button>
-              </div>
-            </div>
-          </CardContent>
+                  <VStack gap={0}>
+                    <Text weight="medium" className="text-sm">Jane Smith</Text>
+                    <Text type="supporting" className="text-xs">General Admission • 10:35 AM</Text>
+                  </VStack>
+                </HStack>
+                <Button variant="ghost" size="sm" className="text-xs h-7" label="Undo" />
+              </HStack>
+            </VStack>
+          </VStack>
         </Card>
       </div>
     </div>

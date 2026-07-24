@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@astryxdesign/core/Button";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Card } from "@astryxdesign/core/Card";
+import { FormLayout } from "@astryxdesign/core/FormLayout";
+import { VStack } from "@astryxdesign/core/VStack";
+import { useToast } from "@/components/astryx/toast-provider";
 
 export function SubmitProjectForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { success, error } = useToast();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -23,7 +25,7 @@ export function SubmitProjectForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) {
-      toast.error("Title and description are required");
+      error("Title and description are required");
       return;
     }
 
@@ -50,75 +52,81 @@ export function SubmitProjectForm() {
         throw new Error(data.error || "Failed to submit project");
       }
 
-      toast.success("Project submitted successfully. Pending approval.");
+      success("Project submitted successfully. Pending approval.");
       router.push("/projects");
       router.refresh();
     } catch (err: any) {
-      toast.error(err.message);
+      error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card>
+    <Card padding={6}>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4 pt-6">
-          <div className="space-y-2">
-            <Label htmlFor="title">Project Title <span className="text-destructive">*</span></Label>
-            <Input id="title" value={title} onChange={e => setTitle(e.target.value)} required />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
-            <Textarea 
-              id="description" 
+        <VStack gap={6}>
+          <FormLayout>
+            <TextInput
+              htmlName="title"
+              label="Project Title"
+              value={title}
+              onChange={setTitle}
+              isRequired
+            />
+            
+            <TextArea 
+              htmlName="description"
+              label="Description"
               value={description} 
-              onChange={e => setDescription(e.target.value)} 
-              required 
-              rows={4}
+              onChange={setDescription} 
+              isRequired 
               placeholder="What did you build? What technologies did you use?"
             />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="github">GitHub URL</Label>
-              <Input id="github" type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/..." />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TextInput
+                htmlName="github"
+                label="GitHub URL"
+                value={githubUrl}
+                onChange={setGithubUrl}
+                placeholder="https://github.com/..."
+              />
+              
+              <TextInput
+                htmlName="live"
+                label="Live URL"
+                value={liveUrl}
+                onChange={setLiveUrl}
+                placeholder="https://..."
+              />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="live">Live URL</Label>
-              <Input id="live" type="url" value={liveUrl} onChange={e => setLiveUrl(e.target.value)} placeholder="https://..." />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="team">Team Members</Label>
-            <Input 
-              id="team" 
-              value={teamMembers} 
-              onChange={e => setTeamMembers(e.target.value)} 
-              placeholder="Alice, Bob (comma separated)" 
+            <TextInput
+              htmlName="team"
+              label="Team Members"
+              value={teamMembers}
+              onChange={setTeamMembers}
+              placeholder="Alice, Bob (comma separated)"
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="image">Cover Image URL</Label>
-            <Input 
-              id="image" 
-              type="url" 
-              value={imageUrl} 
-              onChange={e => setImageUrl(e.target.value)} 
-              placeholder="https://..." 
+            
+            <TextInput
+              htmlName="image"
+              label="Cover Image URL"
+              value={imageUrl}
+              onChange={setImageUrl}
+              placeholder="https://..."
             />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Submitting..." : "Submit Project"}
-          </Button>
-        </CardFooter>
+          </FormLayout>
+          
+          <Button 
+            type="submit" 
+            isDisabled={loading} 
+            className="w-full justify-center"
+            label={loading ? "Submitting..." : "Submit Project"}
+            variant="primary"
+          />
+        </VStack>
       </form>
     </Card>
   );
