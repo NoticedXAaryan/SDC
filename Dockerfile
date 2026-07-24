@@ -42,6 +42,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
@@ -58,6 +61,10 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# Healthcheck so Docker/Traefik knows when the app is ready
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:3000/api/health || exit 1
 
 CMD ["node", "server.js"]
 

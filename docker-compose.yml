@@ -17,6 +17,9 @@ services:
       target: builder
     command: ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
     env_file: [.env]
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: "no"
     networks:
       - default
@@ -26,7 +29,10 @@ services:
     depends_on:
       redis: 
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     env_file: [.env]
+    restart: unless-stopped
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sdc-main-router.rule=Host(`sdc.aaaryan.space`)"
@@ -45,6 +51,8 @@ services:
     depends_on: 
       redis: 
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     env_file: [.env]
     restart: unless-stopped
     networks:

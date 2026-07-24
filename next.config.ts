@@ -1,33 +1,17 @@
 import "./lib/env";
 import type { NextConfig } from "next";
 
-
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.159.148', 'localhost'],
+  // Server-side packages that should not be bundled.
+  // clawpdf/@pdfme packages use Node.js builtins (module, fs) that break in browser bundles.
   serverExternalPackages: ['clawpdf', '@pdfme/converter', '@pdfme/ui', '@pdfme/common', 'ioredis', 'bullmq'],
   output: "standalone",
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        module: false,
-        path: false,
-        crypto: false,
-        zlib: false,
-        url: false,
-      };
-    }
-    return config;
-  },
   turbopack: {
     resolveAlias: {
-      fs: { browser: './lib/mock-node.js' },
+      // clawpdf (used by @pdfme/converter) dynamically imports 'module' which doesn't
+      // exist in browser context. Provide a no-op stub so Turbopack doesn't fail.
       module: { browser: './lib/mock-node.js' },
-      path: { browser: './lib/mock-node.js' },
-      crypto: { browser: './lib/mock-node.js' },
-      zlib: { browser: './lib/mock-node.js' },
-      url: { browser: './lib/mock-node.js' },
     },
   },
   async headers() {
