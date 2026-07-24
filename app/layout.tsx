@@ -34,6 +34,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
+      data-astryx-theme="astryx"
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider

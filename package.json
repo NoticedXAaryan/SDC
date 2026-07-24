@@ -23,6 +23,8 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.11",
+    "@astryxdesign/core": "^0.1.8",
+    "@astryxdesign/theme-neutral": "^0.1.8",
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
     "@marsidev/react-turnstile": "^1.5.3",
@@ -88,6 +90,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "^0.1.8",
     "@faker-js/faker": "^10.5.0",
     "@tailwindcss/postcss": "^4",
     "@types/jsonwebtoken": "^9.0.10",

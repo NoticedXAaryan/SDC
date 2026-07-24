@@ -9,13 +9,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { 
   Home, Calendar, Briefcase, Package, 
   Settings, Users, FileText, QrCode, 
   CreditCard, Inbox, ShieldCheck,
-  Award, MessageSquare, Target, Activity, CheckSquare
+  Award, MessageSquare, Target, Activity, CheckSquare,
+  Layers, BarChart3
 } from "lucide-react";
 
 export async function AppSidebar() {
@@ -24,12 +28,11 @@ export async function AppSidebar() {
   
   const isAdmin = ["admin", "faculty_coordinator", "owner"].includes(role);
   const isLead = isAdmin || ["lead", "co_lead", "event_lead", "content_lead", "marketing_lead", "tech_lead", "finance_lead", "volunteer_lead", "vice_lead"].includes(role);
-  const isMember = true;
 
   const navGroups = [
     {
       label: "My club",
-      visible: isMember,
+      visible: true,
       items: [
         { title: "Home", href: "/dashboard", icon: Home },
         { title: "Events", href: "/events", icon: Calendar },
@@ -37,6 +40,7 @@ export async function AppSidebar() {
         { title: "My pass", href: "/passes/me", icon: QrCode },
         { title: "Certificates", href: "/certificates", icon: Award },
         { title: "Achievements", href: "/achievements", icon: Target },
+        { title: "Leaderboard", href: "/leaderboard", icon: BarChart3 },
         { title: "Feedback", href: "/forms/feedback", icon: MessageSquare },
       ]
     },
@@ -78,17 +82,31 @@ export async function AppSidebar() {
 
   return (
     <Sidebar>
+      <SidebarHeader className="px-4 py-4">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground text-background font-bold text-sm transition-transform group-hover:scale-105">
+            S
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold tracking-tight leading-none">SDC OS</span>
+            <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">Student Developer Club</span>
+          </div>
+        </Link>
+      </SidebarHeader>
+      <SidebarSeparator />
       <SidebarContent>
-        {navGroups.filter(g => g.visible).map((group) => (
+        {navGroups.filter(g => g.visible).map((group, idx) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/70 px-2">
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <Link href={item.href}>
-                        <item.icon className="mr-2 h-4 w-4" />
+                        <item.icon className="mr-2 h-4 w-4 text-muted-foreground/70" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -99,6 +117,12 @@ export async function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
+      <SidebarFooter className="px-4 py-3 border-t border-border/40">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+          <Layers className="h-3 w-3" />
+          <span>v2.1 · Powered by Astryx</span>
+        </div>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
