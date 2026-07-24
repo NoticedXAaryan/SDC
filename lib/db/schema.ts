@@ -306,12 +306,45 @@ export const projects = pgTable("projects", {
   description: text("description").notNull(),
   githubUrl: text("githubUrl"),
   liveUrl: text("liveUrl"),
-  teamMembers: jsonb("teamMembers"), // array of { name, role, github, twitter }
-  images: jsonb("images"), // array of urls
   upvotes: integer("upvotes").default(0),
   status: submissionStatusEnum("status").default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
+
+export const projectMembers = pgTable("project_members", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  projectId: text("projectId").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  githubUrl: text("githubUrl"),
+  twitterUrl: text("twitterUrl"),
+});
+
+export const projectImages = pgTable("project_images", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  projectId: text("projectId").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  url: text("url").notNull(),
+  orderIndex: integer("orderIndex").default(0),
+});
+
+export const projectsRelations = relations(projects, ({ many }) => ({
+  teamMembers: many(projectMembers),
+  images: many(projectImages),
+}));
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const projectImagesRelations = relations(projectImages, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectImages.projectId],
+    references: [projects.id],
+  }),
+}));
 
 export const formTemplates = pgTable("form_templates", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

@@ -13,7 +13,13 @@ import { Globe } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const allProjects = await db.select().from(projects).where(eq(projects.status, "approved")).orderBy(desc(projects.createdAt));
+  const allProjects = await db.query.projects.findMany({
+    where: eq(projects.status, "approved"),
+    orderBy: [desc(projects.createdAt)],
+    with: {
+      images: true,
+    }
+  });
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-4 space-y-8">
@@ -31,7 +37,7 @@ export default async function ProjectsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-8">
         {allProjects.map(project => {
-          const images = project.images as string[] || [];
+          const images = project.images?.map(img => img.url) || [];
           return (
             <Card key={project.id} padding={0} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow border-border">
               {images.length > 0 ? (

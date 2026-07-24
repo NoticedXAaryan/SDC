@@ -25,8 +25,9 @@ export async function checkRateLimit(req: NextRequest, keySuffix?: string): Prom
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      // Redis connection error -> fail closed
-      return { success: false, error: "Service temporarily unavailable" };
+      // Redis connection error -> fail open so we don't break the app
+      console.warn("Rate limit redis error:", error.message);
+      return { success: true };
     }
     // Rate limit exceeded
     return { success: false, error: "Too many requests" };

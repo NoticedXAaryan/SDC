@@ -5,6 +5,7 @@ import { user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const applySchema = z.object({
   year: z.number().min(1).max(5),
@@ -21,6 +22,11 @@ const session = await auth.api.getSession({
 
 if (!session?.user) {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+const rl = await checkRateLimit(req, "onboarding_apply");
+if (!rl.success) {
+  return NextResponse.json({ error: rl.error }, { status: 429 });
 }
 
 if ((session.user as any).role !== "applicant") {

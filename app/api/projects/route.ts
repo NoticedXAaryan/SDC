@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { projects } from "@/lib/db/schema";
+import { projects, projectMembers, projectImages } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,14 @@ export const GET = withApiHandler(async (req: NextRequest) => {
       conditions = eq(projects.status, "approved");
     }
 
-    const data = await db.select().from(projects).where(conditions).orderBy(desc(projects.createdAt));
+    const data = await db.query.projects.findMany({
+      where: conditions,
+      orderBy: [desc(projects.createdAt)],
+      with: {
+        teamMembers: true,
+        images: true
+      }
+    });
 
     return NextResponse.json({ projects: data });
   });
@@ -29,6 +37,11 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();
 const reqBody = await req.json();
+
+const rl = await checkRateLimit(req, "submit_project");
+if (!rl.success) {
+  return NextResponse.json({ error: rl.error }, { status: 429 });
+}
 
 const { title, description, githubUrl, liveUrl, teamMembers, images } = reqBody;
 
@@ -38,15 +51,37 @@ if (!title || !description) {
 
 const projectId = crypto.randomUUID();
 
-await db.insert(projects).values({
-  id: projectId,
-  title,
-  description,
-  githubUrl,
-  liveUrl,
-  teamMembers,
-  images,
-  status: "pending",
+await db.transaction(async (tx) => {
+  await tx.insert(projects).values({
+    id: projectId,
+    title,
+    description,
+    githubUrl,
+    liveUrl,
+    status: "pending",
+  });
+
+  if (teamMembers && Array.isArray(teamMembers) && teamMembers.length > 0) {
+    await tx.insert(projectMembers).values(
+      teamMembers.map((m: any) => ({
+        projectId,
+        name: m.name,
+        role: m.role,
+        githubUrl: m.githubUrl || m.github,
+        twitterUrl: m.twitterUrl || m.twitter
+      }))
+    );
+  }
+
+  if (images && Array.isArray(images) && images.length > 0) {
+    await tx.insert(projectImages).values(
+      images.map((url: string, index: number) => ({
+        projectId,
+        url,
+        orderIndex: index
+      }))
+    );
+  }
 });
 
 return NextResponse.json({ success: true, id: projectId }, { status: 201 });

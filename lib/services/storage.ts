@@ -19,4 +19,14 @@ export class LocalMockStorageService {
     const webPath = filePath.replace(/\\/g, "/");
     return `/uploads/${webPath}`;
   }
+
+  async deleteFile(url: string): Promise<void> {
+    if (!url.startsWith("/uploads/")) return;
+    try {
+      const fullPath = path.join(process.cwd(), "public", url);
+      await fs.unlink(fullPath);
+    } catch {
+      // ignore
+    }
+  }
 }

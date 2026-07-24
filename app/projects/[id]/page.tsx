@@ -14,15 +14,20 @@ import { Globe, ExternalLink } from "lucide-react";
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
-  const projectRows = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
-  const project = projectRows[0];
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, id),
+    with: {
+      teamMembers: true,
+      images: true,
+    }
+  });
   
   if (!project) {
     notFound();
   }
 
-  const teamMembers = project.teamMembers as Array<{ name: string; role: string; github?: string; twitter?: string }> || [];
-  const images = project.images as string[] || [];
+  const teamMembers = project.teamMembers || [];
+  const images = project.images?.map(img => img.url) || [];
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 space-y-8">
@@ -66,8 +71,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <Text type="supporting" className="text-sm">{member.role}</Text>
                 </div>
                 <div className="flex gap-2">
-                  {member.github && (
-                    <Link href={`https://github.com/${member.github}`} target="_blank" className="text-muted-foreground hover:text-foreground">
+                  {member.githubUrl && (
+                    <Link href={member.githubUrl.startsWith('http') ? member.githubUrl : `https://github.com/${member.githubUrl}`} target="_blank" className="text-muted-foreground hover:text-foreground">
                       <ExternalLink className="w-4 h-4" />
                     </Link>
                   )}

@@ -10,17 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function ProjectsPage() {
   await requireSession();
   
-  const allProjects = await db.select({
-    id: projects.id,
-    title: projects.title,
-    description: projects.description,
-    status: projects.status,
-    githubUrl: projects.githubUrl,
-    liveUrl: projects.liveUrl,
-    images: projects.images,
-  })
-  .from(projects)
-  .orderBy(desc(projects.createdAt));
+  const allProjects = await db.query.projects.findMany({
+    orderBy: [desc(projects.createdAt)],
+    with: {
+      images: true,
+      teamMembers: true,
+    }
+  });
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto h-[calc(100vh-80px)] overflow-hidden flex flex-col">

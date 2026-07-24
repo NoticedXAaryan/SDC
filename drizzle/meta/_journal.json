@@ -85,6 +85,13 @@
       "when": 1784134966896,
       "tag": "0011_woozy_weapon_omega",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784903117705,
+      "tag": "0012_faithful_black_bird",
+      "breakpoints": true
     }
   ]
 }
