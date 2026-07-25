@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { certificateTemplates, events } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { certTemplates, events } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
@@ -18,7 +18,8 @@ export default async function CertificatesDashboardPage() {
     redirect("/");
   }
 
-  const templates = await db.select().from(certificateTemplates).orderBy(desc(certificateTemplates.createdAt));
+  const templates = await db.select().from(certTemplates)
+    .orderBy(desc(certTemplates.createdAt));
   const recentEvents = await db.select({ id: events.id, title: events.title }).from(events).orderBy(desc(events.createdAt)).limit(20);
 
   return (
@@ -41,7 +42,7 @@ export default async function CertificatesDashboardPage() {
             </CardHeader>
             <CardContent className="flex-1">
               <div className="aspect-video w-full rounded-md bg-muted flex items-center justify-center overflow-hidden border">
-                <iframe src={`${template.basePdf}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full object-cover pointer-events-none" />
+                <iframe src={`${template.backgroundUrl}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full border-0 pointer-events-none" />
               </div>
             </CardContent>
             <CardFooter className="flex gap-2 justify-between">

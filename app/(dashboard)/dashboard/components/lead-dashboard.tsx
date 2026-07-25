@@ -65,7 +65,7 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
                       <Text type="supporting" className="text-xs">Batch #452 needs approval</Text>
                     </VStack>
                   </HStack>
-                  <Button size="sm" variant="secondary" href="/manage/certificates" label="Issue Certificates" />
+                  <Button size="sm" variant="secondary" href="/admin/certificates" label="Issue Certificates" />
                 </HStack>
               </VStack>
             </VStack>

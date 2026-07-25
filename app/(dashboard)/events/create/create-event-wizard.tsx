@@ -293,7 +293,7 @@ export function CreateEventWizard() {
             <VStack gap={4}>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
                 <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title || "—"}</span>
-                <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? new Date(formData.startsAt).toLocaleString() : "—"}</span>
+                <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? (isNaN(new Date(formData.startsAt).getTime()) ? "Invalid Date" : new Date(formData.startsAt).toLocaleString()) : "—"}</span>
                 <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>
                 <span className="text-muted-foreground">Price:</span> <span className="font-medium">{formData.isPaid ? `₹${formData.price}` : "Free"}</span>
                 <span className="text-muted-foreground">Custom Fields:</span> <span className="font-medium">{formData.forms.length}</span>

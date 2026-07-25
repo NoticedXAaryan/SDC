@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events, registrations, certificateTemplates } from "@/lib/db/schema";
+import { events, registrations, certTemplates } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { logAuditEvent } from "@/lib/services/audit";
 
@@ -26,7 +26,7 @@ if (!event) {
 }
 
 // Verify template
-const [template] = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, templateId)).limit(1);
+const [template] = await db.select().from(certTemplates).where(eq(certTemplates.id, templateId)).limit(1);
 if (!template) {
   return NextResponse.json({ error: "Template not found" }, { status: 404 });
 }

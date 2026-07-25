@@ -49,7 +49,7 @@ export const MANAGEMENT_ROLES: SDCRole[] = [
 ];
 
 /** Roles that can perform admin operations (member management, role changes) */
-export const ADMIN_ROLES: SDCRole[] = ["vice_lead", "lead", "admin", "owner"];
+export const ADMIN_ROLES: SDCRole[] = ["admin", "owner"];
 
 /**
  * Extended session user type that includes our custom fields.
@@ -123,7 +123,7 @@ export async function requireAdmin() {
 
 /** Requires at least lead-level access */
 export async function requireLead() {
-  return requireRole(["lead", "admin", "owner"]);
+  return requireRole(["vice_lead", "lead", "admin", "owner"]);
 }
 
 /** Requires finance or admin access */

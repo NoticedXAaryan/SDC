@@ -27,7 +27,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
     notFound();
   }
 
-  const template = await db.query.certificateTemplates.findFirst();
+  const template = await db.query.certTemplates.findFirst();
   
   // Get registered count dynamically
   const [countResult] = await db.select({ count: sql<number>`count(*)` })

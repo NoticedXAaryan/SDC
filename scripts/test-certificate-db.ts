@@ -1,5 +1,5 @@
 import { db } from "../lib/db";
-import { certificates, certificateTemplates, user, events } from "../lib/db/schema";
+import { certificatesV2, certTemplates, user, events } from "../lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PdfmeRenderer } from "../lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "../lib/services/storage";
@@ -7,7 +7,7 @@ import crypto from "crypto";
 
 async function main() {
   try {
-    const templateData = await db.query.certificateTemplates.findFirst();
+    const templateData = await db.query.certTemplates.findFirst();
     if (!templateData) return console.log("No templates found");
     
     console.log("Template found:", templateData.id);
@@ -27,8 +27,8 @@ async function main() {
     };
     
     const template = {
-      basePdf: templateData.basePdf,
-      schemas: templateData.schemas as any,
+      basePdf: templateData.backgroundUrl,
+      schemas: templateData.fields as any,
     };
 
     console.log("Rendering...");

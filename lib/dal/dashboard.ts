@@ -1,6 +1,6 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user, events, registrations, applications, insights } from "@/lib/db/schema";
+import { user, events, registrations, applications, insights, certificatesV2 } from "@/lib/db/schema";
 import { eq, count, sql, and, desc, gte } from "drizzle-orm";
 
 export async function getDashboardData() {
@@ -82,6 +82,18 @@ export async function getDashboardData() {
   .limit(1)
   .then(rows => rows[0] || null);
 
+  // 5. User's Certificates
+  const myCertificates = await db.select({
+    id: certificatesV2.id,
+    verifyId: certificatesV2.verifyId,
+    issuedAt: certificatesV2.issuedAt,
+    data: certificatesV2.data,
+  })
+  .from(certificatesV2)
+  .where(eq(certificatesV2.userId, userId))
+  .orderBy(desc(certificatesV2.issuedAt))
+  .limit(3);
+
   return {
     user: session.user,
     upcomingEvents,
@@ -89,5 +101,6 @@ export async function getDashboardData() {
     managementStats,
     myApplication,
     insightsData,
+    myCertificates,
   };
 }

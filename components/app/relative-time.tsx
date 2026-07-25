@@ -53,6 +53,10 @@ export function RelativeTime({
 
   const d = typeof date === "string" ? new Date(date) : date;
 
+  if (isNaN(d.getTime())) {
+    return <span className={className}>—</span>;
+  }
+
   if (!mounted) {
     // Server/SSR: render the ISO date to avoid hydration mismatch
     return <time dateTime={d.toISOString()} className={className}>{d.toISOString().split("T")[0]}</time>;

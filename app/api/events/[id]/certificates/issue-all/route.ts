@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, getUserDomain, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events, registrations, certificates, certificateTemplates, user } from "@/lib/db/schema";
+import { events, registrations, certificatesV2, certTemplates, user } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { certificateQueue } from "@/lib/queues/certificates";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -28,20 +28,21 @@ if (!isAdmin) {
   }
 }
 
-const reqBody = await req.json().catch(() => ({}));
-const templateId = reqBody.templateId;
-
-if (!templateId) {
-  return NextResponse.json({ error: "Missing templateId in body" }, { status: 400 });
+if (!event.certificateTemplateId) {
+  return NextResponse.json({ error: "No certificate template configured for this event" }, { status: 400 });
 }
 
-const template = await db.query.certificateTemplates.findFirst({
-  where: eq(certificateTemplates.id, templateId),
+const template = await db.query.certTemplates.findFirst({
+  where: eq(certTemplates.id, event.certificateTemplateId)
 });
 
 if (!template) {
   return NextResponse.json({ error: "Template not found" }, { status: 404 });
 }
+
+// Fetch existing certificates to avoid duplicates
+const existingCerts = await db.select({ userId: certificatesV2.userId }).from(certificatesV2).where(eq(certificatesV2.eventId, eventId));
+const existingUserIds = new Set(existingCerts.map(c => c.userId));
 
 // Fetch all checked_in attendees with user data via manual join
 const attendees = await db
@@ -59,17 +60,19 @@ const attendees = await db
     )
   );
 
-if (attendees.length === 0) {
-  return NextResponse.json({ message: "No checked-in attendees found to issue certificates to." }, { status: 200 });
+const eligibleAttendees = attendees.filter(a => !existingUserIds.has(a.userId));
+
+if (eligibleAttendees.length === 0) {
+  return NextResponse.json({ message: "No eligible checked-in attendees found to issue certificates to." }, { status: 200 });
 }
 
 // Queue jobs
-const jobs = attendees.map(reg => ({
+const jobs = eligibleAttendees.map(reg => ({
   name: "generate-certificate",
   data: {
     userId: reg.userId,
     eventId,
-    templateId,
+    templateId: event.certificateTemplateId,
     issuedBy: session.user.id,
     userName: reg.userName,
     userEmail: reg.userEmail,

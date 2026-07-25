@@ -2,6 +2,9 @@ import { Worker, Job } from "bullmq";
 import { Mailer } from "@/lib/services/mailer";
 import { logger } from "@/lib/logger";
 import { getWorkerConfig } from "@/lib/redis";
+import { db } from "@/lib/db";
+import { communications, registrations, user } from "@/lib/db/schema";
+import { eq, inArray, and } from "drizzle-orm";
 
 /**
  * Email worker — processes all email job types from the shared email-queue.
@@ -18,6 +21,47 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
   switch (type) {
     case "event_registration":
       await Mailer.sendEventQRPass(payload.email, payload.eventTitle, payload.qrCodeDataUrl);
+      break;
+
+    case "broadcast_communication":
+      {
+        const { commId, eventId, subject, body, targetAudience } = payload;
+        
+        // Find users to broadcast to
+        const conditions = targetAudience !== "all" 
+          ? and(eq(registrations.eventId, eventId), eq(registrations.status, targetAudience))
+          : eq(registrations.eventId, eventId);
+
+        const audience = await db.select({ email: user.email })
+          .from(registrations)
+          .innerJoin(user, eq(registrations.userId, user.id))
+          .where(conditions);
+
+        let successCount = 0;
+
+        for (const recipient of audience) {
+          try {
+            await Mailer.sendEmail({
+              to: recipient.email,
+              subject,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <p>${body.replace(/\n/g, "<br>")}</p>
+                  <p style="font-size: 12px; color: #666; margin-top: 30px;">This is an automated announcement from SDC.</p>
+                </div>
+              `,
+            });
+            successCount++;
+          } catch (e) {
+            logger.error({ email: recipient.email, commId, error: e }, "Failed to send broadcast email to recipient");
+          }
+        }
+
+        // Update communication status
+        await db.update(communications)
+          .set({ status: "sent", sentCount: successCount })
+          .where(eq(communications.id, commId));
+      }
       break;
 
     case "event_reminder":

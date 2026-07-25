@@ -25,8 +25,10 @@ interface AppSideNavProps {
 export function AppSideNav({ role = "member" }: AppSideNavProps) {
   const pathname = usePathname();
   
-  const isManagement = ["admin", "lead", "finance_lead", "event_lead", "tech_lead"].includes(role);
-  const isAdmin = role === "admin";
+  const isManagement = ["admin", "owner", "lead", "finance_lead", "event_lead", "tech_lead"].includes(role);
+  const isAdmin = ["admin", "owner"].includes(role);
+  const isFinance = isAdmin || role === "finance_lead";
+  const isLead = isAdmin || ["lead", "event_lead", "tech_lead", "finance_lead"].includes(role);
 
   return (
     <SideNav collapsible resizable={{ autoSaveId: "sdc-sidenav" }}>
@@ -98,6 +100,64 @@ export function AppSideNav({ role = "member" }: AppSideNavProps) {
           label="Forms" 
           isSelected={pathname?.startsWith("/manage/forms")}
         />
+          <SideNavItem 
+            href="/manage/events" 
+            icon={<Calendar className="w-4 h-4" />} 
+          label="Event Admin" 
+          isSelected={pathname?.startsWith("/manage/events")}
+        />
+          <SideNavItem 
+            href="/manage/settings" 
+            icon={<Settings className="w-4 h-4" />} 
+          label="Management Settings" 
+          isSelected={pathname?.startsWith("/manage/settings")}
+        />
+        </SideNavSection>
+      )}
+
+      {isFinance && (
+        <SideNavSection title="Finance">
+          <SideNavItem 
+            href="/finance/budget" 
+            icon={<DollarSign className="w-4 h-4" />} 
+          label="Budgeting" 
+          isSelected={pathname?.startsWith("/finance/budget")}
+        />
+          <SideNavItem 
+            href="/finance/expenses" 
+            icon={<FileText className="w-4 h-4" />} 
+          label="Expenses" 
+          isSelected={pathname?.startsWith("/finance/expenses")}
+        />
+          <SideNavItem 
+            href="/finance/procurement" 
+            icon={<Box className="w-4 h-4" />} 
+          label="Procurement" 
+          isSelected={pathname?.startsWith("/finance/procurement")}
+        />
+        </SideNavSection>
+      )}
+
+      {isLead && (
+        <SideNavSection title="Department">
+          <SideNavItem 
+            href="/lead/achievements" 
+            icon={<CheckSquare className="w-4 h-4" />} 
+          label="Lead Achievements" 
+          isSelected={pathname?.startsWith("/lead/achievements")}
+        />
+          <SideNavItem 
+            href="/lead/certificates" 
+            icon={<FileText className="w-4 h-4" />} 
+          label="Lead Certificates" 
+          isSelected={pathname?.startsWith("/lead/certificates")}
+        />
+          <SideNavItem 
+            href="/lead/content" 
+            icon={<Megaphone className="w-4 h-4" />} 
+          label="Lead Content" 
+          isSelected={pathname?.startsWith("/lead/content")}
+        />
         </SideNavSection>
       )}
 
@@ -126,6 +186,24 @@ export function AppSideNav({ role = "member" }: AppSideNavProps) {
             icon={<FileText className="w-4 h-4" />} 
           label="Audit Logs" 
           isSelected={pathname?.startsWith("/admin/audit")}
+        />
+          <SideNavItem 
+            href="/admin/certificates" 
+            icon={<FileText className="w-4 h-4" />} 
+          label="Certificates" 
+          isSelected={pathname?.startsWith("/admin/certificates")}
+        />
+          <SideNavItem 
+            href="/admin/forms" 
+            icon={<FileText className="w-4 h-4" />} 
+          label="Dynamic Forms" 
+          isSelected={pathname?.startsWith("/admin/forms")}
+        />
+          <SideNavItem 
+            href="/admin/projects" 
+            icon={<Briefcase className="w-4 h-4" />} 
+          label="Master Projects" 
+          isSelected={pathname?.startsWith("/admin/projects")}
         />
         </SideNavSection>
       )}

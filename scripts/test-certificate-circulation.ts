@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "../lib/db";
-import { certificates, certificateTemplates, user, events } from "../lib/db/schema";
+import { certificatesV2, certTemplates, user, events } from "../lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PdfmeRenderer } from "../lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "../lib/services/storage";
@@ -56,9 +56,9 @@ async function main() {
 
     // 3. Find template
     // Clean up old bad template first
-    await db.delete(certificateTemplates).where(eq(certificateTemplates.name, "Default Certificate Template"));
+    await db.delete(certTemplates).where(eq(certTemplates.name, "Default Certificate Template"));
 
-    let templateData = await db.query.certificateTemplates.findFirst();
+    let templateData = await db.query.certTemplates.findFirst();
     if (!templateData) {
       console.log("No certificate template found, creating a default one...");
       const fs = require("fs");
@@ -67,11 +67,11 @@ async function main() {
       const dummyPdfBase64 = fs.readFileSync(pdfPath).toString("base64");
       
       const newTemplateId = crypto.randomUUID();
-      await db.insert(certificateTemplates).values({
+      await db.insert(certTemplates).values({
         id: newTemplateId,
         name: "Default Certificate Template",
-        basePdf: dummyPdfBase64,
-        schemas: [
+        backgroundUrl: dummyPdfBase64,
+        fields: [
           {
             name: { type: "text", position: { x: 50, y: 50 }, width: 100, height: 10 },
             eventName: { type: "text", position: { x: 50, y: 70 }, width: 100, height: 10 },
@@ -81,7 +81,7 @@ async function main() {
         ],
         createdBy: userData.id
       });
-      templateData = await db.query.certificateTemplates.findFirst({ where: eq(certificateTemplates.id, newTemplateId) });
+      templateData = await db.query.certTemplates.findFirst({ where: eq(certTemplates.id, newTemplateId) });
     }
     
     if (!templateData) throw new Error("Could not find or create template");
@@ -102,8 +102,8 @@ async function main() {
     };
     
     const template = {
-      basePdf: templateData.basePdf.startsWith("data:application/pdf;base64,") ? templateData.basePdf : `data:application/pdf;base64,${templateData.basePdf}`,
-      schemas: templateData.schemas as any,
+      basePdf: templateData.backgroundUrl?.startsWith("data:application/pdf;base64,") ? templateData.backgroundUrl : `data:application/pdf;base64,${templateData.backgroundUrl}`,
+      schemas: templateData.fields as any,
     };
 
     const finalPdfBuffer = await renderer.render(template, [inputs]);
@@ -114,15 +114,15 @@ async function main() {
     const storage = new LocalMockStorageService();
     const pdfUrl = await storage.uploadFile(finalPdfBuffer, `certs/${verifyCode}.pdf`, "application/pdf");
 
-    await db.insert(certificates).values({
+    await db.insert(certificatesV2).values({
       id: crypto.randomUUID(),
-      verifyCode,
+      verifyId: verifyCode,
       userId: userData.id,
       eventId: eventData.id,
       templateId: templateData.id,
       pdfUrl,
-      hash,
-      issuedBy: userData.id
+      data: inputs, // Store the certificate inputs
+      issuedBy: userData.id,
     });
     console.log(`Saved certificate to DB. Verify Code: ${verifyCode}`);
 

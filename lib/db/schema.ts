@@ -201,30 +201,7 @@ export const sessionAttendance = pgTable("session_attendance", {
   unique: unique("session_attendance_unq").on(t.sessionId, t.userId)
 }));
 
-export const certificateTemplates = pgTable("certificateTemplates", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
-  basePdf: text("basePdf").notNull(),
-  schemas: jsonb("schemas").notNull(), // pdfme fields JSON
-  createdBy: text("createdBy").notNull().references(() => user.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
 
-export const certificates = pgTable("certificates", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  verifyCode: text("verifyCode").unique().notNull(), // nanoid(12)
-  userId: text("userId").notNull().references(() => user.id),
-  eventId: text("eventId").references(() => events.id),
-  templateId: text("templateId").notNull().references(() => certificateTemplates.id),
-  pdfUrl: text("pdfUrl").notNull(),
-  hash: text("hash").notNull(), // SHA256 of PDF buffer
-  revoked: boolean("revoked").default(false),
-  revokedReason: text("revokedReason"),
-  issuedBy: text("issuedBy").notNull().references(() => user.id),
-  issuedAt: timestamp("issuedAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
-}, (table) => [index("certificates_user_id_idx").on(table.userId)]);
 
 export const eventInvites = pgTable("event_invites", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -507,6 +484,18 @@ export const notifications = pgTable("notifications", {
   updatedAt: timestamp("updatedAt").defaultNow().$onUpdateFn(() => new Date())
 }, (table) => [index("notifications_user_id_idx").on(table.userId), index("notifications_read_idx").on(table.read)]);
 
+export const communications = pgTable("communications", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  eventId: text("eventId").references(() => events.id, { onDelete: "cascade" }),
+  senderId: text("senderId").notNull().references(() => user.id),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  targetAudience: text("targetAudience").notNull(), // "all", "confirmed", "waitlist"
+  status: text("status").default("sent").notNull(),
+  sentCount: integer("sentCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const clubSettings = pgTable("club_settings", {
   id: text("id").primaryKey().default("default"),
   isFrozen: boolean("isFrozen").default(false).notNull(),
@@ -582,7 +571,7 @@ export const eventsRelations = relations(events, ({ many }) => ({
   registrations: many(registrations),
   budgets: many(budgets),
   tasks: many(tasks),
-  certificates: many(certificates),
+  certificatesV2: many(certificatesV2),
 }));
 
 export const eventSessionsRelations = relations(eventSessions, ({ one, many }) => ({
@@ -601,7 +590,6 @@ export const userRelations = relations(user, ({ many }) => ({
   notifications: many(notifications),
   pointLogs: many(pointLogs),
   achievementSubmissions: many(achievementSubmissions),
-  certificates: many(certificates),
   certificatesV2: many(certificatesV2),
   auditLogs: many(auditLogs),
 }));
@@ -635,20 +623,18 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
-export const certificatesRelations = relations(certificates, ({ one }) => ({
-  user: one(user, {
-    fields: [certificates.userId],
-    references: [user.id],
-  }),
+export const communicationsRelations = relations(communications, ({ one }) => ({
   event: one(events, {
-    fields: [certificates.eventId],
+    fields: [communications.eventId],
     references: [events.id],
   }),
-  template: one(certificateTemplates, {
-    fields: [certificates.templateId],
-    references: [certificateTemplates.id],
+  sender: one(user, {
+    fields: [communications.senderId],
+    references: [user.id],
   }),
 }));
+
+
 
 export const interviewsRelations = relations(interviews, ({ one }) => ({
   application: one(applications, {
@@ -811,11 +797,19 @@ export const insights = pgTable("insights", {
   generatedAt: timestamp("generated_at").defaultNow(),
 });
 
-// Relations for tables defined in the v2 block above
+
 export const certificatesV2Relations = relations(certificatesV2, ({ one }) => ({
   user: one(user, {
     fields: [certificatesV2.userId],
     references: [user.id],
+  }),
+  event: one(events, {
+    fields: [certificatesV2.eventId],
+    references: [events.id],
+  }),
+  template: one(certTemplates, {
+    fields: [certificatesV2.templateId],
+    references: [certTemplates.id],
   }),
 }));
 

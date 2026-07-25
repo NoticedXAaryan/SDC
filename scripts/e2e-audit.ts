@@ -1,5 +1,5 @@
 import { db } from "../lib/db";
-import { user, events, budgets, expenses, inventory, inventoryLogs, registrations, eventSessions, sessionAttendance, projects, researchPapers, certificateTemplates } from "../lib/db/schema";
+import { user, events, budgets, expenses, inventory, inventoryLogs, registrations, eventSessions, sessionAttendance, projects, researchPapers, certTemplates } from "../lib/db/schema";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 
@@ -96,11 +96,11 @@ async function runAudit() {
 
     // 8. Certificates
     console.log("🎓 Generating Certificate Template...");
-    await db.insert(certificateTemplates).values({
+    await db.insert(certTemplates).values({
       id: templateId,
       name: "Audit Template",
-      basePdf: "https://pdfme.com/blank.pdf",
-      schemas: [],
+      backgroundUrl: "https://pdfme.com/blank.pdf",
+      fields: [],
       createdBy: adminId
     });
     console.log("✅ Template created. (Queueing jobs is handled via BullMQ APIs in production)\n");
@@ -112,7 +112,7 @@ async function runAudit() {
   } finally {
     // Cleanup
     console.log("\n🧹 Cleaning up test data...");
-    await db.delete(certificateTemplates).where(eq(certificateTemplates.id, templateId));
+    await db.delete(certTemplates).where(eq(certTemplates.id, templateId));
     await db.delete(registrations).where(eq(registrations.id, regId));
     await db.delete(eventSessions).where(eq(eventSessions.id, sessionId));
     await db.delete(inventoryLogs).where(eq(inventoryLogs.itemId, itemId));

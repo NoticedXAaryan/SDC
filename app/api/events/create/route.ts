@@ -47,7 +47,7 @@ export const POST = withApiHandler(async (req: NextRequest) => {
     capacity: validated.capacity,
     isPaid: validated.isPaid,
     price: validated.price ? validated.price.toString() : "0",
-    status: userRole === "admin" ? "published" : "draft", // DFD 27: Lead requires approval
+    status: ["admin", "owner"].includes(userRole) ? "published" : "draft", // DFD 27: Lead requires approval
     createdBy: session.user.id,
     forms: validated.forms,
     certificateTemplateId: validated.certificateTemplateId || null,

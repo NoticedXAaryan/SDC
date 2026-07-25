@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { certificates, user, events } from "@/lib/db/schema";
+import { certificatesV2, user, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 export default async function VerifyPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   
-  const certRows = await db.select().from(certificates).where(eq(certificates.verifyCode, code)).limit(1);
+  const certRows = await db.select().from(certificatesV2).where(eq(certificatesV2.verifyId, code)).limit(1);
   const cert = certRows[0];
   
   if (!cert) {
@@ -32,7 +32,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
         <CardContent className="pt-8 space-y-6">
           
           <div className="flex justify-center">
-            {cert.revoked ? (
+            {cert.status === "revoked" ? (
               <Badge variant="destructive" className="text-lg px-4 py-1">Revoked</Badge>
             ) : (
               <Badge variant="default" className="text-lg px-4 py-1 bg-green-600 hover:bg-green-700">Valid Certificate</Badge>
@@ -50,20 +50,14 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Issue Date</p>
-              <p className="font-medium">{new Date(cert.issuedAt).toLocaleDateString()}</p>
+              <p className="font-medium">{cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString() : 'N/A'}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Verification Code</p>
-              <p className="font-mono bg-muted px-2 py-1 rounded inline-block text-sm">{cert.verifyCode}</p>
+              <p className="font-mono bg-muted px-2 py-1 rounded inline-block text-sm">{cert.verifyId}</p>
             </div>
           </div>
 
-          <div className="space-y-1 pt-4 border-t">
-            <p className="text-sm font-medium text-muted-foreground">Cryptographic Hash (SHA-256)</p>
-            <p className="font-mono text-xs text-muted-foreground break-all">{cert.hash}</p>
-          </div>
-
-          {cert.revoked && cert.revokedReason && (
+          {cert.status === "revoked" && cert.revokedReason && (
             <div className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200 mt-6">
               <p className="font-semibold text-sm mb-1">Reason for Revocation:</p>
               <p className="text-sm">{cert.revokedReason}</p>

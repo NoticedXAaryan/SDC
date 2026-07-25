@@ -1,6 +1,6 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { certificateTemplates } from "@/lib/db/schema";
+import { certTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { CertificateDesigner } from "@/components/certificates/designer";
@@ -15,7 +15,7 @@ export default async function TemplateDesignerPage({ params }: { params: Promise
     redirect("/");
   }
 
-  const templateRows = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, id)).limit(1);
+  const templateRows = await db.select().from(certTemplates).where(eq(certTemplates.id, id)).limit(1);
   const template = templateRows[0];
 
   if (!template) {
@@ -24,8 +24,8 @@ export default async function TemplateDesignerPage({ params }: { params: Promise
 
   // Convert DB row format back to what pdfme expects
   const pdfmeTemplate = {
-    basePdf: template.basePdf,
-    schemas: template.schemas as any,
+    basePdf: template.backgroundUrl,
+    schemas: template.fields as any,
   };
 
   return (

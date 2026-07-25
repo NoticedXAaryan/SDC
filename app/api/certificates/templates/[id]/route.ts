@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { certificateTemplates } from "@/lib/db/schema";
+import { certTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
@@ -22,9 +22,9 @@ if (!schemas || !basePdf) {
   return NextResponse.json({ success: false, error: "Missing schemas or basePdf" }, { status: 400 });
 }
 
-await db.update(certificateTemplates)
-  .set({ schemas, basePdf, updatedAt: new Date() })
-  .where(eq(certificateTemplates.id, id));
+await db.update(certTemplates)
+  .set({ fields: schemas, backgroundUrl: basePdf })
+  .where(eq(certTemplates.id, id));
 
 return NextResponse.json({ success: true });
 });
@@ -33,7 +33,7 @@ export const GET = withApiHandler(async (req: Request, { params }: { params: Pro
   const { id } = await params;
   await requireSession();
   
-  const templateRows = await db.select().from(certificateTemplates).where(eq(certificateTemplates.id, id)).limit(1);
+  const templateRows = await db.select().from(certTemplates).where(eq(certTemplates.id, id)).limit(1);
   const template = templateRows[0];
   
   if (!template) {

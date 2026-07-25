@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
-  const { user, upcomingEvents, myRegistrations, managementStats, myApplication, insightsData } = data;
+  const { user, upcomingEvents, myRegistrations, managementStats, myApplication, insightsData, myCertificates } = data;
   
   const role = user.role as string;
   const isAdmin = ["admin", "owner"].includes(role);
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       ) : isLead ? (
         <LeadDashboard user={user} managementStats={managementStats} upcomingEvents={upcomingEvents} />
       ) : (
-        <StudentDashboard user={user} myRegistrations={myRegistrations} myApplication={myApplication} />
+        <StudentDashboard user={user} myRegistrations={myRegistrations} myApplication={myApplication} myCertificates={myCertificates} />
       )}
     </div>
   );
