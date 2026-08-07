@@ -1,9 +1,13 @@
 import { RegisterForm } from "@/components/auth/register-form";
+import { AuthLayout } from "@/components/auth/auth-layout";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <AuthLayout
+      heading="Join the club"
+      subheading="Create your account to become part of the Student Developer Club community."
+    >
       <RegisterForm />
-    </div>
+    </AuthLayout>
   );
 }

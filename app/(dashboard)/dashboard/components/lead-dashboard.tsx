@@ -2,16 +2,23 @@
 
 import React from "react";
 import Link from "next/link";
-import { Users, Calendar, ClipboardList, CheckSquare, Activity, Plus, FileText, Settings } from "lucide-react";
+import { Users, Calendar, ClipboardList, CheckSquare, Activity, FileText, Settings, Inbox } from "lucide-react";
 import { Card, Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
 import { MetricCard } from "@/components/astryx/metric-card";
-import { StatusBadge } from "@/components/astryx/status-badge";
 
-export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: any) {
+interface LeadDashboardProps {
+  user: any;
+  managementStats: any;
+  upcomingEvents?: any[];
+  pendingTasksCount: number;
+  recentAuditLogs: any[];
+}
+
+export function LeadDashboard({ user, managementStats, upcomingEvents = [], pendingTasksCount, recentAuditLogs = [] }: LeadDashboardProps) {
   return (
     <VStack gap={6}>
       
-      {/* 2. Domain KPIs */}
+      {/* Domain KPIs */}
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard
           title="Domain Members"
@@ -30,69 +37,47 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [] }: an
         />
         <MetricCard
           title="Pending Tasks"
-          value="12"
+          value={pendingTasksCount}
           icon={<CheckSquare />}
-          variant="orange"
+          variant={pendingTasksCount > 0 ? "orange" : "default"}
         />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         <VStack gap={6} className="md:col-span-2">
-          {/* 1. Active Tasks (Reviews pending, approvals, interviews) */}
+          {/* Recent Activity — Real Data */}
           <Card padding={4}>
             <VStack gap={4}>
               <VStack gap={0}>
-                <Heading level={2} className="font-semibold text-lg">Active Tasks</Heading>
-                <Text type="supporting">Items that need your review or approval</Text>
+                <Heading level={2} className="font-semibold text-lg">Recent Activity</Heading>
+                <Text type="supporting">Recent actions from your team</Text>
               </VStack>
               
-              <VStack gap={4}>
-                <HStack justify="between" align="center" className="bg-white dark:bg-zinc-900 border border-border rounded-lg p-3">
-                  <HStack align="center" gap={3}>
-                    <div className="bg-amber-100 text-amber-600 p-2 rounded-full"><ClipboardList className="w-4 h-4" /></div>
-                    <VStack gap={0}>
-                      <Text weight="semibold" className="text-sm">Application Reviews</Text>
-                      <Text type="supporting" className="text-xs">5 pending reviews in Tech Domain</Text>
-                    </VStack>
-                  </HStack>
-                  <Button size="sm" href="/manage/recruitment" label="View Applications" />
-                </HStack>
-                <HStack justify="between" align="center" className="bg-white dark:bg-zinc-900 border border-border rounded-lg p-3">
-                  <HStack align="center" gap={3}>
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-full"><FileText className="w-4 h-4" /></div>
-                    <VStack gap={0}>
-                      <Text weight="semibold" className="text-sm">Certificate Generation</Text>
-                      <Text type="supporting" className="text-xs">Batch #452 needs approval</Text>
-                    </VStack>
-                  </HStack>
-                  <Button size="sm" variant="secondary" href="/admin/certificates" label="Issue Certificates" />
-                </HStack>
-              </VStack>
-            </VStack>
-          </Card>
-
-          {/* 4. Team Activity Feed */}
-          <Card padding={4}>
-            <VStack gap={4}>
-              <Heading level={2} className="font-semibold text-lg">Team Activity</Heading>
-              
-              <div className="relative border-l border-border ml-3 space-y-6">
-                <div className="relative pl-6">
-                  <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
-                  <Text weight="semibold" className="text-sm">Event Created</Text>
-                  <Text type="supporting" className="text-xs">Aaryan created "Tech Talk 2026" • 2h ago</Text>
+              {recentAuditLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <Inbox className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <Text type="supporting">No recent activity to show.</Text>
                 </div>
-                <div className="relative pl-6">
-                  <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
-                  <Text weight="semibold" className="text-sm">Form Published</Text>
-                  <Text type="supporting" className="text-xs">Jane published "Feedback Form" • 5h ago</Text>
+              ) : (
+                <div className="relative border-l border-border ml-3 space-y-6">
+                  {recentAuditLogs.map((log: any) => (
+                    <div key={log.id} className="relative pl-6">
+                      <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
+                      <Text weight="semibold" className="text-sm capitalize">
+                        {log.action.replace(/_/g, " ")}
+                      </Text>
+                      <Text type="supporting" className="text-xs">
+                        {log.entity}{log.details ? ` · ${log.details}` : ""} · {new Date(log.timestamp).toLocaleDateString()}
+                      </Text>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </VStack>
           </Card>
         </VStack>
 
-        {/* 3. Quick Actions */}
+        {/* Quick Actions + Upcoming Events */}
         <VStack gap={6}>
           <Card padding={4}>
             <VStack gap={4}>

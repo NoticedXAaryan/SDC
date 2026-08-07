@@ -1,11 +1,26 @@
-# Active Context
+# Active Context — 2026-08-07
 
-## Current Phase: Implementation & Stabilization
-- **Completed**: Fixed IDOR vulnerabilities in Event endpoints, established secure initial bootstrap (`/api/setup` endpoint), added dummy data scripts with automated cleanup (`[DUMMY]` tags), and integrated Resend mailer with a background worker (BullMQ) for async email dispatch.
-- **In Progress**: Frontend UI Re-design (Phase 7-9 of original PRD plan). The backend is now fully stable.
-- **Next Steps**: Begin updating `app/globals.css` and the dashboard layouts with premium UI tokens as defined in the Frontend Redesign plan.
-- **Open Topics**: Cal.com scheduling features are deferred to a later project phase.
+## What just happened
+1. **Fixed proxy auth bug:** Cookie names changed from `better-auth.session_token` → `sdc.session_token` to match the `cookiePrefix: "sdc"` in auth.ts
+2. **Added 10 missing protected routes** to proxy (manage, settings, certificates, etc.)
+3. **Added forgot-password/reset-password** to public paths
+4. **Deleted Postiz stub service** — was returning fake data, no real integration
+5. **Disabled auto-scheduled weekly report** — was emailing mock URLs to non-existent addresses
+6. **Removed face-api.js** — unused dependency (no code imports it)
+7. **Deleted 18 one-off scripts** from scripts/ (patches, tests, generators)
+8. **Deleted all stale documentation** (19 files including 116KB scenario doc, old blueprints, old ADRs, old audits)
+9. **Created ARCHITECTURE.md** — master document with DFDs, schema, API map, features
+10. **Rewrote README.md** — correct stack versions, links to ARCHITECTURE.md
 
-## Environment Notes
-- **Dokploy**: Standalone Docker builds strip development dependencies (like `tsx`), so one-time scripts must be exposed via Next.js API endpoints or pre-compiled.
-- **Database**: The local `.env.local` points to the *production* Neon DB, so caution must be used when seeding. Use the `npm run db:clean` script to clear out test artifacts.
+## Current state
+- Build passes cleanly (`npx next build`)
+- Dev server runs
+- All documentation is fresh and accurate
+- scripts/ has 7 operational scripts (migrate, seed, set-owner, clean, backup, init-form)
+
+## Known issues to address in future sessions
+- Weekly report worker needs real implementation
+- Content pipeline social posting is disconnected (Postiz removed)
+- Research papers and competitions have CRUD but no dedicated UI pages
+- Offline scan sync needs end-to-end testing
+- CSV import error handling needs review

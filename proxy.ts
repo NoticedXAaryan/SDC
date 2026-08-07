@@ -7,6 +7,9 @@
  * IMPORTANT: This is NOT the only auth check. The DAL (lib/dal/auth.ts)
  * performs the real authorization close to data. This proxy handles
  * the fast redirect for unauthenticated users only.
+ * 
+ * Cookie prefix is "sdc" (set in lib/auth.ts advanced.cookiePrefix),
+ * so Better Auth creates cookies named "sdc.session_token".
  */
 
 import { NextResponse } from "next/server";
@@ -26,19 +29,32 @@ const PROTECTED_PREFIXES = [
   "/leaderboard",
   "/achievements",
   "/passes",
+  "/manage",
+  "/settings",
+  "/certificates",
+  "/internal-projects",
+  "/communications",
+  "/archive",
+  "/notifications",
+  "/forms",
+  "/applications",
 ];
 
 /** Routes that are always public */
 const PUBLIC_PATHS = [
   "/login",
   "/register",
+  "/forgot-password",
+  "/reset-password",
   "/",
   "/verify",
   "/projects",
   "/privacy",
   "/terms",
+  "/setup",
   "/api/auth",
   "/api/health",
+  "/api/ready",
 ];
 
 export async function proxy(request: NextRequest) {
@@ -70,8 +86,11 @@ export async function proxy(request: NextRequest) {
     const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
     if (isProtected) {
-      const sessionCookie = request.cookies.get("better-auth.session_token")
-        || request.cookies.get("__Secure-better-auth.session_token");
+      // Cookie prefix is "sdc" (configured in lib/auth.ts)
+      // In production with secure cookies: __Secure-sdc.session_token
+      // In development: sdc.session_token
+      const sessionCookie = request.cookies.get("sdc.session_token")
+        || request.cookies.get("__Secure-sdc.session_token");
 
       if (!sessionCookie?.value) {
         const loginUrl = new URL("/login", request.url);

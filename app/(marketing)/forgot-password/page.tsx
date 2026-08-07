@@ -5,8 +5,9 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { AlertCircle, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -39,64 +40,82 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight">Forgot Password</CardTitle>
-          <CardDescription>
+    <AuthLayout
+      heading="Reset your password"
+      subheading="We'll send you a link to reset your password and get back into your account."
+    >
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight">Forgot password</h2>
+          <p className="text-sm text-muted-foreground">
             Enter your email to receive a password reset link.
-          </CardDescription>
-        </CardHeader>
-        
+          </p>
+        </div>
+
         {success ? (
-          <CardContent className="space-y-4 pt-4">
-            <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-4 rounded-md flex items-start gap-3">
+          <div className="space-y-6">
+            <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-4 rounded-lg flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-medium">Check your email</h4>
-                <p className="text-sm mt-1">If an account exists with this email, a password reset link has been sent.</p>
+                <p className="text-sm mt-1">
+                  If an account exists with this email, a password reset link has been sent.
+                </p>
               </div>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => window.location.href = '/login'}>
-              Return to Login
-            </Button>
-          </CardContent>
-        ) : (
-          <form onSubmit={handleReset}>
-            <CardContent className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@paruluniversity.ac.in" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              
-              {error && (
-                <div className="bg-destructive/15 text-destructive p-3 rounded-md flex items-center gap-2 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-            </CardContent>
-            
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending link..." : "Send Reset Link"}
+            <Link href="/login">
+              <Button variant="outline" className="w-full h-11">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Return to login
               </Button>
-              <div className="text-center text-sm text-muted-foreground">
-                <a href="/login" className="hover:underline hover:text-foreground transition-colors">
-                  Back to login
-                </a>
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleReset} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input 
+                id="forgot-email" 
+                type="email" 
+                placeholder="name@paruluniversity.ac.in" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-11"
+                autoComplete="email"
+              />
+            </div>
+            
+            {error && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-lg flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {error}
               </div>
-            </CardFooter>
+            )}
+
+            <Button type="submit" className="w-full h-11" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending link…
+                </>
+              ) : (
+                "Send reset link"
+              )}
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              <Link 
+                href="/login" 
+                className="font-medium text-foreground hover:underline underline-offset-4"
+              >
+                Back to sign in
+              </Link>
+            </p>
           </form>
         )}
-      </Card>
-    </div>
+      </div>
+    </AuthLayout>
   );
 }

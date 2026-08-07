@@ -59,7 +59,6 @@
     "disposable-email-domains": "^1.0.62",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "face-api.js": "^0.22.2",
     "file-type": "^22.0.1",
     "html5-qrcode": "^2.3.8",
     "idb": "^8.0.3",

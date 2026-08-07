@@ -5,9 +5,10 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState("");
@@ -62,83 +63,107 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold tracking-tight">Password Reset Complete</CardTitle>
-          <CardDescription>Your password has been successfully updated.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
-          <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-4 rounded-md flex items-center justify-center gap-3 py-6">
-            <CheckCircle2 className="w-8 h-8 shrink-0" />
-            <h4 className="font-semibold text-lg">Success!</h4>
-          </div>
-          <Button className="w-full" onClick={() => router.push('/login')}>
-            Proceed to Login
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight">Password reset complete</h2>
+          <p className="text-sm text-muted-foreground">
+            Your password has been successfully updated.
+          </p>
+        </div>
+        <div className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 p-6 rounded-lg flex flex-col items-center justify-center gap-3">
+          <CheckCircle2 className="w-10 h-10" />
+          <h4 className="font-semibold text-lg">Success!</h4>
+          <p className="text-sm text-center">You can now sign in with your new password.</p>
+        </div>
+        <Button className="w-full h-11" onClick={() => router.push('/login')}>
+          Proceed to sign in
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight">Reset Password</CardTitle>
-        <CardDescription>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold tracking-tight">Reset password</h2>
+        <p className="text-sm text-muted-foreground">
           Enter your new password below.
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
       
-      <form onSubmit={handleReset}>
-        <CardContent className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">New Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={!token}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input 
-              id="confirm-password" 
-              type="password" 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              disabled={!token}
-            />
-          </div>
-          
-          {error && (
-            <div className="bg-destructive/15 text-destructive p-3 rounded-md flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-        </CardContent>
+      <form onSubmit={handleReset} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="new-password">New Password</Label>
+          <Input 
+            id="new-password" 
+            type="password" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={!token}
+            className="h-11"
+            autoComplete="new-password"
+          />
+        </div>
         
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={loading || !token}>
-            {loading ? "Resetting..." : "Reset Password"}
-          </Button>
-        </CardFooter>
+        <div className="space-y-2">
+          <Label htmlFor="confirm-new-password">Confirm Password</Label>
+          <Input 
+            id="confirm-new-password" 
+            type="password" 
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={!token}
+            className="h-11"
+            autoComplete="new-password"
+          />
+        </div>
+        
+        {error && (
+          <div className="bg-destructive/10 text-destructive p-3 rounded-lg flex items-center gap-2 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <Button type="submit" className="w-full h-11" disabled={loading || !token}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Resetting…
+            </>
+          ) : (
+            "Reset password"
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          <Link 
+            href="/login" 
+            className="font-medium text-foreground hover:underline underline-offset-4"
+          >
+            Back to sign in
+          </Link>
+        </p>
       </form>
-    </Card>
+    </div>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Suspense fallback={<div>Loading...</div>}>
+    <AuthLayout
+      heading="Set a new password"
+      subheading="Choose a strong password to secure your account."
+    >
+      <Suspense fallback={
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }>
         <ResetPasswordForm />
       </Suspense>
-    </div>
+    </AuthLayout>
   );
 }

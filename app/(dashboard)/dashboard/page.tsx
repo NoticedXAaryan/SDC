@@ -6,19 +6,22 @@ import { AdminDashboard } from "./components/admin-dashboard";
 
 import { PageHeader } from "@/components/astryx/page-header";
 import { Button } from "@astryxdesign/core";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
-  const { user, upcomingEvents, myRegistrations, managementStats, myApplication, insightsData, myCertificates } = data;
+  const { 
+    user, upcomingEvents, myRegistrations, managementStats, 
+    myApplication, insightsData, myCertificates,
+    pendingApprovalsCount, recentAuditLogs, financeSnapshot, 
+    inventoryAlerts, pendingTasksCount
+  } = data;
   
   const role = user.role as string;
   const isAdmin = ["admin", "owner"].includes(role);
-  const isLead = ["lead", "co_lead", "finance_lead", "event_lead", "tech_lead"].includes(role);
+  const isLead = isManagementRole(role) && !isAdmin;
 
-  const pendingApprovalsCount = 8; // Stubbed for now, replace with actual DAL count if available
   const adminCtaLabel = pendingApprovalsCount > 0 ? "Review approvals" : "Create event";
   const adminCtaLink = pendingApprovalsCount > 0 ? "/manage/approvals" : "/events/create";
 
@@ -43,9 +46,24 @@ export default async function DashboardPage() {
       />
 
       {isAdmin ? (
-        <AdminDashboard user={user} managementStats={managementStats} upcomingEvents={upcomingEvents} insights={insightsData} />
+        <AdminDashboard 
+          user={user} 
+          managementStats={managementStats} 
+          upcomingEvents={upcomingEvents} 
+          insights={insightsData}
+          pendingApprovalsCount={pendingApprovalsCount}
+          recentAuditLogs={recentAuditLogs}
+          financeSnapshot={financeSnapshot}
+          inventoryAlerts={inventoryAlerts}
+        />
       ) : isLead ? (
-        <LeadDashboard user={user} managementStats={managementStats} upcomingEvents={upcomingEvents} />
+        <LeadDashboard 
+          user={user} 
+          managementStats={managementStats} 
+          upcomingEvents={upcomingEvents}
+          pendingTasksCount={pendingTasksCount}
+          recentAuditLogs={recentAuditLogs}
+        />
       ) : (
         <StudentDashboard user={user} myRegistrations={myRegistrations} myApplication={myApplication} myCertificates={myCertificates} />
       )}

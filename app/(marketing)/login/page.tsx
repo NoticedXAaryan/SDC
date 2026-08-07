@@ -1,9 +1,13 @@
 import { LoginForm } from "@/components/auth/login-form";
+import { AuthLayout } from "@/components/auth/auth-layout";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <AuthLayout
+      heading="Welcome back"
+      subheading="Sign in to access your club dashboard, events, certificates, and more."
+    >
       <LoginForm />
-    </div>
+    </AuthLayout>
   );
 }

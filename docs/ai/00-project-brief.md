@@ -1,27 +1,37 @@
-# STC OS — Project Brief
+# Project Brief — SDC OS
 
-## What This Is
-STC OS is the internal operating system for the Student Developer Club (SDC) at Parul University (Goa campus). It manages the full lifecycle of a student tech club: members, events, attendance, certificates, finance, and recruitment.
+## What
+SDC OS (Student Developer Club Operating System) is a web-based platform AND the public-facing website for the Student Developer Club. It serves two purposes:
 
-## Who It's For
-- **Club members**: Register for events, earn points, view certificates
-- **Leads/Co-leads**: Create events, scan check-in QR codes, manage their domain
-- **Finance leads**: Manage budgets, approve expenses, track inventory
-- **Admins/Owners**: Full control — member management, audit logs, system config
+1. **Club promotion & public presence** — The landing page, event listings, project showcase, and public certificate verification are all designed to promote the club to prospective members, the university, and the wider community. This is the club's website, not just an internal management tool.
+2. **Club operations** — Behind login, it manages the full operational lifecycle: members, events, attendance, certificates, recruitment, finance, inventory, projects, forms, communications, and gamification.
 
-## What's Out of Scope (for now)
-- Face recognition check-in (deferred — too complex, low ROI)
-- Cal.com calendar integration (deferred — not needed for MVP)
-- Documenso signing (deferred — overkill for student certificates)
-- Custom page deployment / GitHub stars cron (deferred — vanity features)
-- Frontend redesign (deferred — backend stability first)
+## Who
+- Built for Parul University's Student Developer Club
+- Designed by Aaryan (NoticeXAaryan)
+- Operated by club leadership (owner, admin, leads) for ~200+ members
+- **Public audience:** Prospective members, university faculty, event attendees, certificate recipients
 
 ## Stack
-- **Runtime**: Next.js 16 (App Router, standalone output)
-- **Auth**: Better Auth 1.6.x (email/password + admin plugin)
-- **Database**: Neon PostgreSQL, Drizzle ORM
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **QR**: HMAC-signed rotating QR passes (html5-qrcode for scanning)
-- **Certificates**: pdfme (PDF generation)
-- **Queue**: BullMQ + Redis (certificate generation)
-- **Deploy**: Docker (multi-stage build), hosted on Dokploy / VPS
+Next.js 16 / React 19 / TypeScript / Drizzle ORM / PostgreSQL / Better Auth / BullMQ / Redis / Resend / Sentry / PostHog / Astryx UI / Tailwind CSS 4
+
+## Design Direction
+- **Theme:** Space / cosmic — the logo is a blackhole
+- **Inspiration:** Comet Browser by Perplexity — cosmic visual language, planetary motifs, parabolic orbital lines, "space to Earth" visual journey
+- **Gradients:** Replicate Comet's signature space gradients — deep dark backgrounds with celestial gradient accents (purples, blues, warm nebula tones fading into deep black)
+- **Aesthetic:** Dark-mode-first, restrained with cosmic accent touches — not sci-fi-gaudy, more premium-observatory
+- **Motion:** Subtle orbital/gravitational animations — elements that feel like they have weight and trajectory
+
+## What's in scope
+- All features listed in docs/ARCHITECTURE.md Section 7 (Feature Registry)
+- 14-role RBAC hierarchy
+- Background worker system (email, certificates, grading, reminders)
+- Docker deployment
+- Public-facing club website (landing page, events, projects, certificates)
+
+## What's out of scope
+- Face recognition, biometrics
+- Payment processing
+- WhatsApp integration
+- Calendar sync
+- Microservices architecture

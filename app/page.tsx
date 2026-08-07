@@ -78,46 +78,58 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <NavBar />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Subtle grid background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+      {/* Cosmic Hero Section */}
+      <section className="relative overflow-hidden min-h-[90vh] flex items-center justify-center">
+        {/* Deep space background elements */}
+        <div className="absolute inset-0 bg-background" />
         
-        <div className="relative mx-auto max-w-7xl px-4 md:px-6 py-24 md:py-36 lg:py-44">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/50 px-4 py-1.5 text-sm transition-colors hover:bg-muted">
-              <Sparkles className="h-3.5 w-3.5 text-foreground/60" />
-              <span className="text-muted-foreground">Built for student clubs that mean business</span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+        {/* Comet-style Celestial Gradients */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
+        <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none" />
+        <div className="absolute top-2/3 right-1/3 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none" />
+
+        {/* Orbital/Blackhole Motifs */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-primary/10 rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] border border-primary/5 rounded-full border-dashed opacity-50 animate-[spin_120s_linear_infinite]" />
+        
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background" />
+        
+        <div className="relative z-10 mx-auto max-w-7xl px-4 md:px-6 py-24 md:py-36">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm transition-all hover:bg-primary/20 hover:border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-foreground/90 font-medium tracking-wide">Enter the next dimension of club management</span>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[1.05] text-transparent bg-clip-text bg-gradient-to-b from-foreground to-foreground/50">
               The operating system
               <br />
-              <span className="text-muted-foreground">for student clubs.</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-orange-400">for student clubs.</span>
             </h1>
             
-            <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
               Manage members, track event attendance, oversee budgets, issue verifiable certificates, and run recruitment — all from one platform. Built with security, speed, and compliance from day one.
             </p>
             
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link 
                 href="/login" 
                 className={cn(
                   buttonVariants({ size: "lg" }), 
-                  "text-base px-8 h-12 rounded-xl shadow-lg shadow-foreground/10 transition-all hover:shadow-xl hover:shadow-foreground/15"
+                  "relative group overflow-hidden text-base px-10 h-14 rounded-full shadow-[0_0_30px_-5px_var(--color-primary)] transition-all hover:shadow-[0_0_40px_-5px_var(--color-primary)] hover:-translate-y-0.5"
                 )}
               >
-                Access Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-600 opacity-90 transition-opacity group-hover:opacity-100" />
+                <span className="relative z-10 flex items-center">
+                  Access Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </span>
               </Link>
               <Link 
                 href="/projects" 
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }), 
-                  "text-base px-8 h-12 rounded-xl"
+                  "text-base px-10 h-14 rounded-full border-border/50 bg-background/50 backdrop-blur-md transition-all hover:bg-muted/80 hover:border-border"
                 )}
               >
                 View Projects

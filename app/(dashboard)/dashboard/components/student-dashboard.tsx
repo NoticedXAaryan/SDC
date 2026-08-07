@@ -99,7 +99,7 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication, my
                 </VStack>
                 <VStack gap={0}>
                   <Text type="supporting" className="text-zinc-500 text-xs">Joined</Text>
-                  <Text weight="medium" className="text-zinc-200">2026</Text>
+                  <Text weight="medium" className="text-zinc-200">{user.createdAt ? new Date(user.createdAt).getFullYear() : "—"}</Text>
                 </VStack>
               </HStack>
             </div>
