@@ -2,9 +2,9 @@ import { requireAdmin } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { desc, sql } from "drizzle-orm";
-import { MemberTable } from "@/components/admin/member-table";
 import { PageHeader } from "@/components/astryx/page-header";
 import { MetricCard } from "@/components/astryx/metric-card";
+import { OrgChartTabs } from "@/components/admin/org-chart-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +41,15 @@ export default async function AdminMembersPage() {
   .from(user)
   .groupBy(user.role);
 
+  const allLeads = await db.select({
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    image: user.image,
+  }).from(user).where(
+    sql`${user.role} IN ('owner', 'admin', 'lead', 'vice_lead', 'faculty_coordinator', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead')`
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader 
@@ -58,11 +67,14 @@ export default async function AdminMembersPage() {
         ))}
       </div>
 
-      <MemberTable 
-        initialMembers={members} 
-        total={total}
-        currentUserRole={session.user.role}
-        currentUserId={session.user.id}
+      <OrgChartTabs 
+        membersProps={{
+          initialMembers: members,
+          total,
+          currentUserRole: session.user.role,
+          currentUserId: session.user.id
+        }}
+        orgChartData={allLeads}
       />
     </div>
   );

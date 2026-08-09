@@ -5,28 +5,37 @@ import Link from "next/link";
 import { CheckCircle2, Circle, Clock, QrCode, FileText } from "lucide-react";
 import { Card, Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
 
-export function StudentDashboard({ user, myRegistrations = [], myApplication, myCertificates = [] }: any) {
+import { DashboardUser, UserRegistration, UserApplication, UserCertificate } from "./dashboard-types";
+
+interface StudentDashboardProps {
+  user: DashboardUser;
+  myRegistrations?: UserRegistration[];
+  myApplication?: UserApplication | null;
+  myCertificates?: UserCertificate[];
+}
+
+export function StudentDashboard({ user, myRegistrations = [], myApplication, myCertificates = [] }: StudentDashboardProps) {
   return (
-    <VStack gap={6}>
+    <VStack gap={8}>
       
       {/* 1. Up Next Card */}
-      <Card padding={4} variant="blue" className="border-blue-200">
+      <Card padding={5} className="border-primary/20 bg-primary/5 dark:bg-primary/10">
         <VStack gap={4}>
           <HStack align="center" gap={2}>
-            <Clock className="w-5 h-5 text-blue-600" />
-            <Heading level={2} className="font-semibold text-lg text-blue-900 dark:text-blue-100">Up Next</Heading>
+            <Clock className="w-5 h-5 text-primary" />
+            <Heading level={3} className="font-semibold text-lg text-primary">Up Next</Heading>
           </HStack>
-          <Text type="supporting" className="text-blue-700 dark:text-blue-300">Your pending actions and upcoming events</Text>
+          <Text type="supporting">Your pending actions and upcoming events</Text>
           
           <VStack gap={3}>
             {myRegistrations.length === 0 ? (
               <Text type="supporting">You are all caught up!</Text>
             ) : (
-              myRegistrations.map((reg: any) => (
-                <HStack key={reg.eventId} justify="between" align="center" className="bg-white/60 dark:bg-black/20 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
+              myRegistrations.map((reg) => (
+                <HStack key={reg.eventId} justify="between" align="center" className="bg-background/80 backdrop-blur border border-border/50 shadow-sm p-3 rounded-lg">
                   <VStack gap={0}>
-                    <Text weight="semibold" className="text-sm text-blue-900 dark:text-blue-100">{reg.eventTitle}</Text>
-                    <Text type="supporting" className="text-xs text-blue-700 dark:text-blue-300">Upcoming Event</Text>
+                    <Text weight="semibold" className="text-sm">{reg.eventTitle}</Text>
+                    <Text type="supporting" className="text-xs">Upcoming Event</Text>
                   </VStack>
                   <Button variant="secondary" size="sm" href={`/passes/${reg.eventId}`} label="View Pass" />
                 </HStack>
@@ -39,23 +48,23 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication, my
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* 2. My Applications Timeline */}
-        <Card padding={4}>
-          <VStack gap={4}>
+        <Card padding={5}>
+          <VStack gap={5}>
             <VStack gap={0}>
-              <Heading level={2} className="font-semibold text-lg">My Applications</Heading>
+              <Heading level={3} className="font-semibold text-lg">My Applications</Heading>
               <Text type="supporting">Current recruitment cycle status</Text>
             </VStack>
             
             {myApplication ? (
               <div className="relative border-l border-border ml-3 space-y-6">
                 <div className="relative pl-6">
-                  <div className="absolute -left-[9px] top-1 bg-background"><CheckCircle2 className="w-5 h-5 text-blue-600 bg-background" /></div>
+                  <div className="absolute -left-[9px] top-1 bg-background"><CheckCircle2 className="w-5 h-5 text-primary bg-background" /></div>
                   <Text weight="semibold" className="text-sm">Applied</Text>
                   <Text type="supporting" className="text-xs">Application submitted</Text>
                 </div>
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background">
-                    {myApplication.status === "pending" ? <Circle className="w-5 h-5 text-muted-foreground fill-background" /> : <CheckCircle2 className="w-5 h-5 text-blue-600 bg-background" />}
+                    {myApplication.status === "pending" ? <Circle className="w-5 h-5 text-muted-foreground fill-background" /> : <CheckCircle2 className="w-5 h-5 text-primary bg-background" />}
                   </div>
                   <Text weight="semibold" className="text-sm">Online Assessment (OA)</Text>
                   <Text type="supporting" className="text-xs">{myApplication.status === "pending" ? "Pending review" : "Completed"}</Text>
@@ -106,21 +115,21 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication, my
           </Card>
 
           {/* 4. Certificate Wallet Card */}
-          <Card padding={4}>
-            <VStack gap={4}>
-              <Heading level={2} className="font-semibold text-lg">Certificate Wallet</Heading>
+          <Card padding={5}>
+            <VStack gap={5}>
+              <Heading level={3} className="font-semibold text-lg">Certificate Wallet</Heading>
               
               <div className="flex overflow-x-auto gap-4 pb-2 snap-x">
                 {myCertificates && myCertificates.length > 0 ? (
-                  myCertificates.map((cert: any) => (
+                  myCertificates.map((cert) => (
                     <Link href={`/verify/${cert.verifyId}`} key={cert.id} className="min-w-[200px] snap-center block">
-                      <div className="aspect-[1.4/1] bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-900/20 border border-border rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 flex items-center justify-center">
+                      <div className="aspect-[1.4/1] bg-gradient-to-br from-primary/5 to-primary/10 border border-border rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center">
                           <FileText className="w-4 h-4" />
                         </div>
                         <div>
                           <p className="text-sm font-semibold truncate text-foreground">{cert.data?.eventName || "Certificate"}</p>
-                          <p className="text-xs text-muted-foreground">Issued {new Date(cert.issuedAt).getFullYear()}</p>
+                          <p className="text-xs text-muted-foreground">Issued {cert.issuedAt ? new Date(cert.issuedAt).getFullYear() : "N/A"}</p>
                         </div>
                       </div>
                     </Link>

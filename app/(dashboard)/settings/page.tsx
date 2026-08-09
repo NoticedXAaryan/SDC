@@ -9,7 +9,7 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { HStack } from "@astryxdesign/core/HStack";
-import { Loader2, AtSign, CheckCircle2 } from "lucide-react";
+import { Loader2, AtSign, CheckCircle2, ScanFace, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/astryx/page-header";
 
 export default function SettingsPage() {
@@ -88,6 +88,8 @@ export default function SettingsPage() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<"profile"|"security"|"club">("profile");
+
   if (isPending) {
     return (
       <div className="flex justify-center py-12">
@@ -103,6 +105,7 @@ export default function SettingsPage() {
   const user = session.user;
   const initials = user.name?.substring(0, 2).toUpperCase() || "US";
   const currentUsername = (user as any).username;
+  const isAdmin = user.role === "admin" || user.role === "owner";
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,98 +151,191 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-8">
       <PageHeader title="Settings" description="Manage your account preferences." />
 
-      <Card padding={6}>
-        <VStack gap={6}>
-          <VStack gap={1}>
-            <Text weight="bold" className="text-xl">Profile Details</Text>
-            <Text type="supporting" className="text-sm">Manage your account settings and profile picture.</Text>
-          </VStack>
-          
-          <HStack gap={6} align="center">
-            <Avatar size="lg" src={user.image || undefined} name={user.name || initials} />
+      <div className="flex space-x-1 border-b border-border">
+        <button
+          onClick={() => setActiveTab("profile")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "profile" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Profile
+        </button>
+        <button
+          onClick={() => setActiveTab("security")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "security" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          Security
+        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab("club")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "club" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            Club Settings
+          </button>
+        )}
+      </div>
 
-            <VStack gap={2}>
-              <Text weight="medium" className="text-lg">Profile Picture</Text>
-              <Text type="supporting" className="text-sm">
-                Upload a new profile picture. Recommended size is 256x256px. Max 5MB.
-              </Text>
+      {activeTab === "profile" && (
+        <div className="space-y-8">
+          <Card padding={6}>
+            <VStack gap={6}>
+              <VStack gap={1}>
+                <Text weight="bold" className="text-xl">Profile Details</Text>
+                <Text type="supporting" className="text-sm">Manage your account settings and profile picture.</Text>
+              </VStack>
               
-              <div className="mt-2">
-                <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                  {uploading ? "Uploading..." : "Upload new picture"}
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/png, image/jpeg, image/webp" 
-                    onChange={handleFileChange}
-                    disabled={uploading}
+              <HStack gap={6} align="center">
+                <Avatar size="lg" src={user.image || undefined} name={user.name || initials} />
+
+                <VStack gap={2}>
+                  <Text weight="medium" className="text-lg">Profile Picture</Text>
+                  <Text type="supporting" className="text-sm">
+                    Upload a new profile picture. Recommended size is 256x256px. Max 5MB.
+                  </Text>
+                  
+                  <div className="mt-2">
+                    <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                      {uploading ? "Uploading..." : "Upload new picture"}
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/png, image/jpeg, image/webp" 
+                        onChange={handleFileChange}
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+                  
+                  {error && <Text className="text-sm text-red-500 font-medium">{error}</Text>}
+                  {success && <Text className="text-sm text-green-500 font-medium">{success}</Text>}
+                </VStack>
+              </HStack>
+
+              <div className="space-y-4 pt-6 border-t border-border">
+                <div className="grid gap-2">
+                  <Text type="supporting" className="font-medium text-sm">Name</Text>
+                  <Text weight="medium">{user.name}</Text>
+                </div>
+                <div className="grid gap-2">
+                  <Text type="supporting" className="font-medium text-sm">Email</Text>
+                  <Text weight="medium">{user.email}</Text>
+                </div>
+                <div className="grid gap-2">
+                  <Text type="supporting" className="font-medium text-sm">Role</Text>
+                  <Text weight="medium" className="capitalize">{user.role?.replace("_", " ")}</Text>
+                </div>
+              </div>
+            </VStack>
+          </Card>
+
+          <Card padding={6}>
+            <VStack gap={6}>
+              <VStack gap={1}>
+                <Text weight="bold" className="text-xl">Username Handle</Text>
+                <Text type="supporting" className="text-sm">Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</Text>
+              </VStack>
+              
+              <div className="space-y-2 max-w-md">
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground z-10" />
+                  <TextInput
+                    htmlName="username"
+                    label="Username"
+                    className="pl-9"
+                    value={username}
+                    onChange={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   />
-                </label>
+                </div>
+                
+                <div className="h-5">
+                  {isChecking && <Text type="supporting" className="text-sm flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</Text>}
+                  {!isChecking && isAvailable === true && username !== currentUsername && (
+                    <Text className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</Text>
+                  )}
+                  {!isChecking && usernameError && <Text className="text-sm text-red-500">{usernameError}</Text>}
+                  {!isChecking && usernameSuccess && <Text className="text-sm text-green-600">{usernameSuccess}</Text>}
+                </div>
               </div>
               
-              {error && <Text className="text-sm text-red-500 font-medium">{error}</Text>}
-              {success && <Text className="text-sm text-green-500 font-medium">{success}</Text>}
+              <div className="pt-2">
+                <Button 
+                  label="Update Handle"
+                  onClick={handleUpdateUsername} 
+                  isDisabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
+                  icon={isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+                />
+              </div>
             </VStack>
-          </HStack>
+          </Card>
+        </div>
+      )}
 
-          <div className="space-y-4 pt-6 border-t border-border">
-            <div className="grid gap-2">
-              <Text type="supporting" className="font-medium text-sm">Name</Text>
-              <Text weight="medium">{user.name}</Text>
-            </div>
-            <div className="grid gap-2">
-              <Text type="supporting" className="font-medium text-sm">Email</Text>
-              <Text weight="medium">{user.email}</Text>
-            </div>
-            <div className="grid gap-2">
-              <Text type="supporting" className="font-medium text-sm">Role</Text>
-              <Text weight="medium" className="capitalize">{user.role?.replace("_", " ")}</Text>
-            </div>
-          </div>
-        </VStack>
-      </Card>
+      {activeTab === "security" && (
+        <div className="space-y-8">
+          <Card padding={6}>
+            <VStack gap={6}>
+              <HStack justify="between" align="start">
+                <VStack gap={1}>
+                  <Text weight="bold" className="text-xl">Face ID Enrollment</Text>
+                  <Text type="supporting" className="text-sm">Enroll your face to enable quick, secure check-ins at events.</Text>
+                </VStack>
+              </HStack>
+              
+              <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/10">
+                <HStack align="center" gap={4}>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <ScanFace className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <Text weight="medium">Biometric Check-in</Text>
+                    <Text type="supporting" className="text-sm">
+                      {(user as any).faceDescriptor 
+                        ? "Your face is currently enrolled for fast lane access." 
+                        : "Not enrolled. Check-ins will require a manual QR scan."}
+                    </Text>
+                  </div>
+                </HStack>
+                <Button 
+                  variant="secondary" 
+                  href="/settings/face-enrollment" 
+                  label={(user as any).faceDescriptor ? "Re-enroll Face" : "Set Up Face ID"}
+                  icon={<ChevronRight className="w-4 h-4" />}
+                />
+              </div>
+            </VStack>
+          </Card>
+          
+          <ActiveSessionsCard />
+        </div>
+      )}
 
-      <Card padding={6}>
-        <VStack gap={6}>
-          <VStack gap={1}>
-            <Text weight="bold" className="text-xl">Username Handle</Text>
-            <Text type="supporting" className="text-sm">Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</Text>
-          </VStack>
-          
-          <div className="space-y-2 max-w-md">
-            <div className="relative">
-              <AtSign className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground z-10" />
-              <TextInput
-                htmlName="username"
-                label="Username"
-                className="pl-9"
-                value={username}
-                onChange={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-              />
-            </div>
-            
-            <div className="h-5">
-              {isChecking && <Text type="supporting" className="text-sm flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</Text>}
-              {!isChecking && isAvailable === true && username !== currentUsername && (
-                <Text className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</Text>
-              )}
-              {!isChecking && usernameError && <Text className="text-sm text-red-500">{usernameError}</Text>}
-              {!isChecking && usernameSuccess && <Text className="text-sm text-green-600">{usernameSuccess}</Text>}
-            </div>
-          </div>
-          
-          <div className="pt-2">
-            <Button 
-              label="Update Handle"
-              onClick={handleUpdateUsername} 
-              isDisabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
-              icon={isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-            />
-          </div>
-        </VStack>
-      </Card>
-      
-      <ActiveSessionsCard />
+      {activeTab === "club" && isAdmin && (
+        <div className="space-y-8">
+          <Card padding={6}>
+            <VStack gap={6}>
+              <VStack gap={1}>
+                <Text weight="bold" className="text-xl">Club Settings</Text>
+                <Text type="supporting" className="text-sm">Manage global settings for the club. These changes affect all users.</Text>
+              </VStack>
+              
+              <div className="space-y-6 pt-4">
+                <div className="grid gap-2 max-w-md">
+                  <TextInput label="Club Name" value="Student Developer Club" isDisabled />
+                </div>
+                <div className="grid gap-2 max-w-md">
+                  <TextInput label="Custom Domain" value="" placeholder="e.g. members.sdc.org" />
+                </div>
+                <div className="grid gap-2 max-w-md">
+                  <TextInput label="Global API Key (Resend, etc)" value="" type="password" placeholder="sk_test_..." />
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-border">
+                <Button label="Save Changes" variant="primary" />
+              </div>
+            </VStack>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

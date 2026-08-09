@@ -8,8 +8,8 @@ interface AuthLayoutProps {
 
 export function AuthLayout({
   children,
-  heading = "Welcome to SDC OS",
-  subheading = "The operating system for Student Developer Club.",
+  heading = "Welcome to SDC",
+  subheading = "Parul University's Student Developer Club",
 }: AuthLayoutProps) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -34,7 +34,7 @@ export function AuthLayout({
             </div>
             <div className="flex flex-col">
               <span className="text-base font-semibold tracking-tight leading-none text-foreground">
-                SDC OS
+                SDC
               </span>
               <span className="text-xs text-muted-foreground leading-tight mt-0.5">
                 Student Developer Club
@@ -69,7 +69,7 @@ export function AuthLayout({
               S
             </div>
             <span className="text-sm font-semibold tracking-tight">
-              SDC OS
+              SDC
             </span>
           </Link>
         </div>

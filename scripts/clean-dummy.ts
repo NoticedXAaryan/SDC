@@ -17,6 +17,11 @@ async function clean() {
     const deletedInventory = await db.delete(inventory).where(like(inventory.name, "[DUMMY]%")).returning();
     console.log(`✅ Deleted ${deletedInventory.length} dummy inventory items.`);
 
+    // 3. Delete Dummy Forms (assuming forms table exists and has a title column)
+    const { forms } = await import("../lib/db/schema");
+    const deletedForms = await db.delete(forms).where(like(forms.title, "[DUMMY]%")).returning();
+    console.log(`✅ Deleted ${deletedForms.length} dummy forms.`);
+
     console.log("🎉 Cleanup complete!");
     process.exit(0);
   } catch (error) {

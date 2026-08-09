@@ -46,13 +46,13 @@ export const Mailer = {
   async sendPasswordReset(to: string, resetLink: string) {
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #333;">Reset Your SDC OS Password</h2>
+        <h2 style="color: #333;">Reset Your SDC Password</h2>
         <p>You requested a password reset. Click the button below to set a new password:</p>
         <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">Reset Password</a>
         <p style="margin-top: 30px; font-size: 12px; color: #666;">If you didn't request this, you can safely ignore this email.</p>
       </div>
     `;
-    return this.sendEmail({ to, subject: "Reset your password - SDC OS", html });
+    return this.sendEmail({ to, subject: "Reset your password — Student Developer Club", html });
   },
 
   /**
@@ -62,11 +62,11 @@ export const Mailer = {
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">Verify Your Email</h2>
-        <p>Welcome to SDC OS! Please verify your email address by clicking the button below:</p>
+        <p>Welcome to Student Developer Club! Please verify your email address by clicking the button below:</p>
         <a href="${verificationLink}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">Verify Email</a>
       </div>
     `;
-    return this.sendEmail({ to, subject: "Verify your email - SDC OS", html });
+    return this.sendEmail({ to, subject: "Verify your email — Student Developer Club", html });
   },
 
   async sendEventQRPass(to: string, eventTitle: string, passToken: string) {

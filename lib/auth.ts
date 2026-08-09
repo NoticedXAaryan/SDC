@@ -8,7 +8,7 @@ import * as schema from "./db/schema";
 import { Mailer } from "./services/mailer";
 
 /**
- * SDC OS roles (ordered by privilege):
+ * SDC roles (ordered by privilege):
  * - owner: Full system control, cannot be demoted if last owner
  * - admin: Near-full access, can manage members/events/finance
  * - lead: Domain lead, can manage own domain's events/members

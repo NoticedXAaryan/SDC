@@ -1,8 +1,8 @@
-# SDC OS — Architecture & System Documentation
+# SDC — Architecture & System Documentation
 
 > **Last updated:** 2026-08-07  
 > **Version:** 0.1.0  
-> This is the single source of truth for all system architecture, data flows, features, and technology decisions in SDC OS.
+> This is the single source of truth for all system architecture, data flows, features, and technology decisions in SDC.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## 1. System Overview
 
-**SDC OS** (Student Developer Club Operating System) is a web-based platform that enables a student club to manage its entire operational lifecycle from one system: members, events, attendance, certificates, recruitment, finance, inventory, projects, forms, communications, and gamification.
+**SDC** (Student Developer Club) is a web-based platform that enables a student club to manage its entire operational lifecycle from one system: members, events, attendance, certificates, recruitment, finance, inventory, projects, forms, communications, and gamification.
 
 ### Who uses it
 

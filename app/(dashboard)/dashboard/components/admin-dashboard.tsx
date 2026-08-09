@@ -5,25 +5,62 @@ import Link from "next/link";
 import { Shield, Activity, Bell, FileText, Package, DollarSign, Sparkles, TerminalSquare, Inbox } from "lucide-react";
 import { Card, Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
 import { MetricCard } from "@/components/astryx/metric-card";
+import { AdminCharts } from "./admin-charts";
+import { generateInsightsAction, deleteInsightAction } from "@/lib/actions/insights";
+import { toast } from "sonner";
+
+import { 
+  DashboardUser, 
+  ManagementStats, 
+  AIInsight, 
+  AuditLog, 
+  FinanceSnapshot, 
+  InventoryAlert, 
+  UpcomingEvent,
+  ChartData 
+} from "./dashboard-types";
 
 interface AdminDashboardProps {
-  user: any;
-  managementStats: any;
-  upcomingEvents: any[];
-  insights?: any[];
+  user: DashboardUser;
+  managementStats: ManagementStats;
+  upcomingEvents: UpcomingEvent[];
+  insights?: AIInsight[];
   pendingApprovalsCount: number;
-  recentAuditLogs: any[];
-  financeSnapshot: { budgetRemaining: number; pendingExpenses: any[] } | null;
-  inventoryAlerts: any[];
+  recentAuditLogs: AuditLog[];
+  financeSnapshot: FinanceSnapshot | null;
+  inventoryAlerts: InventoryAlert[];
+  chartData: ChartData;
 }
 
 export function AdminDashboard({ 
   user, managementStats, upcomingEvents, insights = [],
-  pendingApprovalsCount, recentAuditLogs, financeSnapshot, inventoryAlerts
+  pendingApprovalsCount, recentAuditLogs, financeSnapshot, inventoryAlerts, chartData
 }: AdminDashboardProps) {
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast.info("Generating new insights...");
+    const res = await generateInsightsAction();
+    setIsRefreshing(false);
+    if (res?.error) {
+      toast.error(res.error);
+    } else {
+      toast.success("Insights updated!");
+    }
+  };
+
+  const handleDismiss = async (id: string) => {
+    const res = await deleteInsightAction(id);
+    if (res?.error) {
+      toast.error(res.error);
+    } else {
+      toast.success("Insight dismissed.");
+    }
+  };
+
   return (
-    <VStack gap={6}>
-      
+    <VStack gap={8}>
       {/* 1. Global KPIs */}
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard
@@ -49,36 +86,56 @@ export function AdminDashboard({
         />
       </div>
 
+      {/* 2. Charts */}
+      {chartData && <AdminCharts data={chartData} />}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           
-          {/* 2. AI Insights Panel */}
-          {insights.length > 0 && (
-            <Card variant="blue" padding={4}>
-              <VStack gap={4}>
-                <HStack align="center" gap={2}>
-                  <Sparkles className="text-blue-500 w-5 h-5" />
-                  <Heading level={2} className="font-semibold text-lg text-blue-900 dark:text-blue-100">
-                    AI Insights
-                  </Heading>
+          {/* 3. AI Insights Panel */}
+          {(insights.length > 0 || isRefreshing) && (
+            <Card padding={5} className="border-primary/20 bg-primary/5 dark:bg-primary/10">
+              <VStack gap={5}>
+                <HStack justify="between" align="center">
+                  <HStack align="center" gap={2}>
+                    <Sparkles className="text-primary w-5 h-5" />
+                    <Heading level={3} className="font-semibold text-lg text-primary">
+                      AI Insights
+                    </Heading>
+                  </HStack>
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    label={isRefreshing ? "Generating..." : "Refresh"} 
+                    onClick={handleRefresh}
+                    isDisabled={isRefreshing}
+                  />
                 </HStack>
                 
                 <VStack gap={3}>
-                  {insights.map((insight: any) => (
-                    <Card key={insight.id} padding={3} variant="transparent" className="bg-white/60 dark:bg-black/20 border-blue-100 dark:border-blue-900">
-                      <HStack justify="between" align="start" className="mb-2">
-                        <Text weight="medium" className="text-blue-900 dark:text-blue-100">
+                  {insights.map((insight) => (
+                    <Card key={insight.id} padding={4} className="bg-background/80 backdrop-blur border-border/50 shadow-sm relative group">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleDismiss(insight.id)}
+                          className="text-muted-foreground hover:text-foreground text-xs p-1 rounded hover:bg-muted"
+                          title="Dismiss Insight"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <HStack justify="between" align="start" className="mb-2 pr-6">
+                        <Text weight="medium">
                           {insight.title}
                         </Text>
                         {insight.metricTrend && (
                           <Badge variant={insight.metricTrend.startsWith('+') ? 'success' : insight.metricTrend.startsWith('-') ? 'error' : 'neutral'} label={insight.metricTrend} />
                         )}
                       </HStack>
-                      <Text type="supporting" className="text-blue-700 dark:text-blue-400 mt-1">
+                      <Text type="supporting" className="mt-1">
                         {insight.description}
                       </Text>
                       {insight.isActionable && insight.actionLink && (
-                        <Link href={insight.actionLink} className="text-xs text-blue-600 hover:underline mt-2 inline-block font-medium">
+                        <Link href={insight.actionLink} className="text-xs text-primary hover:underline mt-3 inline-block font-medium">
                           Take Action →
                         </Link>
                       )}
@@ -89,12 +146,12 @@ export function AdminDashboard({
             </Card>
           )}
 
-          {/* 3. Recent Audit Logs — Real Data */}
-          <Card padding={4}>
-            <VStack gap={4}>
+          {/* 4. Recent Audit Logs — Real Data */}
+          <Card padding={5}>
+            <VStack gap={5}>
               <HStack justify="between" align="center">
                 <VStack>
-                  <Heading level={2} className="font-semibold text-lg">Recent Activity</Heading>
+                  <Heading level={3} className="font-semibold text-lg">Recent Activity</Heading>
                   <Text type="supporting">System activity stream</Text>
                 </VStack>
                 <Button variant="secondary" size="sm" href="/admin/audit" label="View All" icon={<TerminalSquare className="w-4 h-4" />} />
@@ -107,7 +164,7 @@ export function AdminDashboard({
                     <Text type="supporting">No activity logged yet.</Text>
                   </div>
                 ) : (
-                  recentAuditLogs.map((log: any) => (
+                  recentAuditLogs.map((log) => (
                     <HStack key={log.id} align="start" gap={4} className="border-b border-border pb-3 last:border-0">
                       <div className="bg-zinc-100 dark:bg-zinc-800 text-xs font-mono px-2 py-1 rounded text-zinc-500 shrink-0">
                         {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -131,9 +188,9 @@ export function AdminDashboard({
         {/* Sidebar: Finance & Inventory */}
         <VStack gap={6}>
           {/* Finance Snapshot — Real Data */}
-          <Card padding={4}>
-            <VStack gap={4}>
-              <Heading level={2} className="font-semibold text-lg">Finance Snapshot</Heading>
+          <Card padding={5}>
+            <VStack gap={5}>
+              <Heading level={3} className="font-semibold text-lg">Finance Snapshot</Heading>
               
               {financeSnapshot ? (
                 <>
@@ -154,7 +211,7 @@ export function AdminDashboard({
                     <div className="pt-2">
                       <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Pending Expenses</h4>
                       <div className="space-y-2 flex flex-col">
-                        {financeSnapshot.pendingExpenses.map((exp: any) => (
+                        {financeSnapshot.pendingExpenses.map((exp) => (
                           <Link key={exp.id} href="/admin/finance" className="text-sm flex justify-between p-2 hover:bg-muted rounded-md transition">
                             <Text className="capitalize">{exp.category}</Text>
                             <Text weight="medium" className="text-amber-600">₹{Number(exp.amount).toLocaleString()}</Text>
@@ -173,9 +230,9 @@ export function AdminDashboard({
           </Card>
 
           {/* Inventory Alerts — Real Data */}
-          <Card padding={4}>
-            <VStack gap={4}>
-              <Heading level={2} className="font-semibold text-lg">Inventory Alerts</Heading>
+          <Card padding={5}>
+            <VStack gap={5}>
+              <Heading level={3} className="font-semibold text-lg">Inventory Alerts</Heading>
               
               {inventoryAlerts.length === 0 ? (
                 <div className="text-center py-4">
@@ -183,7 +240,7 @@ export function AdminDashboard({
                 </div>
               ) : (
                 <>
-                  {inventoryAlerts.map((item: any) => (
+                  {inventoryAlerts.map((item) => (
                     <div key={item.id} className="flex items-center justify-between border-l-2 pl-3" style={{ borderLeftColor: item.qtyAvailable === 0 ? 'var(--destructive)' : '#f59e0b' }}>
                       <VStack gap={0}>
                         <Text weight="medium" className="text-sm">{item.name}</Text>

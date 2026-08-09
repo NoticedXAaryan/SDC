@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { HoverCard } from "@astryxdesign/core";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,6 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -54,54 +54,77 @@ export function NotificationBell() {
 
   const unread = notifications.filter(n => !n.read);
 
+  const NotificationList = ({ items, limit }: { items: Notification[], limit?: number }) => {
+    const displayItems = limit ? items.slice(0, limit) : items;
+    
+    if (displayItems.length === 0) {
+      return <div className="p-4 text-center text-sm text-muted-foreground">No new notifications</div>;
+    }
+
+    return (
+      <div className="flex flex-col">
+        {displayItems.map((n) => (
+          <div key={n.id} className={`p-4 border-b last:border-0 flex flex-col gap-1 transition-colors ${!n.read ? 'bg-muted/50' : ''}`} onClick={() => !n.read && markAsRead([n.id])}>
+            <div className="flex justify-between items-start gap-2">
+              <span className="font-medium text-sm leading-tight">{n.title}</span>
+              {!n.read && <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm bg-primary/20 text-primary hover:bg-primary/30">New</Badge>}
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+            {n.link && (
+              <Link href={n.link} className="text-xs text-primary hover:underline mt-1" onClick={() => setOpen(false)}>
+                View details
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const Glimpse = () => (
+    <div className="w-80 flex flex-col">
+      <div className="p-3 border-b border-border/40 font-semibold text-sm">
+        Recent Notifications
+      </div>
+      <NotificationList items={unread.length > 0 ? unread : notifications} limit={3} />
+      <div className="p-2 border-t border-border/40 text-center text-xs text-muted-foreground">
+        Click bell icon to view all
+      </div>
+    </div>
+  );
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unread.length > 0 && (
-            <span className="absolute top-1 right-1 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h4 className="font-semibold text-sm">Notifications</h4>
-          {unread.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => markAsRead(unread.map(u => u.id))}>
-              Mark all read
-            </Button>
-          )}
+    <Sheet open={open} onOpenChange={setOpen}>
+      <HoverCard content={<Glimpse />} placement="end" alignment="center">
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative rounded-lg h-10 w-10 text-muted-foreground hover:text-foreground">
+            <Bell className="h-5 w-5" />
+            {unread.length > 0 && (
+              <span className="absolute top-2 right-2 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+            )}
+          </Button>
+        </SheetTrigger>
+      </HoverCard>
+
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0 flex flex-col border-l border-border/40">
+        <SheetHeader className="p-6 border-b border-border/40 text-left">
+          <div className="flex items-center justify-between">
+            <SheetTitle>Notifications</SheetTitle>
+            {unread.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => markAsRead(unread.map(u => u.id))}>
+                Mark all read
+              </Button>
+            )}
+          </div>
+        </SheetHeader>
+        
+        <div className="flex-1 overflow-y-auto">
+          <NotificationList items={notifications} />
         </div>
-        <div className="max-h-[300px] overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
-          ) : (
-            notifications.slice(0, 10).map((n) => (
-              <div key={n.id} className={`p-4 border-b last:border-0 flex flex-col gap-1 transition-colors ${!n.read ? 'bg-muted/50' : ''}`} onClick={() => !n.read && markAsRead([n.id])}>
-                <div className="flex justify-between items-start gap-2">
-                  <span className="font-medium text-sm leading-tight">{n.title}</span>
-                  {!n.read && <Badge variant="secondary" className="text-[10px] h-4 px-1 rounded-sm">New</Badge>}
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
-                {n.link && (
-                  <Link href={n.link} className="text-xs text-blue-500 hover:underline mt-1" onClick={() => setOpen(false)}>
-                    View details
-                  </Link>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-        <div className="p-2 border-t text-center">
-          <Link href="/notifications" className="text-xs font-medium text-primary hover:underline" onClick={() => setOpen(false)}>
-            View all notifications
-          </Link>
-        </div>
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   );
 }

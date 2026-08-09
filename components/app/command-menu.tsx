@@ -63,14 +63,6 @@ export function CommandMenu() {
 
   return (
     <>
-      <Button 
-        variant="outline" 
-        className="w-full max-w-sm justify-start text-muted-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <Search className="mr-2 h-4 w-4" />
-        <span>Search (Cmd+K)</span>
-      </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>

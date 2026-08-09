@@ -9,7 +9,8 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import Link from "next/link";
-import { Globe, ExternalLink } from "lucide-react";
+import { Globe, ExternalLink, AlertTriangle } from "lucide-react";
+
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,6 +32,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 space-y-8">
+      {project.status === "pending" && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-700 dark:text-yellow-400 p-4 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Pending Approval</p>
+            <p className="text-sm opacity-90">This project has been submitted and is waiting for an admin to approve it before it appears in the public gallery.</p>
+          </div>
+        </div>
+      )}
+      
+      {project.status === "rejected" && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-400 p-4 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Project Rejected</p>
+            <p className="text-sm opacity-90">This project was not approved for the public gallery.</p>
+          </div>
+        </div>
+      )}
+
       <VStack gap={4} className="text-center">
         <h1 className="text-4xl font-bold">{project.title}</h1>
         <p className="text-xl text-muted-foreground">{project.description}</p>

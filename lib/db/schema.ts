@@ -31,6 +31,7 @@ export const user = pgTable("user", {
 					points: integer("points").default(0),
 					level: integer("level").default(1),
 					privacy: jsonb("privacy"),
+					faceDescriptor: text("faceDescriptor"), // JSON array of 128 floats
     deletedAt: timestamp("deletedAt")
 }, (table) => [
 	drizzleCheck("role_check", sql`${table.role} IN ('owner', 'admin', 'lead', 'vice_lead', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead', 'faculty_coordinator', 'member', 'alumni', 'applicant', 'outsider', 'user')`)
@@ -709,7 +710,7 @@ export const competitionsRelations = relations(competitions, ({ one }) => ({
 }));
 
 export const formStatusEnum = pgEnum("form_status", ["draft", "published", "closed", "archived"]);
-export const formFieldTypeEnum = pgEnum("field_type", ["short_text", "long_text", "email", "number", "dropdown", "checkbox", "file", "date", "rating"]);
+export const formFieldTypeEnum = pgEnum("field_type", ["short_text", "long_text", "email", "number", "dropdown", "checkbox", "file", "date", "rating", "section_break", "image"]);
 export const certStatusEnum = pgEnum("cert_status", ["valid", "revoked", "draft"]);
 export const reviewActionEnum = pgEnum("review_action", ["approved", "rejected", "needs_info"]);
 
@@ -727,6 +728,13 @@ export const forms = pgTable("forms", {
     quotaPerUser: 1,
     quotaPerForm: 1000,
     collegeDomainOnly: true,
+    theme: {
+      accentColor: "#3b82f6",
+      fontFamily: "Inter",
+      backgroundImage: null
+    },
+    thankYouMessage: "Thank you for submitting!",
+    redirectUrl: null
   }),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -740,6 +748,7 @@ export const formFields = pgTable("form_fields", {
   options: jsonb("options"), 
   autoFillKey: text("auto_fill_key"), 
   order: integer("order").notNull(),
+  visibilityRules: jsonb("visibility_rules"),
 });
 
 export const formResponses = pgTable("form_responses", {

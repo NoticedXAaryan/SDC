@@ -1,9 +1,8 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { researchPapers, competitions, achievementSubmissions } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { researchPapers, competitions, achievementSubmissions, registrations, user } from "@/lib/db/schema";
+import { desc, eq, sql } from "drizzle-orm";
 import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Text } from "@astryxdesign/core/Text";
 import { HStack } from "@astryxdesign/core/HStack";
@@ -11,6 +10,8 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { PageHeader } from "@/components/astryx/page-header";
 import { EmptyState } from "@/components/astryx/empty-state";
 import { SubmitAchievementDialog } from "@/components/achievements/submit-achievement-dialog";
+import { Trophy, Star, Target, Zap, Shield, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default async function AchievementsPage() {
   const session = await requireSession();
@@ -21,6 +22,24 @@ export default async function AchievementsPage() {
     .where(eq(achievementSubmissions.userId, session.user.id))
     .orderBy(desc(achievementSubmissions.createdAt));
 
+  // Compute standard achievements
+  const [regCount] = await db.select({ count: sql<number>`count(*)` }).from(registrations).where(eq(registrations.userId, session.user.id));
+  const [currentUser] = await db.select({ points: user.points, level: user.level }).from(user).where(eq(user.id, session.user.id)).limit(1);
+  
+  const hasSubmissions = submissions.filter(s => s.status === "approved").length > 0;
+  const eventsCount = Number(regCount.count);
+  const userPoints = currentUser?.points || 0;
+  const userLevel = currentUser?.level || 1;
+
+  const standardAchievements = [
+    { title: "First Steps", description: "Registered for your first event.", icon: <Target className="w-8 h-8" />, unlocked: eventsCount >= 1 },
+    { title: "Active Member", description: "Registered for 5+ events.", icon: <Zap className="w-8 h-8" />, unlocked: eventsCount >= 5 },
+    { title: "Point Collector", description: "Earned over 500 SDC points.", icon: <Star className="w-8 h-8" />, unlocked: userPoints >= 500 },
+    { title: "Rising Star", description: "Reached Level 5 in SDC.", icon: <Sparkles className="w-8 h-8" />, unlocked: userLevel >= 5 },
+    { title: "Contributor", description: "Got an external achievement approved.", icon: <Shield className="w-8 h-8" />, unlocked: hasSubmissions },
+    { title: "Hall of Famer", description: "Got a research paper or competition win.", icon: <Trophy className="w-8 h-8" />, unlocked: false }, // Currently manual
+  ];
+
   return (
     <div className="max-w-5xl mx-auto space-y-12">
       <PageHeader
@@ -28,6 +47,24 @@ export default async function AchievementsPage() {
         description="Submit your achievements to earn points and climb the leaderboard."
         primaryAction={<SubmitAchievementDialog />}
       />
+
+      <VStack gap={4}>
+        <Text weight="bold" className="text-2xl">Earned Badges</Text>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {standardAchievements.map((ach, idx) => (
+            <Card key={idx} className={cn("text-center relative overflow-hidden transition-all duration-300", ach.unlocked ? "border-yellow-500/50 bg-yellow-500/5 shadow-lg shadow-yellow-500/10" : "opacity-60 grayscale bg-muted/30 border-dashed")}>
+              <VStack align="center" gap={3} className="p-4">
+                <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-yellow-500/20 text-yellow-500" : "bg-muted text-muted-foreground")}>
+                  {ach.icon}
+                </div>
+                <VStack gap={1}>
+                  <Text weight="semibold" className="text-sm">{ach.title}</Text>
+                </VStack>
+              </VStack>
+            </Card>
+          ))}
+        </div>
+      </VStack>
 
       <VStack gap={4}>
         <Text weight="bold" className="text-2xl">My Submissions</Text>

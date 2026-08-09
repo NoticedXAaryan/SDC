@@ -1,7 +1,7 @@
-# Project Brief — SDC OS
+# Project Brief — SDC
 
 ## What
-SDC OS (Student Developer Club Operating System) is a web-based platform AND the public-facing website for the Student Developer Club. It serves two purposes:
+SDC (Student Developer Club) is the web platform and public-facing website for the Student Developer Club. It serves two purposes:
 
 1. **Club promotion & public presence** — The landing page, event listings, project showcase, and public certificate verification are all designed to promote the club to prospective members, the university, and the wider community. This is the club's website, not just an internal management tool.
 2. **Club operations** — Behind login, it manages the full operational lifecycle: members, events, attendance, certificates, recruitment, finance, inventory, projects, forms, communications, and gamification.

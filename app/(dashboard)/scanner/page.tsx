@@ -1,7 +1,13 @@
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
+import { events, registrations } from "@/lib/db/schema";
 import { QrScanner } from "@/components/scanner/qr-scanner";
+import { PageHeader } from "@/components/app/page-header";
+import { Selector } from "@astryxdesign/core/Selector";
+import { Button } from "@astryxdesign/core/Button";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
 
 export default async function ScannerPage({ searchParams }: { searchParams: Promise<{ eventId?: string }> }) {
   // Only organizers can scan
@@ -12,36 +18,55 @@ export default async function ScannerPage({ searchParams }: { searchParams: Prom
   
   // Fetch active/upcoming events
   const activeEvents = await db.select().from(events);
+  
+  let checkInsToday = 0;
+  if (selectedEventId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Fallback naive count for now to avoid complex SQL date functions
+    const allCheckIns = await db.select({ id: registrations.id, checkedInAt: registrations.checkedInAt })
+      .from(registrations)
+      .where(
+        and(
+          eq(registrations.eventId, selectedEventId),
+          eq(registrations.status, 'checked_in')
+        )
+      );
+      
+    checkInsToday = allCheckIns.filter(r => r.checkedInAt && new Date(r.checkedInAt) >= today).length;
+  }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">ClassScan</h1>
-        <p className="text-muted-foreground">Scan attendee QR passes for secure check-in.</p>
-      </div>
+    <div className="max-w-xl mx-auto space-y-8 pb-12">
+      <PageHeader 
+        title="ClassScan" 
+        description="Scan attendee QR passes for secure check-in."
+      />
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Select Event to Scan For</label>
-        <form method="GET" className="flex gap-2">
-          <select 
-            name="eventId" 
-            defaultValue={selectedEventId || ""}
-            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            required
-          >
-            <option value="" disabled>Select an event...</option>
-            {activeEvents.map(evt => (
-              <option key={evt.id} value={evt.id}>{evt.title}</option>
-            ))}
-          </select>
-          <button type="submit" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
-            Set Event
-          </button>
+      <VStack gap={4}>
+        <Text weight="medium">Select Event to Scan For</Text>
+        <form method="GET" className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <Selector
+              htmlName="eventId"
+              label="Event"
+              isLabelHidden
+              value={selectedEventId || ""}
+              options={activeEvents.map(evt => ({ label: evt.title, value: evt.id }))}
+            />
+          </div>
+          <Button type="submit" label="Set Event" variant="primary" className="w-full sm:w-auto" />
         </form>
-      </div>
+      </VStack>
 
       {selectedEventId && (
-        <div className="pt-4 border-t">
+        <div className="pt-8 border-t border-border">
+          <div className="flex justify-between items-center mb-4">
+            <Text type="supporting" className="text-sm">
+              <span className="font-semibold text-foreground">{checkInsToday}</span> check-ins today
+            </Text>
+          </div>
           <QrScanner eventId={selectedEventId} />
         </div>
       )}

@@ -20,10 +20,24 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const session = await requireSession();
   
-  const eventData = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
-  const event = eventData[0];
+  let eventData = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
+  let event = eventData[0];
   
-  if (!event || (event.status !== "published" && !["owner", "admin", "lead", "co_lead"].includes(session.user.role as string))) {
+  if (!event) {
+    // Fallback: check if the slug is actually an old UUID ID, and redirect to its proper slug
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(slug)) {
+      const fallbackEvent = await db.select().from(events).where(eq(events.id, slug)).limit(1);
+      if (fallbackEvent.length > 0 && fallbackEvent[0].slug) {
+        // We must use redirect from next/navigation
+        const { redirect } = await import("next/navigation");
+        redirect(`/events/${fallbackEvent[0].slug}`);
+      }
+    }
+    notFound();
+  }
+
+  if (event.status !== "published" && !["owner", "admin", "lead", "co_lead"].includes(session.user.role as string)) {
     notFound();
   }
 

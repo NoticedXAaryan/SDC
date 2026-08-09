@@ -56,7 +56,7 @@ export function RegisterForm() {
       <div className="space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">Create an account</h2>
         <p className="text-sm text-muted-foreground">
-          Enter your details to create your SDC OS account.
+          Enter your details to join the Student Developer Club.
         </p>
       </div>
 

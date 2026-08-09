@@ -38,7 +38,6 @@ if (currentUserRole === "lead" && ["owner", "admin", "lead", "faculty_coordinato
   return NextResponse.json({ error: "Leads cannot assign executive roles" }, { status: 403 });
 }
 
-// Prevent modifying an owner if you are not an owner
 const [targetUser] = await db.select().from(user).where(eq(user.id, targetUserId)).limit(1);
 if (!targetUser) {
   return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -46,6 +45,16 @@ if (!targetUser) {
 
 if (targetUser.role === "owner" && currentUserRole !== "owner") {
   return NextResponse.json({ error: "Cannot modify an owner" }, { status: 403 });
+}
+
+// Leads cannot modify the roles of anyone equal or higher to them (owner, admin, lead, faculty_coordinator)
+if (currentUserRole === "lead" && ["owner", "admin", "lead", "faculty_coordinator"].includes(targetUser.role as string)) {
+  return NextResponse.json({ error: "Leads cannot demote or modify executives or other leads" }, { status: 403 });
+}
+
+// Admins cannot modify the roles of other admins (only owners can do that)
+if (currentUserRole === "admin" && targetUser.role === "admin") {
+  return NextResponse.json({ error: "Admins cannot demote or modify other admins" }, { status: 403 });
 }
 
 await db.update(user).set({ role }).where(eq(user.id, targetUserId));

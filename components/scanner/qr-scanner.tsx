@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Camera, Upload, X } from "lucide-react";
+import * as faceapi from "@vladmandic/face-api";
+import { Button } from "@astryxdesign/core/Button";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Camera, Upload, X, ScanFace, Loader2 } from "lucide-react";
 import { addPendingCheckIn, getPendingCheckIns, removePendingCheckIn } from "@/lib/offline/db";
 
-export function QrScannerFixed({ onScan }: { onScan: (t: string) => void }) {
+export function QrScannerCamera({ onScan }: { onScan: (t: string) => void }) {
   const [status, setStatus] = useState<"idle"|"starting"|"scanning"|"error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const qrRef = useRef<Html5Qrcode | null>(null);
@@ -38,7 +39,9 @@ export function QrScannerFixed({ onScan }: { onScan: (t: string) => void }) {
     try { 
       if (qrRef.current?.isScanning) await qrRef.current.stop(); 
       qrRef.current?.clear();
-    } catch {}; 
+    } catch (err) {
+      console.error("Failed to stop camera", err);
+    } 
     setStatus("idle"); 
   };
   
@@ -54,19 +57,24 @@ export function QrScannerFixed({ onScan }: { onScan: (t: string) => void }) {
     finally { if (fileRef.current) fileRef.current.value=""; }
   };
   
-  useEffect(()=>()=>{ stopCamera(); },[]);
+  useEffect(() => {
+    return () => { stopCamera(); };
+  }, []);
   
-
-  useEffect(()=>()=>{ stopCamera() },[])
   return (
     <div className="space-y-4">
       <div id="qr-reader" className="w-full aspect-square rounded-lg bg-black/5 overflow-hidden" />
       <div id="qr-reader-file" className="hidden" />
-      {errorMsg && <Alert variant="destructive"><AlertDescription>{errorMsg}</AlertDescription></Alert>}
+      {errorMsg && (
+        <Banner status="error" title={errorMsg} />
+      )}
       <div className="flex gap-2">
-        {status!=="scanning" ? <Button onClick={startCamera} className="flex-1"><Camera className="mr-2 h-4 w-4" />Start Camera</Button>
-        : <Button variant="outline" onClick={stopCamera} className="flex-1"><X className="mr-2 h-4 w-4" />Stop</Button>}
-        <Button variant="secondary" onClick={()=>fileRef.current?.click()} className="flex-1"><Upload className="mr-2 h-4 w-4" />Upload</Button>
+        {status !== "scanning" ? (
+          <Button onClick={startCamera} className="flex-1" icon={<Camera className="h-4 w-4" />} label="Start Camera" />
+        ) : (
+          <Button variant="secondary" onClick={stopCamera} className="flex-1" icon={<X className="h-4 w-4" />} label="Stop" />
+        )}
+        <Button variant="secondary" onClick={() => fileRef.current?.click()} className="flex-1" icon={<Upload className="h-4 w-4" />} label="Upload" />
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
     </div>
@@ -80,6 +88,33 @@ interface QrScannerProps {
 export function QrScanner({ eventId }: QrScannerProps) {
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  
+  const [faceMatchEnabled, setFaceMatchEnabled] = useState(false);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  useEffect(() => {
+    if (faceMatchEnabled && !modelsLoaded && !loadingModels) {
+      setLoadingModels(true);
+      const loadModels = async () => {
+        try {
+          const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+          await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+          ]);
+          setModelsLoaded(true);
+        } catch (err) {
+          console.error("Failed to load models:", err);
+          setFaceMatchEnabled(false);
+        } finally {
+          setLoadingModels(false);
+        }
+      };
+      loadModels();
+    }
+  }, [faceMatchEnabled, modelsLoaded, loadingModels]);
 
   const syncPending = async () => {
     try {
@@ -118,14 +153,38 @@ export function QrScanner({ eventId }: QrScannerProps) {
 
     try {
       if (!navigator.onLine) {
+        if (faceMatchEnabled) {
+          setScanResult({ success: false, message: "Face match requires internet connection" });
+          return;
+        }
         await addPendingCheckIn(eventId, decodedText);
         setScanResult({ success: true, message: "Offline - queued for sync" });
         setPendingCount(prev => prev + 1);
       } else {
+        let scannedFaceDescriptor = null;
+        
+        if (faceMatchEnabled) {
+          const videoEl = document.querySelector("#qr-reader video") as HTMLVideoElement;
+          if (videoEl) {
+            setScanResult({ success: true, message: "Analyzing face..." });
+            const detection = await faceapi.detectSingleFace(
+              videoEl, 
+              new faceapi.TinyFaceDetectorOptions()
+            ).withFaceLandmarks().withFaceDescriptor();
+            
+            if (detection) {
+              scannedFaceDescriptor = Array.from(detection.descriptor);
+            } else {
+              setScanResult({ success: false, message: "No face detected. Please face the camera." });
+              return;
+            }
+          }
+        }
+        
         const res = await fetch("/api/scanner/check-in", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: decodedText, eventId })
+          body: JSON.stringify({ token: decodedText, eventId, scannedFaceDescriptor })
         });
         
         const data = await res.json();
@@ -144,7 +203,7 @@ export function QrScanner({ eventId }: QrScannerProps) {
     setTimeout(() => {
       setScanResult(null);
     }, 3000);
-  }, [eventId]);
+  }, [eventId, faceMatchEnabled]);
 
   return (
     <div className="space-y-4">
@@ -152,19 +211,28 @@ export function QrScanner({ eventId }: QrScannerProps) {
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-medium">Event Scanner</h3>
           {pendingCount > 0 && (
-            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-semibold">
+            <span className="bg-[var(--warning-background)] text-[var(--warning-foreground)] text-xs px-2 py-1 rounded-full font-semibold">
               {pendingCount} Queued
             </span>
           )}
         </div>
+        
+        <Button 
+          variant={faceMatchEnabled ? "primary" : "secondary"} 
+          size="sm"
+          onClick={() => setFaceMatchEnabled(!faceMatchEnabled)}
+          icon={loadingModels ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanFace className="w-4 h-4" />}
+          label={faceMatchEnabled ? "Face Match On" : "Face Match Off"}
+        />
       </div>
       
-      <QrScannerFixed onScan={handleScan} />
+      <QrScannerCamera onScan={handleScan} />
 
       {scanResult && (
-        <div className={`p-4 rounded-lg font-medium text-center text-lg ${scanResult.success ? "bg-green-100 text-green-800 border-green-200" : "bg-red-100 text-red-800 border-red-200"} border`}>
-          {scanResult.message}
-        </div>
+        <Banner 
+          status={scanResult.success ? "success" : "error"} 
+          title={scanResult.message} 
+        />
       )}
     </div>
   );

@@ -38,7 +38,7 @@ if (status === "interviewing") {
   if (applicant) {
     await emailQueue.add("send-email", {
       to: applicant.email,
-      subject: "Invitation to Interview - SDC OS",
+      subject: "Interview Invitation — Student Developer Club",
       html: `<p>Hi ${applicant.name},</p><p>Congratulations! We have reviewed your application and would like to invite you to an interview.</p><p>Please check your student portal for scheduling details.</p>`,
     }, { jobId: crypto.createHash("sha256").update(`interview:${id}`).digest("hex") });
   }

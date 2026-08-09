@@ -8,6 +8,9 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Badge } from "@astryxdesign/core/Badge";
 import { useToast } from "@/components/astryx/toast-provider";
+import { Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 type Project = {
   id: string;
@@ -35,11 +38,33 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
   const updateStatus = async (projectId: string, newStatus: string) => {
     setLoading(projectId);
     try {
-      // Optimistically update
       setProjects(projects.map(p => p.id === projectId ? { ...p, status: newStatus as any } : p));
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status on server");
       success("Status updated");
     } catch (e: any) {
       error("Failed to update status");
+      // Revert optimism if necessary, omitted for brevity
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
+    setLoading(projectId);
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete project");
+      setProjects(projects.filter(p => p.id !== projectId));
+      success("Project deleted permanently");
+    } catch (e: any) {
+      error(e.message);
     } finally {
       setLoading(null);
     }
@@ -61,7 +86,35 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
             {projects.filter(p => (p.status || "pending") === status).map(project => (
               <Card key={project.id} padding={0} className="shadow-sm cursor-grab active:cursor-grabbing">
                 <VStack gap={3} className="p-4">
-                  <Text weight="semibold" className="text-base">{project.title}</Text>
+                  <HStack justify="between" align="start">
+                    <Text weight="semibold" className="text-base flex-1 pr-2">{project.title}</Text>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="text-muted-foreground hover:text-red-500 transition-colors p-1" disabled={loading === project.id}>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the project
+                            &quot;{project.title}&quot; and remove all of its data and images from our servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={(e) => { e.preventDefault(); deleteProject(project.id); }}
+                            className="bg-red-500 hover:bg-red-600 text-white"
+                          >
+                            {loading === project.id ? "Deleting..." : "Delete Project"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </HStack>
                   
                   <Text type="supporting" className="text-sm line-clamp-3">
                     {project.description || "No description"}

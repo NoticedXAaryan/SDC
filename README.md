@@ -1,6 +1,6 @@
-# SDC OS (Student Developer Club Operating System)
+# Student Developer Club
 
-SDC OS is the operational backbone for student clubs — managing members, events, attendance, certificates, recruitment, finance, inventory, projects, and communications from one system.
+The Student Developer Club platform — our club's website and internal tools for managing members, events, attendance, certificates, recruitment, finance, inventory, projects, and communications from one system.
 
 ## Quick Start
 

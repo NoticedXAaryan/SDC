@@ -10,8 +10,8 @@ import { Toaster } from "sonner";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "SDC OS | Student Developer Club",
-  description: "The operating system for student clubs. Manage members, events, certificates, and finances.",
+  title: "Student Developer Club | Parul University",
+  description: "Parul University's Student Developer Club — events, projects, certificates, and community.",
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
             attribute="data-astryx-media"
             defaultTheme="system"
             enableSystem
-            disableTransitionOnChange
+
         >
           <PostHogProvider>
             <PostHogIdentify />

@@ -1,29 +1,24 @@
-import { getDashboardData } from "@/lib/dal/dashboard";
-import { isManagementRole } from "@/lib/dal/auth";
-import { StudentDashboard } from "./components/student-dashboard";
-import { LeadDashboard } from "./components/lead-dashboard";
-import { AdminDashboard } from "./components/admin-dashboard";
-
+import { requireSession, isManagementRole } from "@/lib/dal/auth";
+import { AdminContainer, LeadContainer, StudentContainer } from "./components/dashboard-containers";
+import { DashboardSkeleton } from "./components/dashboard-skeleton";
 import { PageHeader } from "@/components/astryx/page-header";
 import { Button } from "@astryxdesign/core";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
-  const { 
-    user, upcomingEvents, myRegistrations, managementStats, 
-    myApplication, insightsData, myCertificates,
-    pendingApprovalsCount, recentAuditLogs, financeSnapshot, 
-    inventoryAlerts, pendingTasksCount
-  } = data;
+  const session = await requireSession();
+  const user = session.user;
   
   const role = user.role as string;
   const isAdmin = ["admin", "owner"].includes(role);
   const isLead = isManagementRole(role) && !isAdmin;
 
-  const adminCtaLabel = pendingApprovalsCount > 0 ? "Review approvals" : "Create event";
-  const adminCtaLink = pendingApprovalsCount > 0 ? "/manage/approvals" : "/events/create";
+  // We don't have pendingApprovalsCount instantly since we deferred fetching,
+  // so we'll show generic links in the header.
+  const adminCtaLabel = "Review actions";
+  const adminCtaLink = "/manage/approvals";
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto py-6">
@@ -45,28 +40,15 @@ export default async function DashboardPage() {
         }
       />
 
-      {isAdmin ? (
-        <AdminDashboard 
-          user={user} 
-          managementStats={managementStats} 
-          upcomingEvents={upcomingEvents} 
-          insights={insightsData}
-          pendingApprovalsCount={pendingApprovalsCount}
-          recentAuditLogs={recentAuditLogs}
-          financeSnapshot={financeSnapshot}
-          inventoryAlerts={inventoryAlerts}
-        />
-      ) : isLead ? (
-        <LeadDashboard 
-          user={user} 
-          managementStats={managementStats} 
-          upcomingEvents={upcomingEvents}
-          pendingTasksCount={pendingTasksCount}
-          recentAuditLogs={recentAuditLogs}
-        />
-      ) : (
-        <StudentDashboard user={user} myRegistrations={myRegistrations} myApplication={myApplication} myCertificates={myCertificates} />
-      )}
+      <Suspense fallback={<DashboardSkeleton />}>
+        {isAdmin ? (
+          <AdminContainer user={user} />
+        ) : isLead ? (
+          <LeadContainer user={user} />
+        ) : (
+          <StudentContainer user={user} />
+        )}
+      </Suspense>
     </div>
   );
 }

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { 
   Card, 
   Button, 
@@ -20,49 +23,91 @@ import {
 } from "@astryxdesign/core";
 import { X } from "lucide-react";
 
+const eventSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  slug: z.string().min(3, "Slug must be at least 3 characters").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
+  description: z.string().optional(),
+  startsAt: z.string().min(1, "Start time is required"),
+  endsAt: z.string().min(1, "End time is required"),
+  location: z.string().optional(),
+  coverImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  capacity: z.number().min(0),
+  isPaid: z.boolean(),
+  price: z.number().min(0),
+  forms: z.array(z.object({
+    id: z.string(),
+    type: z.string(),
+    question: z.string().min(1, "Question is required"),
+    required: z.boolean(),
+    options: z.string().optional() // Stored as comma separated in UI
+  })),
+  certificateTemplateId: z.string().optional(),
+});
+
+type EventFormValues = z.infer<typeof eventSchema>;
+
 export function CreateEventWizard() {
   const [step, setStep] = useState(1);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form State
-  const [formData, setFormData] = useState({
-    title: "",
-    slug: "",
-    type: "technical",
-    description: "",
-    coverImage: "",
-    startsAt: "",
-    endsAt: "",
-    location: "",
-    capacity: 0,
-    isPaid: false,
-    price: 0,
-    forms: [] as { id: string; type: string; question: string; required: boolean; options?: string[] }[],
-    certificateTemplateId: "",
+  const { control, handleSubmit, watch, trigger, formState: { errors } } = useForm<EventFormValues>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: {
+      title: "",
+      slug: "",
+      description: "",
+      coverImage: "",
+      startsAt: "",
+      endsAt: "",
+      location: "",
+      capacity: 0,
+      isPaid: false,
+      price: 0,
+      forms: [],
+      certificateTemplateId: "",
+    },
+    mode: "onChange"
   });
 
-  const handleNext = () => setStep(s => Math.min(s + 1, 5));
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "forms",
+  });
+
+  const watchIsPaid = watch("isPaid");
+  const formData = watch();
+
+  const handleNext = async () => {
+    // Validate current step before proceeding
+    let fieldsToValidate: (keyof EventFormValues)[] = [];
+    if (step === 1) fieldsToValidate = ["title", "slug", "description", "startsAt", "endsAt", "location", "coverImage"];
+    if (step === 2) fieldsToValidate = ["capacity", "isPaid", "price"];
+    if (step === 3) fieldsToValidate = ["forms"];
+    if (step === 4) fieldsToValidate = ["certificateTemplateId"];
+
+    const isValid = await trigger(fieldsToValidate);
+    if (isValid) setStep(s => Math.min(s + 1, 5));
+  };
+  
   const handlePrev = () => setStep(s => Math.max(s - 1, 1));
 
-  const updateForm = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const addFormField = () => {
-    setFormData(prev => ({
-      ...prev,
-      forms: [...prev.forms, { id: crypto.randomUUID(), type: "text", question: "", required: false }]
-    }));
-  };
-
-  const submitEvent = async () => {
+  const onSubmit = async (data: EventFormValues) => {
     setIsSubmitting(true);
     try {
+      // Transform forms string options to array
+      const payload = {
+        ...data,
+        forms: data.forms.map(f => ({
+          ...f,
+          options: f.options ? f.options.split(",").map(o => o.trim()) : []
+        }))
+      };
+
       const res = await fetch("/api/events/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to create event");
       
@@ -99,91 +144,115 @@ export function CreateEventWizard() {
           </Text>
         </VStack>
 
-        <div className="py-4 border-t border-b border-border min-h-[400px]">
+        <form className="py-4 border-t border-b border-border min-h-[400px]">
           {step === 1 && (
             <FormLayout>
               <div className="grid grid-cols-2 gap-4">
-                <TextInput 
-                  label="Title" 
-                  htmlName="title"
-                  value={formData.title} 
-                  onChange={v => updateForm("title", v)} 
-                  placeholder="Event Title" 
+                <Controller
+                  name="title"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <TextInput label="Title" {...field} placeholder="Event Title" />
+                      {errors.title && <span className="text-red-500 text-xs mt-1">{errors.title.message}</span>}
+                    </div>
+                  )}
                 />
-                <TextInput 
-                  label="Slug" 
-                  htmlName="slug"
-                  value={formData.slug} 
-                  onChange={v => updateForm("slug", v)} 
-                  placeholder="event-slug" 
+                <Controller
+                  name="slug"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <TextInput label="Slug" {...field} placeholder="event-slug" />
+                      {errors.slug && <span className="text-red-500 text-xs mt-1">{errors.slug.message}</span>}
+                    </div>
+                  )}
                 />
               </div>
-              <TextArea 
-                label="Description" 
-                htmlName="description"
-                value={formData.description} 
-                onChange={v => updateForm("description", v)} 
-                placeholder="Event description..." 
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextArea label="Description" {...field} value={field.value || ""} placeholder="Event description..." />
+                )}
               />
               <div className="grid grid-cols-2 gap-4">
-                <TextInput 
-                  type="text" 
-                  label="Start Time" 
-                  htmlName="startsAt"
-                  value={formData.startsAt} 
-                  onChange={v => updateForm("startsAt", v)} 
-                  placeholder="YYYY-MM-DDTHH:MM"
+                <Controller
+                  name="startsAt"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <TextInput type={"datetime-local" as any} label="Start Time" {...field} />
+                      {errors.startsAt && <span className="text-red-500 text-xs mt-1">{errors.startsAt.message}</span>}
+                    </div>
+                  )}
                 />
-                <TextInput 
-                  type="text" 
-                  label="End Time" 
-                  htmlName="endsAt"
-                  value={formData.endsAt} 
-                  onChange={v => updateForm("endsAt", v)} 
-                  placeholder="YYYY-MM-DDTHH:MM"
+                <Controller
+                  name="endsAt"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <TextInput type={"datetime-local" as any} label="End Time" {...field} />
+                      {errors.endsAt && <span className="text-red-500 text-xs mt-1">{errors.endsAt.message}</span>}
+                    </div>
+                  )}
                 />
               </div>
-              <TextInput 
-                label="Location" 
-                htmlName="location"
-                value={formData.location} 
-                onChange={v => updateForm("location", v)} 
-                placeholder="Venue or Meet link" 
+              <Controller
+                name="location"
+                control={control}
+                render={({ field }) => (
+                  <TextInput label="Location" {...field} value={field.value || ""} placeholder="Venue or Meet link" />
+                )}
               />
-              <TextInput 
-                label="Cover Image URL" 
-                htmlName="coverImage"
-                value={formData.coverImage} 
-                onChange={v => updateForm("coverImage", v)} 
-                placeholder="https://..." 
+              <Controller
+                name="coverImage"
+                control={control}
+                render={({ field }) => (
+                  <div>
+                    <TextInput label="Cover Image URL" {...field} value={field.value || ""} placeholder="https://..." />
+                    {errors.coverImage && <span className="text-red-500 text-xs mt-1">{errors.coverImage.message}</span>}
+                  </div>
+                )}
               />
             </FormLayout>
           )}
 
           {step === 2 && (
             <FormLayout>
-              <TextInput 
-                type="text"
-                label="Total Capacity" 
-                htmlName="capacity"
-                value={formData.capacity.toString()} 
-                onChange={v => updateForm("capacity", parseInt(v) || 0)} 
-                description="Set to 0 for unlimited."
-              />
-              <CheckboxInput 
-                label="This is a paid event" 
-                htmlName="isPaid"
-                value={formData.isPaid} 
-                onChange={v => updateForm("isPaid", v)} 
-              />
-              {formData.isPaid && (
-                <div className="border-l-2 border-blue-500 pl-4 ml-2 mt-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-r-md">
+              <Controller
+                name="capacity"
+                control={control}
+                render={({ field }) => (
                   <TextInput 
-                    type="text"
-                    label="Price (INR)" 
-                    htmlName="price"
-                    value={formData.price.toString()} 
-                    onChange={v => updateForm("price", parseFloat(v) || 0)} 
+                    type={"number" as any}
+                    label="Total Capacity" 
+                    value={field.value.toString()}
+                    onChange={v => field.onChange(parseInt(v) || 0)}
+                    description="Set to 0 for unlimited."
+                  />
+                )}
+              />
+              <Controller
+                name="isPaid"
+                control={control}
+                render={({ field }) => (
+                  <CheckboxInput label="This is a paid event" value={field.value} onChange={field.onChange} />
+                )}
+              />
+              {watchIsPaid && (
+                <div className="border-l-2 border-blue-500 pl-4 mt-2 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-r-md">
+                  <Controller
+                    name="price"
+                    control={control}
+                    render={({ field }) => (
+                      <TextInput 
+                        type={"number" as any}
+                        label="Price (INR)" 
+                        value={field.value.toString()}
+                        onChange={v => field.onChange(parseFloat(v) || 0)}
+                      />
+                    )}
                   />
                 </div>
               )}
@@ -194,79 +263,72 @@ export function CreateEventWizard() {
             <VStack gap={6}>
               <HStack justify="between" align="center">
                 <Text weight="medium">Custom Registration Questions</Text>
-                <Button type="button" variant="secondary" size="sm" onClick={addFormField} label="+ Add Field" />
+                <Button type="button" variant="secondary" size="sm" onClick={() => append({ id: crypto.randomUUID(), type: "text", question: "", required: false, options: "" })} label="+ Add Field" />
               </HStack>
-              {formData.forms.length === 0 ? (
+              {fields.length === 0 ? (
                 <div className="text-center p-8 bg-muted/20 border rounded-lg text-sm text-muted-foreground">
                   No custom fields added. Default fields (Name, Email, Phone) will be automatically collected.
                 </div>
               ) : (
                 <VStack gap={4}>
-                  {formData.forms.map((field, idx) => (
+                  {fields.map((field, idx) => (
                     <Card key={field.id} padding={4} className="relative bg-muted/10 border-muted">
                       <div className="absolute top-2 right-2">
                         <IconButton
                           variant="ghost" 
                           icon={<X className="w-4 h-4 text-red-500" />} 
                           label="Remove field"
-                          onClick={() => setFormData(prev => ({ ...prev, forms: prev.forms.filter((_, i) => i !== idx) }))}
+                          onClick={() => remove(idx)}
                         />
                       </div>
                       <FormLayout>
                         <div className="grid grid-cols-3 gap-4">
                           <div className="col-span-2">
-                            <TextInput 
-                              label="Question Label" 
-                              htmlName={`question-${idx}`}
-                              value={field.question} 
-                              onChange={v => {
-                                const newForms = [...formData.forms];
-                                newForms[idx].question = v;
-                                updateForm("forms", newForms);
-                              }} 
-                              placeholder="e.g. T-Shirt Size" 
+                            <Controller
+                              name={`forms.${idx}.question`}
+                              control={control}
+                              render={({ field: f }) => (
+                                <div>
+                                  <TextInput label="Question Label" {...f} placeholder="e.g. T-Shirt Size" />
+                                  {errors.forms?.[idx]?.question && <span className="text-red-500 text-xs mt-1">{errors.forms[idx].question.message}</span>}
+                                </div>
+                              )}
                             />
                           </div>
                           <div>
-                            <Selector 
-                              label="Type"
-                              value={field.type} 
-                              onChange={v => {
-                                if (!v) return;
-                                const newForms = [...formData.forms];
-                                newForms[idx].type = v;
-                                updateForm("forms", newForms);
-                              }}
-                              options={[
-                                { value: "text", label: "Short Text" },
-                                { value: "textarea", label: "Long Text" },
-                                { value: "dropdown", label: "Dropdown" },
-                              ]}
+                            <Controller
+                              name={`forms.${idx}.type`}
+                              control={control}
+                              render={({ field: f }) => (
+                                <Selector 
+                                  label="Type"
+                                  value={f.value} 
+                                  onChange={f.onChange}
+                                  options={[
+                                    { value: "text", label: "Short Text" },
+                                    { value: "textarea", label: "Long Text" },
+                                    { value: "dropdown", label: "Dropdown" },
+                                  ]}
+                                />
+                              )}
                             />
                           </div>
                         </div>
-                        {field.type === "dropdown" && (
-                          <TextInput 
-                            label="Options (comma separated)" 
-                            htmlName={`options-${idx}`}
-                            value={(field.options || []).join(",")} 
-                            onChange={v => {
-                               const newForms = [...formData.forms];
-                               newForms[idx].options = v.split(",");
-                               updateForm("forms", newForms);
-                            }} 
-                            placeholder="S, M, L, XL" 
+                        {formData.forms[idx]?.type === "dropdown" && (
+                          <Controller
+                            name={`forms.${idx}.options`}
+                            control={control}
+                            render={({ field: f }) => (
+                              <TextInput label="Options (comma separated)" {...f} value={f.value || ""} placeholder="Option 1, Option 2" />
+                            )}
                           />
                         )}
-                        <CheckboxInput 
-                          label="Required field" 
-                          htmlName={`required-${idx}`}
-                          value={field.required} 
-                          onChange={v => {
-                             const newForms = [...formData.forms];
-                             newForms[idx].required = v;
-                             updateForm("forms", newForms);
-                          }} 
+                        <Controller
+                          name={`forms.${idx}.required`}
+                          control={control}
+                          render={({ field: f }) => (
+                            <CheckboxInput label="Required field" value={f.value} onChange={f.onChange} />
+                          )}
                         />
                       </FormLayout>
                     </Card>
@@ -278,13 +340,12 @@ export function CreateEventWizard() {
 
           {step === 4 && (
             <FormLayout>
-              <TextInput 
-                label="Link Certificate Template" 
-                htmlName="templateId"
-                description="Select a template to automatically issue certificates upon event completion."
-                value={formData.certificateTemplateId} 
-                onChange={v => updateForm("certificateTemplateId", v)} 
-                placeholder="Template ID (optional)" 
+              <Controller
+                name="certificateTemplateId"
+                control={control}
+                render={({ field }) => (
+                  <TextInput label="Link Certificate Template" {...field} value={field.value || ""} description="Select a template to automatically issue certificates." placeholder="Template ID (optional)" />
+                )}
               />
             </FormLayout>
           )}
@@ -293,24 +354,24 @@ export function CreateEventWizard() {
             <VStack gap={4}>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
                 <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title || "—"}</span>
-                <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? (isNaN(new Date(formData.startsAt).getTime()) ? "Invalid Date" : new Date(formData.startsAt).toLocaleString()) : "—"}</span>
+                <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? new Date(formData.startsAt).toLocaleString() : "—"}</span>
                 <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>
                 <span className="text-muted-foreground">Price:</span> <span className="font-medium">{formData.isPaid ? `₹${formData.price}` : "Free"}</span>
-                <span className="text-muted-foreground">Custom Fields:</span> <span className="font-medium">{formData.forms.length}</span>
+                <span className="text-muted-foreground">Custom Fields:</span> <span className="font-medium">{formData.forms?.length || 0}</span>
               </div>
               <p className="text-sm text-muted-foreground bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 p-4 rounded-md">
                 By clicking publish, this event will be submitted for review. Once approved by an admin, it will go live on the dashboard.
               </p>
             </VStack>
           )}
-        </div>
+        </form>
 
         <HStack justify="between" align="center">
           <Button variant="secondary" onClick={handlePrev} isDisabled={step === 1} label="Back" />
           {step < 5 ? (
             <Button onClick={handleNext} label="Continue" />
           ) : (
-            <Button onClick={submitEvent} isDisabled={isSubmitting} label={isSubmitting ? "Publishing..." : "Publish Event"} />
+            <Button onClick={handleSubmit(onSubmit)} isDisabled={isSubmitting} label={isSubmitting ? "Publishing..." : "Publish Event"} />
           )}
         </HStack>
       </VStack>
