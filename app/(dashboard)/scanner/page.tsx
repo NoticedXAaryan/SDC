@@ -4,10 +4,9 @@ import { and, eq } from "drizzle-orm";
 import { events, registrations } from "@/lib/db/schema";
 import { QrScanner } from "@/components/scanner/qr-scanner";
 import { PageHeader } from "@/components/app/page-header";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Button } from "@astryxdesign/core/Button";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
+import { EventSelector } from "./event-selector";
 
 export default async function ScannerPage({ searchParams }: { searchParams: Promise<{ eventId?: string }> }) {
   // Only organizers can scan
@@ -46,18 +45,10 @@ export default async function ScannerPage({ searchParams }: { searchParams: Prom
 
       <VStack gap={4}>
         <Text weight="medium">Select Event to Scan For</Text>
-        <form method="GET" className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <Selector
-              htmlName="eventId"
-              label="Event"
-              isLabelHidden
-              value={selectedEventId || ""}
-              options={activeEvents.map(evt => ({ label: evt.title, value: evt.id }))}
-            />
-          </div>
-          <Button type="submit" label="Set Event" variant="primary" className="w-full sm:w-auto" />
-        </form>
+        <EventSelector 
+          events={activeEvents} 
+          defaultValue={selectedEventId || ""} 
+        />
       </VStack>
 
       {selectedEventId && (

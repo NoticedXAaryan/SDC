@@ -1,13 +1,21 @@
 # Active Context
 
 **Current Focus:**
-All phases (1-10) of the dashboard overhaul and functionality refinement are complete. The application now uses the full `@astryxdesign/core` design system, features a fully robust drag-and-drop forms builder with logic, clean hierarchical navigation, optimized queries, correct role promotion rules, and rich AI-driven operational insights.
+The user has requested a comprehensive feature audit to identify broken routes, missing pages, and loops. We need to identify, test, and audit every single feature one by one, and then fix the missing parts.
 
 **Last Actions:**
-- Completed Phase 10: Advanced AI Insights. 
-- Created `generateInsightsAction` and `deleteInsightAction` in `lib/actions/insights.ts` to generate LLM insights based on rich operations data (finance, attendance, backlog, and inventory).
-- Wired a "Refresh" and "Dismiss" button directly into the AI Insights panel on the `AdminDashboard`.
-- Added the missing `faceDescriptor` column to the local database via Drizzle and raw SQL execution.
+- Audited full codebase: 42 ✅ features, 6 ⚠️ partial, 1 🔲 stub
+- Created `docs/SPECIFICATION.md` — 4-phase development cycle, three-direction analysis (should/shouldn't/missing), multi-level institute scaling model, integration map, UI standards, security framework, and prioritized work order
+- Updated `docs/ai/00-project-brief.md` to reference the master spec
 
-**Next Steps:**
-- The project is in a stable, deployed state. Future tasks will involve monitoring production metrics, maintaining stability, and finalizing any production deployment steps.
+**Next Steps (from SPECIFICATION.md §10.2):**
+1. Extract `lib/dal/events.ts` and refactor event API routes (Phase 2)
+2. Extract remaining DAL modules per §5.2
+3. Verify INT-01 through INT-15 integration workflows against EXECUTION_ROADMAP
+4. Shadcn → Astryx migration P0/P1 files
+5. Add integration tests for top 5 workflows
+
+**Key reference documents:**
+- `docs/SPECIFICATION.md` — what to build and in what order
+- `docs/ARCHITECTURE.md` — how it works technically
+- `docs/EXECUTION_ROADMAP.md` — verification checklist

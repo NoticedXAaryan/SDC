@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { logger } from "@/lib/logger";
 import { env } from "../env";
 import QRCode from "qrcode";
 
@@ -11,7 +12,7 @@ export const Mailer = {
   async sendEmail({ to, subject, html, attachments }: { to: string; subject: string; html: string; attachments?: any[] }) {
     if (!env.RESEND_API_KEY || !env.EMAIL_FROM_ADDRESS) {
       console.warn("⚠️ RESEND_API_KEY or EMAIL_FROM_ADDRESS is not set. Email not sent.");
-      console.log(`[Email to ${to}] Subject: ${subject}`);
+      logger.info(`[Email to ${to}] Subject: ${subject}`);
       return;
     }
 
@@ -32,7 +33,7 @@ export const Mailer = {
         throw new Error(error.message);
       }
 
-      console.log(`✅ Email sent to ${to} (ID: ${data?.id})`);
+      logger.info(`✅ Email sent to ${to} (ID: ${data?.id})`);
       return data;
     } catch (err) {
       console.error("❌ Failed to send email:", err);

@@ -1,8 +1,7 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { PageHeader } from "@/components/astryx/page-header";
 import { EmptyState } from "@/components/astryx/empty-state";
-import { Bell } from "lucide-react";
-import { Button } from "@astryxdesign/core/Button";
+import { NewAnnouncementModal } from "./new-announcement-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +15,7 @@ export default async function CommunicationsPage() {
         title="Communications"
         description="Updates, announcements, and messages from the club."
         primaryAction={canSend ? (
-          <Button variant="primary" label="New Announcement" icon={<Bell className="w-4 h-4" />} />
+          <NewAnnouncementModal />
         ) : undefined}
       />
 

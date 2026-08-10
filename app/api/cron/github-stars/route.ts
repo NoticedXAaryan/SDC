@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { withApiHandler } from "@/lib/api-wrapper";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { projects } from "@/lib/db/schema";
 import { isNotNull } from "drizzle-orm";
 
-export async function GET(req: Request) {
+export const GET = withApiHandler(async (req: NextRequest) => {
   try {
     // Optional: Add authorization header check to ensure only Vercel Cron can call this
     
@@ -30,18 +32,21 @@ export async function GET(req: Request) {
               const data = await res.json();
               // In this schema, we don't have a 'stars' column yet, but we could update upvotes or metadata.
               // For now, just logging it as proof of concept for the cron.
-              console.log(`Synced ${repo}: ${data.stargazers_count} stars`);
+              logger.info(`Synced ${repo}: ${data.stargazers_count} stars`);
               updatedCount++;
+            } else {
+              logger.error(`Failed to fetch stars for ${repo}: ${res.statusText}`);
             }
           }
         } catch (e) {
-          console.error(`Failed to sync stars for ${project.id}`, e);
+          logger.error(`Failed to sync stars for ${project.id}`, e);
         }
       }
     }
 
     return NextResponse.json({ success: true, updatedCount });
   } catch (error: any) {
+    logger.error(`Internal server error in github sync: ${String(error)}`);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
-}
+});

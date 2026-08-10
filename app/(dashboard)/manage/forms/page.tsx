@@ -115,7 +115,7 @@ export default function ManageFormsPage() {
                 </HStack>
                 
                 <Text type="supporting" className="text-sm">
-                  0 responses
+                  {form.responseCount || 0} responses
                 </Text>
 
                 <HStack gap={2} className="mt-2">

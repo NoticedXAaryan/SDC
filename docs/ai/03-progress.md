@@ -1,5 +1,37 @@
 # Progress Log
 
+## 2026-08-10: Architecture Debt & Missing UIs (Audit Remediation)
+
+### Completed
+- **Core Security & Bugs:** Extracted `withApiHandler` to wrap API routes, fixed RBAC guards, fixed scanner component bugs, cleaned up generic `console.log` statements in crons.
+- **Missing Architecture UIs:** 
+  - Created backend APIs and frontend dashboards for missing schema tables: `Tasks`, `Competitions`, and `Research Papers`.
+  - Replaced dead buttons and empty stubs in Unified Approvals, Settings, Communications, and Event Management with working `EmptyState` or functional interactive forms.
+- **Component Cleanups:** Fixed strict typing issues with `DialogTrigger asChild` and Astryx `EmptyState` `icon` props that were causing Next.js build failures.
+
+### Status
+All critical backend stubs and logic gaps from the HTML audit report have been resolved. The remaining major task is the massive Shadcn to Astryx component migration.
+
+## 2026-08-09: Master Development Specification
+
+### Completed
+- **Specification document:** Created `docs/SPECIFICATION.md` — comprehensive, discrete specification covering:
+  - 4-phase development cycle (Core → Connect → UI → Sub-features)
+  - Three-direction analysis: 42 in-scope features, 14 explicit exclusions, 10 confirmed gaps
+  - Multi-level institute scaling model (Institute → Club → Domain → Member)
+  - 15 cross-domain integration workflows with verification criteria
+  - DAL consolidation plan (10 domain modules to extract)
+  - UI route inventory, role matrix, and Shadcn→Astryx migration plan
+  - 17 sub-feature backlog items with acceptance criteria
+  - Security & safety framework (auth, authorization, API, data, operational)
+  - Prioritized work order for next development sessions
+- **Documentation wiring:** Updated `docs/ai/00-project-brief.md` and `docs/ai/02-active-context.md` to reference the master spec
+
+### Status
+Phase 1 ~92% complete. Ready to begin Phase 2 (DAL extraction + integration verification).
+
+---
+
 ## 2026-08-09: Dashboard & Functionality Overhaul (Phases 1-9)
 
 ### Completed

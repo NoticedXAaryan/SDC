@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { withApiHandler } from "@/lib/api-wrapper";
 import { generateInsightsAction } from "@/lib/actions/insights";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export const GET = withApiHandler(async (req: NextRequest) => {
   // In a real scenario, protect this endpoint via a secret header or allow only local cron triggers
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -16,4 +17,4 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ success: true });
-}
+});

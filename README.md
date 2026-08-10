@@ -45,6 +45,8 @@ docker-compose up --build
 
 ## Documentation
 
+Start with [`docs/SPECIFICATION.md`](docs/SPECIFICATION.md) — the master development specification covering the 4-phase build cycle, feature registry, gap analysis, and implementation order.
+
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete system documentation including:
 - Data Flow Diagrams for all major features
 - Full database schema map (30+ tables)

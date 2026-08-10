@@ -12,6 +12,8 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Loader2, AtSign, CheckCircle2, ScanFace, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/astryx/page-header";
 
+import { ClubSettingsForm } from "./club-settings-form";
+
 export default function SettingsPage() {
   const { data: session, isPending } = useSession();
   const [uploading, setUploading] = useState(false);
@@ -317,21 +319,7 @@ export default function SettingsPage() {
                 <Text type="supporting" className="text-sm">Manage global settings for the club. These changes affect all users.</Text>
               </VStack>
               
-              <div className="space-y-6 pt-4">
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Club Name" value="Student Developer Club" isDisabled />
-                </div>
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Custom Domain" value="" placeholder="e.g. members.sdc.org" />
-                </div>
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Global API Key (Resend, etc)" value="" type="password" placeholder="sk_test_..." />
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-border">
-                <Button label="Save Changes" variant="primary" />
-              </div>
+              <ClubSettingsForm />
             </VStack>
           </Card>
         </div>

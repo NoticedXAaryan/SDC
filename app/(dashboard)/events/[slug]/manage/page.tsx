@@ -13,6 +13,7 @@ import { EventScannerTab } from "./components/event-scanner-tab";
 import { EventCommunicationsTab } from "./components/event-communications-tab";
 import { EventCertificatesTab } from "./components/event-certificates-tab";
 import { EventManageTabsNav } from "./components/event-manage-tabs-nav";
+import { EmptyState } from "@/components/astryx/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -54,13 +55,21 @@ export default async function EventManagePage({
         {tab === "overview" && <EventOverviewTab event={event} />}
         {tab === "registrations" && <EventRegistrationsTab event={event} />}
         {tab === "sessions" && (
-          <div className="p-6 border rounded-lg bg-card text-center text-muted-foreground">Sessions management coming soon</div>
+          <EmptyState 
+            icon={<Users />} 
+            title="Sessions Management" 
+            description="Sessions management is coming soon." 
+          />
         )}
         {tab === "scanner" && <EventScannerTab event={event} />}
         {tab === "communications" && <EventCommunicationsTab event={event} />}
         {tab === "certificates" && <EventCertificatesTab event={event} />}
         {tab === "settings" && (
-          <div className="p-6 border rounded-lg bg-card text-center text-muted-foreground">Event settings coming soon</div>
+          <EmptyState 
+            icon={<Settings />} 
+            title="Event Settings" 
+            description="Event settings management is coming soon." 
+          />
         )}
       </div>
     </div>

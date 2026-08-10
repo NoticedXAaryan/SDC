@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { withApiHandler } from "@/lib/api-wrapper";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -14,8 +15,7 @@ export const dynamic = "force-dynamic";
  * 
  * SECURITY: This endpoint immediately locks itself permanently once at least one 'owner' exists.
  */
-export async function GET() {
-  try {
+export const GET = withApiHandler(async (req: NextRequest) => {
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
     const adminName = process.env.ADMIN_NAME || "System Admin";
@@ -81,8 +81,4 @@ export async function GET() {
       success: true,
       message: `Owner account ${adminEmail} created securely! Setup is now locked. You may log in.`
     });
-  } catch (error: any) {
-    console.error("[Setup API Error]:", error);
-    return NextResponse.json({ error: "Internal server error during setup", details: error.message }, { status: 500 });
-  }
-}
+});

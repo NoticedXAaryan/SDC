@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import QRCode from "qrcode";
+import { withApiHandler } from "@/lib/api-wrapper";
 
-export async function GET(req: Request) {
+export const GET = withApiHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   
@@ -20,4 +21,4 @@ export async function GET(req: Request) {
   } catch (err) {
     return new NextResponse("Error generating QR", { status: 500 });
   }
-}
+});

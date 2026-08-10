@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { forms, formFields } from "@/lib/db/schema";
+import { forms, formFields, formResponses } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/dal/auth";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
 
@@ -65,12 +66,21 @@ export const POST = withApiHandler(async (req: Request) => {
 });
 
 export const GET = withApiHandler(async (req: Request) => {
-    // For listing forms in admin/management
-    // A public endpoint would just get one form by ID or published forms
-    const session = await requireAdmin(); // Wait, FIX.md says GET /api/forms is for all users? 
-    // Actually, GET /api/forms for manage/forms -> lead+. Let's just return all forms if lead+
-    const allForms = await db.query.forms.findMany({
-      orderBy: (f, { desc }) => desc(f.createdAt)
-    });
-    return NextResponse.json(allForms);
+    const session = await requireAdmin(); 
+    
+    // Fetch all forms with their response counts
+    const formsWithCounts = await db.select({
+      id: forms.id,
+      title: forms.title,
+      description: forms.description,
+      status: forms.status,
+      createdAt: forms.createdAt,
+      responseCount: sql<number>`count(${formResponses.id})`.mapWith(Number)
+    })
+    .from(forms)
+    .leftJoin(formResponses, eq(forms.id, formResponses.formId))
+    .groupBy(forms.id)
+    .orderBy(sql`${forms.createdAt} DESC`);
+
+    return NextResponse.json(formsWithCounts);
 });

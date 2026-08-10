@@ -22,8 +22,11 @@ Next.js 16 / React 19 / TypeScript / Drizzle ORM / PostgreSQL / Better Auth / Bu
 - **Aesthetic:** Dark-mode-first, restrained with cosmic accent touches — not sci-fi-gaudy, more premium-observatory
 - **Motion:** Subtle orbital/gravitational animations — elements that feel like they have weight and trajectory
 
+## Development specification
+- **Master spec:** `docs/SPECIFICATION.md` — authoritative 4-phase development cycle, feature registry, gap analysis, and implementation order. Read this before any implementation work.
+
 ## What's in scope
-- All features listed in docs/ARCHITECTURE.md Section 7 (Feature Registry)
+- All features listed in docs/SPECIFICATION.md Section 2 and docs/ARCHITECTURE.md Section 7 (Feature Registry)
 - 14-role RBAC hierarchy
 - Background worker system (email, certificates, grading, reminders)
 - Docker deployment

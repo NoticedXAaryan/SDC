@@ -90,7 +90,7 @@ export default function ProjectsClient({ initialProjects }: { initialProjects: P
                     <Text weight="semibold" className="text-base flex-1 pr-2">{project.title}</Text>
                     
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
+                      <AlertDialogTrigger>
                         <button className="text-muted-foreground hover:text-red-500 transition-colors p-1" disabled={loading === project.id}>
                           <Trash2 className="w-4 h-4" />
                         </button>

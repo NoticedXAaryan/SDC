@@ -2,7 +2,7 @@
 
 > **Purpose:** This is a step-by-step task list for an AI agent (or human developer) to systematically test, fix, and complete every feature in the SDC platform. Each step has clear inputs, actions, and success criteria.
 >
-> **Read first:** `docs/ai/00-project-brief.md` (what this is) and `docs/ARCHITECTURE.md` (how everything works).
+> **Read first:** `docs/SPECIFICATION.md` (what to build and in what order), `docs/ai/00-project-brief.md` (what this is), and `docs/ARCHITECTURE.md` (how everything works).
 
 ---
 

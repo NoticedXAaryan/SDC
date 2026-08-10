@@ -9,7 +9,7 @@ export const navItems: NavItem[] = [
   { href: "/events", label: "Events" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/achievements", label: "Hall of Fame" },
-  { href: "/recruitment/apply", label: "Apply" },
+  { href: "/recruitment/apply", label: "Apply", roles: ["applicant", "outsider"] },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -25,4 +25,6 @@ export const managementNavItems: NavItem[] = [
   { href: "/finance/procurement", label: "Procurement", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
   { href: "/admin/audit", label: "Audit Logs", roles: ["admin", "owner", "faculty_coordinator"] },
   { href: "/admin/members", label: "Members", roles: ["lead", "admin", "owner"] },
+  { href: "/manage/forms", label: "Form Builder", roles: ["lead", "admin", "owner"] },
+  { href: "/manage/approvals", label: "Unified Approvals", roles: ["admin", "owner"] },
 ];

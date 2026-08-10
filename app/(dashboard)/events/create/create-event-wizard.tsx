@@ -147,7 +147,7 @@ export function CreateEventWizard() {
         <form className="py-4 border-t border-b border-border min-h-[400px]">
           {step === 1 && (
             <FormLayout>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Controller
                   name="title"
                   control={control}
@@ -176,7 +176,7 @@ export function CreateEventWizard() {
                   <TextArea label="Description" {...field} value={field.value || ""} placeholder="Event description..." />
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Controller
                   name="startsAt"
                   control={control}
@@ -282,7 +282,7 @@ export function CreateEventWizard() {
                         />
                       </div>
                       <FormLayout>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div className="col-span-2">
                             <Controller
                               name={`forms.${idx}.question`}
@@ -352,7 +352,7 @@ export function CreateEventWizard() {
 
           {step === 5 && (
             <VStack gap={4}>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
                 <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title || "—"}</span>
                 <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? new Date(formData.startsAt).toLocaleString() : "—"}</span>
                 <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>

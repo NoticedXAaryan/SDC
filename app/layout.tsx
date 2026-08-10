@@ -28,7 +28,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider
-            attribute="data-astryx-media"
+            attribute="class"
             defaultTheme="system"
             enableSystem
 

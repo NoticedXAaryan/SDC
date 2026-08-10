@@ -6,12 +6,13 @@ import { desc, eq } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ApprovalActions } from "./approval-actions";
+import { ProcurementActions } from "./procurement-actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export default async function ApprovalsPage() {
   const session = await requireSession();
-  if (session.user.role !== "admin") {
+  if (session.user.role !== "admin" && session.user.role !== "owner") {
     redirect("/events");
   }
 
@@ -134,8 +135,7 @@ export default async function ApprovalsPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end space-x-3 border-t pt-4">
-                   <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">Reject</Button>
-                   <Button>Approve Request</Button>
+                   <ProcurementActions reqId={req.id} />
                 </CardFooter>
               </Card>
             ))}

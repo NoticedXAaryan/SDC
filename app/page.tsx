@@ -7,8 +7,10 @@ import {
   Calendar, Users, Award, QrCode, Shield, BarChart3, 
   Zap, Globe, ArrowRight, Sparkles,
   FileText, CreditCard, Target, MessageSquare,
-  Lock, Activity, Layers, Rocket, Code, Laptop
+  Lock, Activity, Layers, Rocket, Code, Laptop,
+  Menu, X
 } from "lucide-react";
+import { useState } from "react";
 
 function FeatureCard({ icon: Icon, title, description }: { 
   icon: React.ElementType; 
@@ -36,6 +38,8 @@ function StatCard({ value, label }: { value: string; label: string }) {
 }
 
 function NavBar() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
@@ -45,12 +49,16 @@ function NavBar() {
           </div>
           <span className="font-semibold tracking-tight">SDC</span>
         </div>
+        
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
           <Link href="/projects" className="transition-colors hover:text-foreground">Projects</Link>
           <Link href="/recruitment/apply" className="transition-colors hover:text-foreground">Join Us</Link>
           <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
         </nav>
-        <div className="flex items-center gap-3">
+
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-3">
           <Link 
             href="/login" 
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "text-sm")}
@@ -65,14 +73,52 @@ function NavBar() {
             <ArrowRight className="ml-1 h-3.5 w-3.5" />
           </Link>
         </div>
+
+        {/* Mobile Toggle */}
+        <div className="md:hidden flex items-center">
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="p-2 -mr-2 text-foreground"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl absolute top-14 left-0 w-full p-4 flex flex-col gap-4 shadow-xl">
+          <nav className="flex flex-col gap-4 text-sm font-medium">
+            <Link href="/projects" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/10">Projects</Link>
+            <Link href="/recruitment/apply" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/10">Join Us</Link>
+            <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-border/10">Privacy</Link>
+          </nav>
+          <div className="flex flex-col gap-3 mt-4">
+            <Link 
+              href="/login" 
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full justify-center")}
+            >
+              Sign in
+            </Link>
+            <Link 
+              href="/login" 
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(buttonVariants({ size: "sm" }), "w-full justify-center")}
+            >
+              Dashboard
+            </Link>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
       <NavBar />
 
       {/* Cosmic Hero Section */}

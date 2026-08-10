@@ -1,26 +1,28 @@
 "use client";
 
-import { useToast as useAstryxToast } from "@astryxdesign/core/Toast";
+import { toast as sonnerToast } from "sonner";
 import { useCallback } from "react";
 
 export function useToast() {
-  const showToast = useAstryxToast();
-
   const success = useCallback((title: string, description?: string) => {
-    showToast({ body: description ? `${title}: ${description}` : title, type: "info" });
-  }, [showToast]);
+    sonnerToast.success(title, { description });
+  }, []);
 
   const error = useCallback((title: string, description?: string) => {
-    showToast({ body: description ? `${title}: ${description}` : title, type: "error" });
-  }, [showToast]);
+    sonnerToast.error(title, { description });
+  }, []);
 
   const info = useCallback((title: string, description?: string) => {
-    showToast({ body: description ? `${title}: ${description}` : title, type: "info" });
-  }, [showToast]);
+    sonnerToast.info(title, { description });
+  }, []);
 
   const warning = useCallback((title: string, description?: string) => {
-    showToast({ body: description ? `${title}: ${description}` : title, type: "info" });
-  }, [showToast]);
+    sonnerToast.warning(title, { description });
+  }, []);
+
+  const showToast = useCallback((props: any) => {
+     sonnerToast(props.body || "Notification");
+  }, []);
 
   return { success, error, info, warning, showToast };
 }
