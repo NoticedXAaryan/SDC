@@ -67,9 +67,11 @@ export async function proxy(request: NextRequest) {
         const clonedRequest = request.clone();
         const body = await clonedRequest.json();
         
-        const turnstileValid = await validateTurnstile(body.turnstileToken);
-        if (!turnstileValid) {
-          return NextResponse.json({ error: "Invalid or missing captcha token" }, { status: 400 });
+        if (process.env.NODE_ENV === 'production') {
+          const turnstileValid = await validateTurnstile(body.turnstileToken);
+          if (!turnstileValid) {
+            return NextResponse.json({ error: "Invalid or missing captcha token" }, { status: 400 });
+          }
         }
       } catch {
         return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });

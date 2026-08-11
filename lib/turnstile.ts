@@ -4,9 +4,9 @@ export async function validateTurnstile(token: string | null | undefined): Promi
   if (!token) return false;
   
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    // If not configured, bypass validation (useful for local dev)
-    console.warn("Turnstile validation bypassed: TURNSTILE_SECRET_KEY is not set.");
+  if (!secret || process.env.NODE_ENV !== 'production') {
+    // If not configured or not in production, bypass validation (useful for local dev)
+    console.warn("Turnstile validation bypassed.");
     return true;
   }
 

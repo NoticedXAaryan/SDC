@@ -6,9 +6,11 @@ import { sql, gte, eq, desc, inArray } from "drizzle-orm";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/dal/auth";
 
 export async function generateInsightsAction() {
   try {
+    await requireAdmin();
     // 1. Gather rich context data
     const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(user);
     
@@ -90,6 +92,7 @@ export async function generateInsightsAction() {
 
 export async function deleteInsightAction(id: string) {
   try {
+    await requireAdmin();
     await db.delete(insights).where(eq(insights.id, id));
     revalidatePath("/admin");
     return { success: true };

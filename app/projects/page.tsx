@@ -5,10 +5,9 @@ import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { HStack } from "@astryxdesign/core/HStack";
 import { EmptyState } from "@/components/astryx/empty-state";
 import Link from "next/link";
-import { Globe } from "lucide-react";
+import { Globe, ArrowRight, FolderOpen } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +28,8 @@ export default async function ProjectsPage() {
           <p className="text-xl text-muted-foreground">Discover amazing things built by our community.</p>
         </div>
         <div>
-          <Link href="/projects/submit" passHref legacyBehavior>
-            <Button variant="primary" label="Submit a Project" />
+          <Link href="/projects/submit">
+            <Button variant="primary" label="Submit a Project" endContent={<ArrowRight className="w-4 h-4" />} />
           </Link>
         </div>
       </div>
@@ -39,14 +38,21 @@ export default async function ProjectsPage() {
         {allProjects.map(project => {
           const images = project.images?.map(img => img.url) || [];
           return (
-            <Card key={project.id} padding={0} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow border-border">
+            <Card key={project.id} padding={0} className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow border-border group">
               {images.length > 0 ? (
-                <div className="aspect-video bg-muted relative">
-                  <img src={images[0]} alt={project.title} className="w-full h-full object-cover" />
+                <div className="aspect-video bg-muted relative overflow-hidden">
+                  <img 
+                    src={images[0]} 
+                    alt={project.title} 
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                  />
                 </div>
               ) : (
-                <div className="aspect-video bg-blue-50 flex items-center justify-center">
-                  <span className="text-blue-200 text-4xl font-bold">{project.title.charAt(0)}</span>
+                <div className="aspect-video bg-muted/50 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <FolderOpen className="h-8 w-8 text-muted-foreground/40" />
+                    <span className="text-muted-foreground/60 text-lg font-semibold">{project.title.charAt(0)}</span>
+                  </div>
                 </div>
               )}
               
@@ -60,12 +66,12 @@ export default async function ProjectsPage() {
               <div className="flex justify-between border-t border-border p-4 bg-muted/10">
                 <div className="flex gap-2">
                   {project.liveUrl && (
-                    <Link href={project.liveUrl} target="_blank" passHref legacyBehavior>
+                    <Link href={project.liveUrl} target="_blank">
                       <Button variant="ghost" label="Live Demo" icon={<Globe className="w-4 h-4" />} />
                     </Link>
                   )}
                 </div>
-                <Link href={`/projects/${project.id}`} passHref legacyBehavior>
+                <Link href={`/projects/${project.id}`}>
                   <Button variant="secondary" label="View Details" />
                 </Link>
               </div>

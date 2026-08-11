@@ -17,4 +17,4 @@ export const GET = withApiHandler(async (req: NextRequest) => {
   }
 
   return NextResponse.json({ success: true });
-});
+}, { requireAuth: false });

@@ -36,6 +36,9 @@ export type CreateEventInput = z.infer<typeof createEventSchema>;
 
 export const updateEventSchema = createEventBaseSchema.partial().extend({
   status: z.enum(["draft", "published", "cancelled", "completed"]).optional(),
+  parentId: z.string().optional().nullable(),
+  checklist: z.array(z.any()).optional(),
+  staff: z.array(z.any()).optional(),
 });
 
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;

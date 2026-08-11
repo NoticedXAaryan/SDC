@@ -49,4 +49,4 @@ export const GET = withApiHandler(async (req: NextRequest) => {
     logger.error(`Internal server error in github sync: ${String(error)}`);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
-});
+}, { requireAuth: false });

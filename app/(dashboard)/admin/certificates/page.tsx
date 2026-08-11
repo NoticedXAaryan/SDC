@@ -30,8 +30,8 @@ export default async function CertificateAdminPage() {
         title="Certificate Templates" 
         description="Manage templates for event certificates."
         primaryAction={
-          <Link href="/admin/certificates/create" passHref legacyBehavior>
-            <Button as="a" variant="primary" label="New Template" icon={<Plus className="w-4 h-4" />} />
+          <Link href="/admin/certificates/create">
+            <Button variant="primary" label="New Template" icon={<Plus className="w-4 h-4" />} />
           </Link>
         }
       />
@@ -63,8 +63,8 @@ export default async function CertificateAdminPage() {
               </div>
               
               <div className="p-4 mt-auto border-t border-border bg-muted/10">
-                <Link href={`/admin/certificates/${template.id}`} passHref legacyBehavior>
-                  <Button as="a" variant="ghost" label="Edit Template" className="w-full justify-center" />
+                <Link href={`/admin/certificates/${template.id}`}>
+                  <Button variant="ghost" label="Edit Template" className="w-full justify-center" />
                 </Link>
               </div>
             </Card>

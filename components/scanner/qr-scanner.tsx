@@ -130,7 +130,7 @@ export function QrScanner({ eventId }: QrScannerProps) {
       const data = await res.json();
       if (data.success) {
         for (const result of data.results) {
-          if (result.success || result.error === "Invalid status") {
+          if (result.success || result.error !== "Server error") {
             await removePendingCheckIn(result.id);
           }
         }

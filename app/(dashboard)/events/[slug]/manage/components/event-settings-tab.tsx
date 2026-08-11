@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Card, Button, Heading, Text, HStack, VStack, TextInput, Switch, Badge } from "@astryxdesign/core"
 import { Settings, CheckSquare, Users, Link as LinkIcon, Trash, Plus } from "lucide-react"
 
@@ -22,10 +23,16 @@ export function EventSettingsTab({ event }: { event: any }) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      // In a real implementation, this would save to the API
-      // await fetch(`/api/events/${event.id}`, { method: 'PATCH', body: JSON.stringify({ checklist, staff, parentId }) })
-      setTimeout(() => setSaving(false), 1000)
+      const res = await fetch(`/api/events/${event.id}`, { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checklist, staff, parentId: parentId || null }) 
+      })
+      if (!res.ok) throw new Error("Failed to save settings")
+      toast.success("Settings saved successfully")
     } catch (e) {
+      toast.error("Failed to save settings")
+    } finally {
       setSaving(false)
     }
   }

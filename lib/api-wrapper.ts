@@ -30,17 +30,23 @@ type ApiHandler<T = any> = (
 export interface ApiHandlerOptions {
   requireRateLimit?: boolean;
   rateLimitPrefix?: string;
+  requireAuth?: boolean;
 }
 
 export function withApiHandler(
   handler: ApiHandler,
-  options: ApiHandlerOptions = { requireRateLimit: true }
+  options: ApiHandlerOptions = { requireRateLimit: true, requireAuth: true }
 ) {
   return async (req: NextRequest, ctx: any) => {
     try {
       const h = await headers();
       const session = await auth.api.getSession({ headers: h });
       
+      // Enforce fail-safe auth
+      if (options.requireAuth !== false && (!session || !session.user)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
       if (session && !session.user.emailVerified) {
         return NextResponse.json({ error: "Verify email first", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
       }

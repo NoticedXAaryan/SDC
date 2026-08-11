@@ -39,7 +39,9 @@ export type AuditAction =
   | "guest_register"
   | "event_deregister"
   | "waitlist_promotion"
-  | "whatsapp_template_generate";
+  | "whatsapp_template_generate"
+  | "scanner_checkin"
+  | "scanner_batch_checkin";
 
 export type AuditEntity = "user" | "event" | "registration" | "budget" | "expense" | "certificate" | "inventory" | "system" | "income" | "file" | "certificateTemplates" | "eventSessions" | "clubSettings";
 

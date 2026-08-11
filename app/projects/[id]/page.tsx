@@ -9,7 +9,7 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import Link from "next/link";
-import { Globe, ExternalLink, AlertTriangle } from "lucide-react";
+import { ExternalLink, AlertTriangle } from "lucide-react";
 
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -59,13 +59,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <HStack gap={4} justify="center" className="pt-4">
           {project.githubUrl && (
             <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="secondary" label="Repository" icon={<Globe className="h-4 w-4" />} />
+              <Button variant="secondary" label="Repository" />
             </a>
           )}
           {project.liveUrl && (
-            <Link href={project.liveUrl} target="_blank" passHref legacyBehavior>
+            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary" label="Live Demo" icon={<ExternalLink className="w-4 h-4" />} />
-            </Link>
+            </a>
           )}
         </HStack>
       </VStack>

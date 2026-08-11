@@ -67,12 +67,14 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [], pend
                   {recentAuditLogs.map((log) => (
                     <div key={log.id} className="relative pl-6">
                       <div className="absolute -left-[9px] top-1 bg-background"><Activity className="w-5 h-5 text-muted-foreground bg-background" /></div>
-                      <Text weight="semibold" className="text-sm capitalize">
-                        {log.action.replace(/_/g, " ")}
-                      </Text>
-                      <Text type="supporting" className="text-xs">
-                        {log.entity}{log.details ? ` · ${log.details}` : ""} · {new Date(log.timestamp).toLocaleDateString()}
-                      </Text>
+                      <VStack gap={0}>
+                        <Text weight="semibold" className="text-sm capitalize">
+                          {log.action.replace(/_/g, " ")}
+                        </Text>
+                        <Text type="supporting" className="text-xs">
+                          {log.entity}{log.details ? ` · ${log.details}` : ""} · {new Date(log.timestamp).toLocaleDateString()}
+                        </Text>
+                      </VStack>
                     </div>
                   ))}
                 </div>

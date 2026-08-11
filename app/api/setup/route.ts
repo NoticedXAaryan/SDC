@@ -81,4 +81,4 @@ export const GET = withApiHandler(async (req: NextRequest) => {
       success: true,
       message: `Owner account ${adminEmail} created securely! Setup is now locked. You may log in.`
     });
-});
+}, { requireAuth: false });

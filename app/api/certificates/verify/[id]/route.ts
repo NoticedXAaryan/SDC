@@ -36,4 +36,4 @@ export const GET = withApiHandler(async (
     valid: true,
     certificate: cert,
   });
-}, { requireRateLimit: false });
+}, { requireAuth: false, requireRateLimit: false });

@@ -89,11 +89,11 @@ export function AdminDashboard({
       {/* 2. Charts */}
       {chartData && <AdminCharts data={chartData} />}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+        <VStack gap={6} className="lg:col-span-2">
           
           {/* 3. AI Insights Panel */}
           {(insights.length > 0 || isRefreshing) && (
-            <Card padding={5} className="border-primary/20 bg-primary/5 dark:bg-primary/10">
+            <Card padding={5} variant="muted" className="border-primary/20">
               <VStack gap={5}>
                 <HStack justify="between" align="center">
                   <HStack align="center" gap={2}>
@@ -183,7 +183,7 @@ export function AdminDashboard({
               </VStack>
             </VStack>
           </Card>
-        </div>
+        </VStack>
         
         {/* Sidebar: Finance & Inventory */}
         <VStack gap={6}>
@@ -194,9 +194,9 @@ export function AdminDashboard({
               
               {financeSnapshot ? (
                 <>
-                  <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-border">
+                  <div className="flex justify-between items-center bg-muted p-3 rounded-lg border border-border">
                     <HStack align="center" gap={3}>
-                      <div className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 p-2 rounded-full"><DollarSign className="w-4 h-4" /></div>
+                      <div className="bg-green-500/10 text-green-600 dark:text-green-400 p-2 rounded-full"><DollarSign className="w-4 h-4" /></div>
                       <VStack gap={0}>
                         <Text weight="semibold" className="text-sm">Budget Remaining</Text>
                         <Text type="supporting" className="text-xs">Across all events</Text>
@@ -210,14 +210,14 @@ export function AdminDashboard({
                   {financeSnapshot.pendingExpenses.length > 0 && (
                     <div className="pt-2">
                       <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Pending Expenses</h4>
-                      <div className="space-y-2 flex flex-col">
+                      <VStack gap={2}>
                         {financeSnapshot.pendingExpenses.map((exp) => (
                           <Link key={exp.id} href="/admin/finance" className="text-sm flex justify-between p-2 hover:bg-muted rounded-md transition">
                             <Text className="capitalize">{exp.category}</Text>
                             <Text weight="medium" className="text-amber-600">₹{Number(exp.amount).toLocaleString()}</Text>
                           </Link>
                         ))}
-                      </div>
+                      </VStack>
                     </div>
                   )}
                 </>

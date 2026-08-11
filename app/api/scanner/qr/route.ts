@@ -21,4 +21,4 @@ export const GET = withApiHandler(async (req: NextRequest) => {
   } catch (err) {
     return new NextResponse("Error generating QR", { status: 500 });
   }
-});
+}, { requireAuth: false });

@@ -1,51 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
-import { db } from "@/lib/db";
-import { budgets, events } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import crypto from "crypto";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { requireSession } from "@/lib/dal/auth";
+import { withApiHandler } from "@/lib/api-wrapper";
+import { allocateBudget } from "@/lib/dal/finance";
 
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-// Only admins or finance team (if applicable) can allocate budget
-await requireRole(["admin", "owner"]);
-
-const { id: eventId } = await params;
-const body = await req.json().catch(() => ({}));
-const { allocated } = body;
-
-if (allocated === undefined || isNaN(Number(allocated))) {
-  return NextResponse.json({ error: "Valid allocated amount is required" }, { status: 400 });
-}
-
-const event = await db.query.events.findFirst({
-  where: eq(events.id, eventId),
+  const session = await requireSession();
+  const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  
+  const result = await allocateBudget(session, id, body.allocated);
+  return NextResponse.json({ success: true, ...result }, { status: 201 });
 });
 
-if (!event) {
-  return NextResponse.json({ error: "Event not found" }, { status: 404 });
-}
-
-// Check if budget already exists
-const existingBudget = await db.query.budgets.findFirst({
-  where: eq(budgets.eventId, eventId),
-});
-
-if (existingBudget) {
-  return NextResponse.json({ error: "Budget already allocated for this event. Use PUT/PATCH to update." }, { status: 400 });
-}
-
-const budgetId = crypto.randomUUID();
-await db.insert(budgets).values({
-  id: budgetId,
-  eventId,
-  allocated: String(allocated),
-});
-
-  // Removed redundant link: events no longer store budgetId since budgets store eventId
-
-return NextResponse.json({ success: true, budgetId }, { status: 201 });
-
-});

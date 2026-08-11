@@ -59,25 +59,33 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication, my
               <div className="relative border-l border-border ml-3 space-y-6">
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background"><CheckCircle2 className="w-5 h-5 text-primary bg-background" /></div>
-                  <Text weight="semibold" className="text-sm">Applied</Text>
-                  <Text type="supporting" className="text-xs">Application submitted</Text>
+                  <VStack gap={0}>
+                    <Text weight="semibold" className="text-sm">Applied</Text>
+                    <Text type="supporting" className="text-xs">Application submitted</Text>
+                  </VStack>
                 </div>
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background">
                     {myApplication.status === "pending" ? <Circle className="w-5 h-5 text-muted-foreground fill-background" /> : <CheckCircle2 className="w-5 h-5 text-primary bg-background" />}
                   </div>
-                  <Text weight="semibold" className="text-sm">Online Assessment (OA)</Text>
-                  <Text type="supporting" className="text-xs">{myApplication.status === "pending" ? "Pending review" : "Completed"}</Text>
+                  <VStack gap={0}>
+                    <Text weight="semibold" className="text-sm">Online Assessment (OA)</Text>
+                    <Text type="supporting" className="text-xs">{myApplication.status === "pending" ? "Pending review" : "Completed"}</Text>
+                  </VStack>
                 </div>
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background"><Circle className="w-5 h-5 text-muted-foreground fill-background" /></div>
-                  <Text weight="semibold" className="text-sm">Interview</Text>
-                  <Text type="supporting" className="text-xs">Not scheduled</Text>
+                  <VStack gap={0}>
+                    <Text weight="semibold" className="text-sm">Interview</Text>
+                    <Text type="supporting" className="text-xs">Not scheduled</Text>
+                  </VStack>
                 </div>
                 <div className="relative pl-6">
                   <div className="absolute -left-[9px] top-1 bg-background"><Circle className="w-5 h-5 text-muted-foreground fill-background" /></div>
-                  <Text weight="semibold" className="text-sm">Result</Text>
-                  <Text type="supporting" className="text-xs">TBD</Text>
+                  <VStack gap={0}>
+                    <Text weight="semibold" className="text-sm">Result</Text>
+                    <Text type="supporting" className="text-xs">TBD</Text>
+                  </VStack>
                 </div>
               </div>
             ) : (
@@ -92,23 +100,23 @@ export function StudentDashboard({ user, myRegistrations = [], myApplication, my
 
         <VStack gap={6}>
           {/* 3. My Kit Card (ID Card Layout) */}
-          <Card padding={6} className="overflow-hidden relative bg-gradient-to-br from-zinc-900 to-black text-white border-zinc-800">
+          <Card padding={6} variant="muted" className="overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-10">
-              <QrCode className="w-24 h-24" />
+              <QrCode className="w-24 h-24 text-primary" />
             </div>
             <div className="relative z-10">
-              <Badge variant="neutral" className="bg-white/10 text-zinc-300 border-zinc-700 mb-4" label="Member ID" />
-              <h3 className="text-2xl font-bold text-white">{user.name}</h3>
-              <p className="text-zinc-400 mb-4">@{user.username || "student"}</p>
+              <Badge variant="neutral" className="mb-4" label="Member ID" />
+              <Heading level={3} className="text-2xl font-bold">{user.name}</Heading>
+              <Text type="supporting" className="mb-4">@{user.username || "student"}</Text>
               
               <HStack gap={4} className="mt-6">
                 <VStack gap={0}>
-                  <Text type="supporting" className="text-zinc-500 text-xs">Role</Text>
-                  <Text weight="medium" className="text-zinc-200 capitalize">{user.role}</Text>
+                  <Text type="supporting" className="text-xs">Role</Text>
+                  <Text weight="medium" className="capitalize">{user.role}</Text>
                 </VStack>
                 <VStack gap={0}>
-                  <Text type="supporting" className="text-zinc-500 text-xs">Joined</Text>
-                  <Text weight="medium" className="text-zinc-200">{user.createdAt ? new Date(user.createdAt).getFullYear() : "—"}</Text>
+                  <Text type="supporting" className="text-xs">Joined</Text>
+                  <Text weight="medium">{user.createdAt ? new Date(user.createdAt).getFullYear() : "—"}</Text>
                 </VStack>
               </HStack>
             </div>
