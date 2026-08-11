@@ -1,21 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button, Dialog, DialogHeader, TextInput, HStack, VStack, Text, Selector, TabList, Tab, Icon } from "@astryxdesign/core";
 import { toast } from "sonner";
 import { Send, Loader2, Users, User } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Event = {
   id: string;
@@ -33,6 +21,7 @@ export function IssueCertificateDialog({ templateId, templateName, events }: Iss
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
+  const [activeTab, setActiveTab] = useState("group");
 
   async function handleIssueIndividual(e: React.FormEvent) {
     e.preventDefault();
@@ -95,88 +84,82 @@ export function IssueCertificateDialog({ templateId, templateName, events }: Iss
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="flex gap-2" />}>
-        <Send className="w-4 h-4" />
-        Issue
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[450px]">
-        <DialogHeader>
-          <DialogTitle>Issue Certificates</DialogTitle>
-          <DialogDescription>
+    <>
+      <Button 
+        variant="secondary"
+        onClick={() => setIsOpen(true)}
+        icon={<Send className="w-4 h-4" />}
+        label="Issue"
+      />
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+        <DialogHeader title="Issue Certificates" />
+        <VStack gap={4} className="py-4">
+          <Text type="supporting" className="text-sm">
             Issue "{templateName}" to a group of event attendees or an individual.
-          </DialogDescription>
-        </DialogHeader>
+          </Text>
 
-        <Tabs defaultValue="group" className="w-full mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="group" className="flex gap-2">
-              <Users className="w-4 h-4" />
-              Event Group
-            </TabsTrigger>
-            <TabsTrigger value="individual" className="flex gap-2">
-              <User className="w-4 h-4" />
-              Individual
-            </TabsTrigger>
-          </TabsList>
+          <TabList 
+            value={activeTab}
+            onChange={(tab) => setActiveTab(tab)}
+          >
+            <Tab value="group" label="Event Group" />
+            <Tab value="individual" label="Individual" />
+          </TabList>
           
-          <TabsContent value="group" className="pt-4">
-            <form onSubmit={handleIssueGroup} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="event">Select Event</Label>
-                <Select value={selectedEventId} onValueChange={(val) => setSelectedEventId(val || "")} disabled={isLoading}>
-                  <SelectTrigger id="event">
-                    <SelectValue placeholder="Select an event..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {events.map(event => (
-                      <SelectItem key={event.id} value={event.id}>
-                        {event.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  This will queue a certificate for all attendees of this event.
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Issuing...</>
-                ) : (
-                  "Issue to All Attendees"
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="individual" className="pt-4">
-            <form onSubmit={handleIssueIndividual} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">User Email</Label>
-                <Input 
-                  id="email" 
-                  type="email"
-                  placeholder="user@example.com" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  disabled={isLoading}
+          {activeTab === "group" && (
+            <form onSubmit={handleIssueGroup}>
+              <VStack gap={4}>
+                <VStack gap={2}>
+                  <Selector 
+                    label="Select Event"
+                    value={selectedEventId}
+                    onChange={(val) => setSelectedEventId(val || "")}
+                    options={events.map(e => ({ label: e.title, value: e.id }))}
+                    placeholder="Select an event..."
+                    isDisabled={isLoading}
+                  />
+                  <Text type="supporting" className="text-xs">
+                    This will queue a certificate for all attendees of this event.
+                  </Text>
+                </VStack>
+                <Button 
+                  type="submit" 
+                  isDisabled={isLoading} 
+                  label={isLoading ? "Issuing..." : "Issue to All Attendees"}
+                  icon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : undefined}
                 />
-                <p className="text-xs text-muted-foreground">
-                  The user must already have an account on the platform.
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Issuing...</>
-                ) : (
-                  "Issue to User"
-                )}
-              </Button>
+              </VStack>
             </form>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+          )}
+          
+          {activeTab === "individual" && (
+            <form onSubmit={handleIssueIndividual}>
+              <VStack gap={4}>
+                <VStack gap={2}>
+                  <TextInput 
+                    id="email" 
+                    label="User Email"
+                    type="email"
+                    placeholder="user@example.com" 
+                    value={email} 
+                    onChange={val => setEmail(val)} 
+                    isDisabled={isLoading}
+                  />
+                  <Text type="supporting" className="text-xs">
+                    The user must already have an account on the platform.
+                  </Text>
+                </VStack>
+                <Button 
+                  type="submit" 
+                  isDisabled={isLoading} 
+                  label={isLoading ? "Issuing..." : "Issue to User"}
+                  icon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : undefined}
+                />
+              </VStack>
+            </form>
+          )}
+        </VStack>
+      </Dialog>
+    </>
   );
 }

@@ -39,7 +39,7 @@ export const GET = withApiHandler(async (req: NextRequest) => {
             }
           }
         } catch (e) {
-          logger.error(`Failed to sync stars for ${project.id}`, e);
+          logger.error(`Failed to sync stars for ${project.id}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }

@@ -17,7 +17,7 @@ export function EventManageTabsNav({ currentTab }: { currentTab: string }) {
 
   return (
     <div className="mb-6 w-full">
-      <TabList value={currentTab} onChange={handleTabChange} hasDivider>
+      <TabList value={currentTab} onChange={handleTabChange}>
         <Tab value="overview" label="Overview" />
         <Tab value="registrations" label="Registrations" />
         <Tab value="sessions" label="Sessions" />

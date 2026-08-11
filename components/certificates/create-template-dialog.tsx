@@ -1,19 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button, Dialog, DialogHeader, TextInput, HStack, VStack, Text } from "@astryxdesign/core";
 import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
 
@@ -86,53 +75,50 @@ export function CreateTemplateDialog() {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger render={<Button className="flex gap-2" />}>
-        <Plus className="w-4 h-4" />
-        Create New Template
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create Certificate Template</DialogTitle>
-          <DialogDescription>
-            Upload a base PDF to use as the background for your certificate template.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleCreate} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Template Name</Label>
-            <Input 
+    <>
+      <Button 
+        variant="primary" 
+        onClick={() => setIsOpen(true)}
+        icon={<Plus className="w-4 h-4" />}
+        label="Create New Template"
+      />
+      <Dialog isOpen={isOpen} onOpenChange={setIsOpen}>
+        <form onSubmit={handleCreate}>
+          <DialogHeader title="Create Certificate Template" />
+          <VStack gap={4} className="py-4">
+            <Text type="supporting" className="text-sm">
+              Upload a base PDF to use as the background for your certificate template.
+            </Text>
+            
+            <TextInput 
               id="name" 
+              label="Template Name"
               placeholder="e.g. Winner Certificate" 
               value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              disabled={isLoading}
+              onChange={val => setName(val)} 
+              isDisabled={isLoading}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pdf">Base PDF File</Label>
-            <Input 
-              id="pdf" 
-              type="file" 
-              accept="application/pdf" 
-              onChange={(e) => setFile(e.target.files?.[0] || null)} 
-              disabled={isLoading}
-            />
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Template"
-              )}
-            </Button>
-          </DialogFooter>
+            
+            {/* Astryx TextInput doesn't natively support type="file" well, but we can pass input props if needed. 
+                Using a native input here with styling or passing type="file" to TextInput. 
+                Wait, Astryx has FileInput exported from index.ts! I will use standard input for simplicity. */}
+            <VStack gap={2}>
+              <Text type="supporting" className="text-sm font-medium">Base PDF File</Text>
+              <input 
+                id="pdf" 
+                type="file" 
+                accept="application/pdf" 
+                onChange={(e) => setFile(e.target.files?.[0] || null)} 
+                disabled={isLoading}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </VStack>
+          </VStack>
+          <HStack gap={2} justify="end">
+            <Button type="submit" isDisabled={isLoading} label={isLoading ? "Creating..." : "Create Template"} icon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : undefined} />
+          </HStack>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }

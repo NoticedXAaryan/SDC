@@ -3,14 +3,20 @@ import { db } from "@/lib/db";
 import { events, procurementRequests, user } from "@/lib/db/schema";
 import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, Text, Badge, TabList, Tab, VStack, HStack } from "@astryxdesign/core";
+import { PageHeader } from "@/components/astryx/page-header";
 import { ApprovalActions } from "./approval-actions";
 import { ProcurementActions } from "./procurement-actions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { ApprovalTabsNav } from "./approval-tabs-nav";
 
-export default async function ApprovalsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab = "events" } = await searchParams;
   const session = await requireSession();
   if (session.user.role !== "admin" && session.user.role !== "owner") {
     redirect("/events");
@@ -34,121 +40,110 @@ export default async function ApprovalsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Unified Approvals</h1>
-        <p className="text-muted-foreground">
+      <VStack gap={2}>
+        <Text as="h1" className="text-3xl font-bold tracking-tight">Unified Approvals</Text>
+        <Text type="supporting">
           Review and approve events, procurement requests, and role changes.
-        </p>
-      </div>
+        </Text>
+      </VStack>
 
-      <Tabs defaultValue="events">
-        <TabsList className="mb-4">
-          <TabsTrigger value="events">
-            Events {drafts.length > 0 && <Badge variant="secondary" className="ml-2">{drafts.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="procurement">
-            Procurement {pendingProcurements.length > 0 && <Badge variant="secondary" className="ml-2">{pendingProcurements.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="roles">
-            Role Changes
-          </TabsTrigger>
-        </TabsList>
+      <ApprovalTabsNav currentTab={tab} eventsCount={drafts.length} procurementsCount={pendingProcurements.length} />
 
-        <TabsContent value="events" className="space-y-6">
-
+      {tab === "events" && (
+        <VStack gap={6}>
       {drafts.length === 0 ? (
         <div className="text-center p-12 border rounded-lg bg-muted/20">
-          <p className="text-muted-foreground">No pending events to review.</p>
+          <Text type="supporting">No pending events to review.</Text>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <VStack gap={6}>
           {drafts.map((draft) => (
-            <Card key={draft.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{draft.title}</CardTitle>
-                    <CardDescription>{new Date(draft.startsAt).toLocaleString()} • {draft.type}</CardDescription>
-                  </div>
-                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full border border-yellow-200">
-                    Pending Review
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm">{draft.description || "No description provided."}</p>
+            <Card key={draft.id} padding={6}>
+              <VStack gap={4}>
+                <HStack justify="between" align="start">
+                  <VStack gap={1}>
+                    <Text weight="bold" className="text-lg">{draft.title}</Text>
+                    <Text type="supporting" className="text-sm">{new Date(draft.startsAt).toLocaleString()} • {draft.type}</Text>
+                  </VStack>
+                  <Badge label="Pending Review" variant="warning" />
+                </HStack>
+                
+                <Text className="text-sm">{draft.description || "No description provided."}</Text>
+                
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted/30 p-4 rounded-lg">
-                  <div>
-                    <span className="block text-muted-foreground text-xs">Capacity</span>
-                    <span className="font-medium">{draft.capacity || "Unlimited"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground text-xs">Location</span>
-                    <span className="font-medium">{draft.location || "TBA"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground text-xs">Price</span>
-                    <span className="font-medium">{draft.isPaid ? `₹${draft.price}` : "Free"}</span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground text-xs">Custom Fields</span>
-                    <span className="font-medium">{(draft.forms as any[])?.length || 0}</span>
-                  </div>
+                  <VStack gap={1}>
+                    <Text type="supporting" className="text-xs">Capacity</Text>
+                    <Text weight="medium">{draft.capacity || "Unlimited"}</Text>
+                  </VStack>
+                  <VStack gap={1}>
+                    <Text type="supporting" className="text-xs">Location</Text>
+                    <Text weight="medium">{draft.location || "TBA"}</Text>
+                  </VStack>
+                  <VStack gap={1}>
+                    <Text type="supporting" className="text-xs">Price</Text>
+                    <Text weight="medium">{draft.isPaid ? `₹${draft.price}` : "Free"}</Text>
+                  </VStack>
+                  <VStack gap={1}>
+                    <Text type="supporting" className="text-xs">Custom Fields</Text>
+                    <Text weight="medium">{(draft.forms as any[])?.length || 0}</Text>
+                  </VStack>
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-end border-t pt-4">
-                <ApprovalActions eventId={draft.id} />
-              </CardFooter>
+                
+                <div className="flex justify-end border-t pt-4">
+                  <ApprovalActions eventId={draft.id} />
+                </div>
+              </VStack>
             </Card>
           ))}
-        </div>
+        </VStack>
       )}
-      </TabsContent>
+      </VStack>
+      )}
 
-      <TabsContent value="procurement" className="space-y-6">
+      {tab === "procurement" && (
+        <VStack gap={6}>
         {pendingProcurements.length === 0 ? (
           <div className="text-center p-12 border rounded-lg bg-muted/20">
-            <p className="text-muted-foreground">No pending procurement requests.</p>
+            <Text type="supporting">No pending procurement requests.</Text>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <VStack gap={6}>
             {pendingProcurements.map((req) => (
-              <Card key={req.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>{req.title}</CardTitle>
-                      <CardDescription>Requested by {req.requestedBy || "Unknown"} • {new Date(req.createdAt).toLocaleDateString()}</CardDescription>
-                    </div>
-                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full border border-yellow-200">
-                      Pending Approval
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm">{req.description}</p>
+              <Card key={req.id} padding={6}>
+                <VStack gap={4}>
+                  <HStack justify="between" align="start">
+                    <VStack gap={1}>
+                      <Text weight="bold" className="text-lg">{req.title}</Text>
+                      <Text type="supporting" className="text-sm">Requested by {req.requestedBy || "Unknown"} • {new Date(req.createdAt).toLocaleDateString()}</Text>
+                    </VStack>
+                    <Badge label="Pending Approval" variant="warning" />
+                  </HStack>
+                  
+                  <Text className="text-sm">{req.description}</Text>
+                  
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted/30 p-4 rounded-lg">
-                    <div>
-                      <span className="block text-muted-foreground text-xs">Estimated Cost</span>
-                      <span className="font-medium">₹{req.estimatedCost || 0}</span>
-                    </div>
+                    <VStack gap={1}>
+                      <Text type="supporting" className="text-xs">Estimated Cost</Text>
+                      <Text weight="medium">₹{req.estimatedCost || 0}</Text>
+                    </VStack>
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-end space-x-3 border-t pt-4">
-                   <ProcurementActions reqId={req.id} />
-                </CardFooter>
+                  
+                  <div className="flex justify-end space-x-3 border-t pt-4">
+                     <ProcurementActions reqId={req.id} />
+                  </div>
+                </VStack>
               </Card>
             ))}
-          </div>
+          </VStack>
         )}
-      </TabsContent>
+        </VStack>
+      )}
 
-      <TabsContent value="roles" className="space-y-6">
+      {tab === "roles" && (
         <div className="text-center p-12 border rounded-lg bg-muted/20">
-          <p className="text-muted-foreground">No pending role change requests.</p>
+          <Text type="supporting">No pending role change requests.</Text>
         </div>
-      </TabsContent>
-      </Tabs>
+      )}
     </div>
   );
 }

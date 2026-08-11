@@ -4,37 +4,21 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   Calendar,
-  Briefcase,
-  Package,
   Settings,
   Users,
-  FileText,
   QrCode,
   CreditCard,
   Inbox,
-  ShieldCheck,
   Award,
   MessageSquare,
   Target,
   CheckSquare,
-  LogOut,
   AlertCircle,
   Plus
 } from "lucide-react"
 
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "@/components/ui/command"
+import { CommandPalette, createStaticSource } from "@astryxdesign/core"
 import { useSession } from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
 
 export function CommandMenu() {
   const [open, setOpen] = React.useState(false)
@@ -61,119 +45,64 @@ export function CommandMenu() {
   const isAdmin = ["admin", "faculty_coordinator", "owner"].includes(role)
   const isLead = isAdmin || ["lead", "co_lead", "event_lead", "content_lead", "marketing_lead", "tech_lead", "finance_lead", "volunteer_lead", "vice_lead"].includes(role)
 
+  const commands = React.useMemo(() => {
+    const items = [
+      { id: "my-pass", label: "My QR pass", auxiliaryData: { group: "Personal", icon: <QrCode className="w-4 h-4 mr-2" />, action: () => router.push("/passes/me") } },
+      { id: "my-registrations", label: "My registrations", auxiliaryData: { group: "Personal", icon: <CheckSquare className="w-4 h-4 mr-2" />, action: () => router.push("/events/my-registrations") } },
+      { id: "submit-feedback", label: "Submit feedback", auxiliaryData: { group: "Personal", icon: <MessageSquare className="w-4 h-4 mr-2" />, action: () => router.push("/forms/feedback") } },
+      
+      { id: "dashboard", label: "Dashboard", auxiliaryData: { group: "Navigate", icon: <Target className="w-4 h-4 mr-2" />, action: () => router.push("/dashboard") } },
+      { id: "events", label: "Events", auxiliaryData: { group: "Navigate", icon: <Calendar className="w-4 h-4 mr-2" />, action: () => router.push("/events") } },
+      { id: "certificates", label: "My Certificates", auxiliaryData: { group: "Navigate", icon: <Award className="w-4 h-4 mr-2" />, action: () => router.push("/certificates") } },
+    ]
+
+    if (isLead) {
+      items.push(
+        { id: "manage-comms", label: "Communications", auxiliaryData: { group: "Navigate", icon: <MessageSquare className="w-4 h-4 mr-2" />, action: () => router.push("/manage/communications") } },
+        { id: "scanner", label: "Scanner", auxiliaryData: { group: "Navigate", icon: <QrCode className="w-4 h-4 mr-2" />, action: () => router.push("/scanner") } },
+        { id: "manage-finance", label: "Finance", auxiliaryData: { group: "Navigate", icon: <CreditCard className="w-4 h-4 mr-2" />, action: () => router.push("/manage/finance") } },
+        
+        { id: "create-event", label: "Create event", auxiliaryData: { group: "Create", icon: <Plus className="w-4 h-4 mr-2" />, action: () => router.push("/manage/events/new") } },
+        { id: "compose-announcement", label: "Compose announcement", auxiliaryData: { group: "Create", icon: <Plus className="w-4 h-4 mr-2" />, action: () => router.push("/manage/communications/new") } },
+        { id: "create-form", label: "Create form", auxiliaryData: { group: "Create", icon: <Plus className="w-4 h-4 mr-2" />, action: () => router.push("/manage/forms/new") } },
+        
+        { id: "pending-approvals", label: "Pending approvals", auxiliaryData: { group: "Current work", icon: <Inbox className="w-4 h-4 mr-2" />, action: () => router.push("/manage/queue") } },
+        { id: "registrations-review", label: "Registrations awaiting review", auxiliaryData: { group: "Current work", icon: <AlertCircle className="w-4 h-4 mr-2" />, action: () => router.push("/manage/events/reviews") } }
+      )
+    }
+
+    if (isAdmin) {
+      items.push(
+        { id: "admin-members", label: "Members", auxiliaryData: { group: "Navigate", icon: <Users className="w-4 h-4 mr-2" />, action: () => router.push("/admin/members") } },
+        { id: "admin-settings", label: "Settings", auxiliaryData: { group: "Navigate", icon: <Settings className="w-4 h-4 mr-2" />, action: () => router.push("/admin/settings") } },
+        
+        { id: "create-cert-template", label: "Create certificate template", auxiliaryData: { group: "Create", icon: <Plus className="w-4 h-4 mr-2" />, action: () => router.push("/admin/certificates/templates/new") } },
+        { id: "add-member", label: "Add member", auxiliaryData: { group: "Create", icon: <Plus className="w-4 h-4 mr-2" />, action: () => router.push("/admin/members/new") } }
+      )
+    }
+
+    return items
+  }, [router, isLead, isAdmin])
+
+  const searchSource = React.useMemo(() => createStaticSource(commands), [commands])
+
   return (
-    <>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-
-        
-        <CommandGroup heading="Personal">
-          <CommandItem onSelect={() => runCommand(() => router.push("/passes/me"))}>
-            <QrCode />
-            <span>My QR pass</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/events/my-registrations"))}>
-            <CheckSquare />
-            <span>My registrations</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/forms/feedback"))}>
-            <MessageSquare />
-            <span>Submit feedback</span>
-          </CommandItem>
-        </CommandGroup>
-
-        <CommandSeparator />
-        
-        <CommandGroup heading="Navigate">
-          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard"))}>
-            <Target />
-            <span>Dashboard</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/events"))}>
-            <Calendar />
-            <span>Events</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/certificates"))}>
-            <Award />
-            <span>My Certificates</span>
-          </CommandItem>
-          {isLead && (
-            <>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/communications"))}>
-                <MessageSquare />
-                <span>Communications</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/scanner"))}>
-                <QrCode />
-                <span>Scanner</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/finance"))}>
-                <CreditCard />
-                <span>Finance</span>
-              </CommandItem>
-            </>
-          )}
-          {isAdmin && (
-            <>
-              <CommandItem onSelect={() => runCommand(() => router.push("/admin/members"))}>
-                <Users />
-                <span>Members</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/admin/settings"))}>
-                <Settings />
-                <span>Settings</span>
-              </CommandItem>
-            </>
-          )}
-        </CommandGroup>
-
-        {isLead && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Create">
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/events/new"))}>
-                <Plus />
-                <span>Create event</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/communications/new"))}>
-                <Plus />
-                <span>Compose announcement</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/forms/new"))}>
-                <Plus />
-                <span>Create form</span>
-              </CommandItem>
-              {isAdmin && (
-                <>
-                  <CommandItem onSelect={() => runCommand(() => router.push("/admin/certificates/templates/new"))}>
-                    <Plus />
-                    <span>Create certificate template</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => runCommand(() => router.push("/admin/members/new"))}>
-                    <Plus />
-                    <span>Add member</span>
-                  </CommandItem>
-                </>
-              )}
-            </CommandGroup>
-            
-            <CommandSeparator />
-            <CommandGroup heading="Current work">
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/queue"))}>
-                <Inbox />
-                <span>Pending approvals</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/events/reviews"))}>
-                <AlertCircle />
-                <span>Registrations awaiting review</span>
-              </CommandItem>
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
-    </CommandDialog>
-    </>
+    <CommandPalette
+      isOpen={open}
+      onOpenChange={setOpen}
+      searchSource={searchSource}
+      onValueChange={(id) => {
+        const command = commands.find(c => c.id === id)
+        if (command && typeof command.auxiliaryData?.action === "function") {
+          runCommand(command.auxiliaryData.action as any)
+        }
+      }}
+      renderItem={(item, isSelected) => (
+        <div className="flex items-center">
+          {item.auxiliaryData?.icon as React.ReactNode}
+          <span>{item.label}</span>
+        </div>
+      )}
+    />
   )
 }

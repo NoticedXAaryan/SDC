@@ -15,6 +15,8 @@ import { EventCertificatesTab } from "./components/event-certificates-tab";
 import { EventManageTabsNav } from "./components/event-manage-tabs-nav";
 import { EmptyState } from "@/components/astryx/empty-state";
 
+import { EventSettingsTab } from "./components/event-settings-tab";
+
 export const dynamic = "force-dynamic";
 
 export default async function EventManagePage({ 
@@ -64,13 +66,7 @@ export default async function EventManagePage({
         {tab === "scanner" && <EventScannerTab event={event} />}
         {tab === "communications" && <EventCommunicationsTab event={event} />}
         {tab === "certificates" && <EventCertificatesTab event={event} />}
-        {tab === "settings" && (
-          <EmptyState 
-            icon={<Settings />} 
-            title="Event Settings" 
-            description="Event settings management is coming soon." 
-          />
-        )}
+        {tab === "settings" && <EventSettingsTab event={event} />}
       </div>
     </div>
   );

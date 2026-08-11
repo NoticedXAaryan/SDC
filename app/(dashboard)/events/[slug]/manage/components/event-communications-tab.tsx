@@ -1,11 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, Button, Heading, Text, HStack, VStack, Badge } from "@astryxdesign/core"
+import { Card, Button, Heading, Text, HStack, VStack, Badge, TextInput, TextArea, Selector } from "@astryxdesign/core"
 import { Mail, MessageSquare, Send, RefreshCcw } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 
 export function EventCommunicationsTab({ event }: { event: any }) {
@@ -61,6 +58,13 @@ export function EventCommunicationsTab({ event }: { event: any }) {
       setSending(false)
     }
   }
+  
+  const audienceOptions = [
+    { label: "All Registered (including waitlist)", value: "all" },
+    { label: "Confirmed Only", value: "confirmed" },
+    { label: "Waitlist Only", value: "waitlist" },
+  ];
+
   return (
     <div className="grid gap-6 md:grid-cols-3">
       <div className="md:col-span-2 space-y-6">
@@ -71,27 +75,29 @@ export function EventCommunicationsTab({ event }: { event: any }) {
               <Text type="supporting">Send an email update to event attendees</Text>
             </VStack>
             <VStack gap={4}>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">To</label>
-                <Select value={targetAudience} onValueChange={(val) => setTargetAudience(val || "all")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select recipients" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Registered (including waitlist)</SelectItem>
-                    <SelectItem value="confirmed">Confirmed Only</SelectItem>
-                    <SelectItem value="waitlist">Waitlist Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Subject</label>
-                <Input placeholder="Update regarding [Event Name]" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={sending} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Message</label>
-                <Textarea placeholder="Type your message here..." className="min-h-[150px]" value={body} onChange={(e) => setBody(e.target.value)} disabled={sending} />
-              </div>
+              <Selector 
+                label="To"
+                value={targetAudience}
+                onChange={(val) => setTargetAudience(val || "all")}
+                options={audienceOptions}
+                placeholder="Select recipients"
+              />
+              <TextInput 
+                id="subject"
+                label="Subject"
+                placeholder="Update regarding [Event Name]" 
+                value={subject} 
+                onChange={val => setSubject(val)} 
+                isDisabled={sending} 
+              />
+              <TextArea 
+                label="Message"
+                placeholder="Type your message here..." 
+                value={body} 
+                onChange={val => setBody(val)} 
+                isDisabled={sending} 
+                rows={6}
+              />
               <div>
                 <Button label={sending ? "Sending..." : "Send Announcement"} icon={sending ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} onClick={handleSend} isDisabled={sending} className="w-full sm:w-auto" />
               </div>

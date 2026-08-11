@@ -2,18 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button, Dialog, DialogHeader, TextInput, HStack, VStack, Text } from "@astryxdesign/core";
 import { toast } from "sonner";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
@@ -61,17 +50,24 @@ export function InventoryActionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button variant="outline" size="sm" onClick={() => setAction("check_out")} disabled={item.qtyAvailable === 0}>
-          <ArrowUpFromLine className="w-3 h-3 mr-1" /> Out
-        </Button>
-      </DialogTrigger>
-      
+    <>
+      <Button 
+        variant="secondary" 
+        onClick={() => {
+          setAction("check_out");
+          setOpen(true);
+        }} 
+        isDisabled={item.qtyAvailable === 0}
+        icon={<ArrowUpFromLine className="w-3 h-3" />}
+        label="Out"
+      />
       {/* Invisible trigger for check in that we control via a separate button outside DialogTrigger but sharing same Dialog state? No, we can just use a separate Dialog or conditionally render. Actually it's easier to use a Dropdown or two buttons in the parent that open different dialogs.
           Let's just use two buttons in this component.
       */}
-    </Dialog>
+      <Dialog isOpen={open} onOpenChange={(val: boolean) => setOpen(val)}>
+        <></>
+      </Dialog>
+    </>
   );
 }
 
@@ -121,46 +117,48 @@ export function InventoryActions({ item }: { item: { id: string; name: string; q
 
   return (
     <>
-      <div className="flex gap-2 w-full mt-4">
-        <Button variant="outline" className="flex-1 text-xs h-8" onClick={() => openDialog("check_in")} disabled={item.qtyAvailable >= item.qtyTotal}>
-          <ArrowDownToLine className="w-3 h-3 mr-1" /> Check In
-        </Button>
-        <Button variant="default" className="flex-1 text-xs h-8" onClick={() => openDialog("check_out")} disabled={item.qtyAvailable === 0}>
-          <ArrowUpFromLine className="w-3 h-3 mr-1" /> Check Out
-        </Button>
-      </div>
+      <HStack gap={2} className="w-full mt-4">
+        <Button 
+          variant="secondary" 
+          onClick={() => openDialog("check_in")} 
+          isDisabled={item.qtyAvailable >= item.qtyTotal}
+          icon={<ArrowDownToLine className="w-3 h-3" />}
+          label="Check In"
+          className="flex-1"
+        />
+        <Button 
+          variant="primary" 
+          onClick={() => openDialog("check_out")} 
+          isDisabled={item.qtyAvailable === 0}
+          icon={<ArrowUpFromLine className="w-3 h-3" />}
+          label="Check Out"
+          className="flex-1"
+        />
+      </HStack>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>{action === "check_out" ? "Check Out" : "Check In"} {item.name}</DialogTitle>
-              <DialogDescription>
-                {action === "check_out" 
-                  ? `Available to check out: ${item.qtyAvailable}` 
-                  : `Total missing to check in: ${item.qtyTotal - item.qtyAvailable}`}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="qty">Quantity</Label>
-                <Input 
-                  id="qty" 
-                  type="number" 
-                  min="1" 
-                  max={action === "check_out" ? item.qtyAvailable : (item.qtyTotal - item.qtyAvailable)} 
-                  value={qty} 
-                  onChange={e => setQty(e.target.value)} 
-                  required 
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Confirm"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
+      <Dialog isOpen={open} onOpenChange={(val: boolean) => setOpen(val)}>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader title={`${action === "check_out" ? "Check Out" : "Check In"} ${item.name}`} />
+          <VStack gap={4} className="py-4">
+            <Text type="supporting" className="text-sm">
+              {action === "check_out" 
+                ? `Available to check out: ${item.qtyAvailable}` 
+                : `Total missing to check in: ${item.qtyTotal - item.qtyAvailable}`}
+            </Text>
+            
+            <TextInput 
+              id="qty" 
+              label="Quantity"
+              value={qty} 
+              onChange={val => setQty(val)} 
+              isRequired
+            />
+          </VStack>
+          <HStack gap={2} justify="end">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} isDisabled={loading} label="Cancel" />
+            <Button type="submit" isDisabled={loading} label={loading ? "Saving..." : "Confirm"} />
+          </HStack>
+        </form>
       </Dialog>
     </>
   );

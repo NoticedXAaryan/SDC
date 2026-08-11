@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, Dialog, DialogHeader, TextArea, HStack, VStack, Text } from "@astryxdesign/core";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 
 export function ProcurementActions({ reqId }: { reqId: string }) {
   const [isApproving, setIsApproving] = useState(false);
@@ -66,38 +64,34 @@ export function ProcurementActions({ reqId }: { reqId: string }) {
   };
 
   return (
-    <div className="flex space-x-3">
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger>
-          <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
-            Reject
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Procurement Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">Provide a reason for rejecting this procurement request.</p>
-            <Textarea
-              placeholder="e.g. Budget exceeded for this quarter."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={isRejecting}>
-              {isRejecting ? "Rejecting..." : "Confirm Rejection"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+    <HStack gap={3}>
+      <Button 
+        variant="secondary" 
+        label="Reject" 
+        onClick={() => setDialogOpen(true)}
+      />
+      <Dialog 
+        isOpen={dialogOpen} 
+        onOpenChange={(val: boolean) => setDialogOpen(val)}
+      >
+        <DialogHeader title="Reject Procurement Request" />
+        <VStack gap={4} className="py-4">
+          <Text type="supporting" className="text-sm">Provide a reason for rejecting this procurement request.</Text>
+          <TextArea
+            label="Reason for rejection"
+            placeholder="e.g. Budget exceeded for this quarter."
+            value={rejectReason}
+            onChange={(val) => setRejectReason(val)}
+            rows={4}
+          />
+        </VStack>
+        <HStack gap={2} justify="end">
+          <Button variant="ghost" label="Cancel" onClick={() => setDialogOpen(false)} />
+          <Button variant="destructive" label={isRejecting ? "Rejecting..." : "Confirm Rejection"} onClick={handleReject} isDisabled={isRejecting} />
+        </HStack>
       </Dialog>
       
-      <Button onClick={handleApprove} disabled={isApproving}>
-        {isApproving ? "Approving..." : "Approve Request"}
-      </Button>
-    </div>
+      <Button onClick={handleApprove} isDisabled={isApproving} label={isApproving ? "Approving..." : "Approve Request"} />
+    </HStack>
   );
 }

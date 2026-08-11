@@ -2,21 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button, Dialog, DialogHeader, TextInput, Selector, HStack, VStack, Text, Icon } from "@astryxdesign/core";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function AddExpenseDialog({ budgets }: { budgets: { id: string; eventTitle: string }[] }) {
   const [open, setOpen] = useState(false);
@@ -66,57 +54,68 @@ export function AddExpenseDialog({ budgets }: { budgets: { id: string; eventTitl
     }
   };
 
+  const budgetOptions = budgets.map(b => ({
+    label: b.eventTitle || "General Budget",
+    value: b.id,
+  }));
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"><Plus className="w-4 h-4 mr-2" /> Submit Expense</div>
-      </DialogTrigger>
-      <DialogContent>
+    <>
+      <Button 
+        variant="primary" 
+        icon={<Plus className="w-4 h-4" />}
+        label="Submit Expense"
+        onClick={() => setOpen(true)}
+      />
+      <Dialog isOpen={open} onOpenChange={(val: boolean) => setOpen(val)}>
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Submit New Expense</DialogTitle>
-            <DialogDescription>
+          <DialogHeader title="Submit New Expense" />
+          <VStack gap={4} className="py-4">
+            <Text type="supporting" className="text-sm">
               Submit an expense for reimbursement against an event budget.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="budget">Event Budget</Label>
-              <Select value={budgetId} onValueChange={(val) => setBudgetId(val || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select budget..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {budgets.map(b => (
-                    <SelectItem key={b.id} value={b.id}>{b.eventTitle || "General Budget"}</SelectItem>
-                  ))}
-                  {budgets.length === 0 && <SelectItem value="none" disabled>No budgets available</SelectItem>}
-                </SelectContent>
-              </Select>
-            </div>
+            </Text>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="amount">Amount (₹)</Label>
-                <Input id="amount" type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="1500" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" value={category} onChange={e => setCategory(e.target.value)} required placeholder="e.g. Food, Logistics" />
-              </div>
-            </div>
+            <Selector
+              label="Event Budget"
+              value={budgetId}
+              onChange={(val) => setBudgetId(val || "")}
+              options={budgetOptions}
+              placeholder="Select budget..."
+            />
             
-            <div className="grid gap-2">
-              <Label htmlFor="receipt">Receipt URL (Optional)</Label>
-              <Input id="receipt" type="url" value={receiptUrl} onChange={e => setReceiptUrl(e.target.value)} placeholder="https://drive.google.com/..." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-            <Button type="submit" disabled={loading || !budgetId}>{loading ? "Submitting..." : "Submit"}</Button>
-          </DialogFooter>
+            <HStack gap={4} className="w-full">
+              <TextInput 
+                id="amount" 
+                label="Amount (₹)"
+                value={amount} 
+                onChange={val => setAmount(val)} 
+                isRequired
+                placeholder="1500" 
+              />
+              <TextInput 
+                id="category" 
+                label="Category"
+                value={category} 
+                onChange={val => setCategory(val)} 
+                isRequired
+                placeholder="e.g. Food, Logistics" 
+              />
+            </HStack>
+            
+            <TextInput 
+              id="receipt" 
+              label="Receipt URL (Optional)"
+              value={receiptUrl} 
+              onChange={val => setReceiptUrl(val)} 
+              placeholder="https://drive.google.com/..." 
+            />
+          </VStack>
+          <HStack gap={2} justify="end">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} isDisabled={loading} label="Cancel" />
+            <Button type="submit" isDisabled={loading || !budgetId} label={loading ? "Submitting..." : "Submit"} />
+          </HStack>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }

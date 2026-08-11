@@ -83,7 +83,6 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-11"
-                autoComplete="email"
               />
             </div>
             

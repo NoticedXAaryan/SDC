@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, Dialog, DialogHeader, TextArea, HStack, VStack, Text } from "@astryxdesign/core";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 
 export function ApprovalActions({ eventId }: { eventId: string }) {
   const [isApproving, setIsApproving] = useState(false);
@@ -55,36 +53,34 @@ export function ApprovalActions({ eventId }: { eventId: string }) {
   };
 
   return (
-    <div className="flex space-x-3">
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger render={<Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" />}>
-          Reject
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Event Draft</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">Provide constructive feedback so the Lead can revise their draft.</p>
-            <Textarea
-              placeholder="e.g. Please update the cover image to meet our brand guidelines."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={isRejecting}>
-              {isRejecting ? "Rejecting..." : "Confirm Rejection"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+    <HStack gap={3}>
+      <Button 
+        variant="secondary" 
+        label="Reject" 
+        onClick={() => setDialogOpen(true)}
+      />
+      <Dialog 
+        isOpen={dialogOpen} 
+        onOpenChange={(val: boolean) => setDialogOpen(val)}
+      >
+        <DialogHeader title="Reject Event Draft" />
+        <VStack gap={4} className="py-4">
+          <Text type="supporting" className="text-sm">Provide constructive feedback so the Lead can revise their draft.</Text>
+          <TextArea
+            label="Reason for rejection"
+            placeholder="e.g. Please update the cover image to meet our brand guidelines."
+            value={rejectReason}
+            onChange={(val) => setRejectReason(val)}
+            rows={4}
+          />
+        </VStack>
+        <HStack gap={2} justify="end">
+          <Button variant="ghost" label="Cancel" onClick={() => setDialogOpen(false)} />
+          <Button variant="destructive" label={isRejecting ? "Rejecting..." : "Confirm Rejection"} onClick={handleReject} isDisabled={isRejecting} />
+        </HStack>
       </Dialog>
       
-      <Button onClick={handleApprove} disabled={isApproving}>
-        {isApproving ? "Approving..." : "Approve & Publish"}
-      </Button>
-    </div>
+      <Button onClick={handleApprove} isDisabled={isApproving} label={isApproving ? "Approving..." : "Approve & Publish"} />
+    </HStack>
   );
 }

@@ -2,18 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button, Dialog, DialogHeader, TextInput, HStack, VStack, Text } from "@astryxdesign/core";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
@@ -58,34 +47,44 @@ export function AddInventoryDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"><Plus className="w-4 h-4 mr-2" /> Add Item</div>
-      </DialogTrigger>
-      <DialogContent>
+    <>
+      <Button 
+        variant="primary" 
+        icon={<Plus className="w-4 h-4" />}
+        label="Add Item"
+        onClick={() => setOpen(true)}
+      />
+      <Dialog isOpen={open} onOpenChange={(val: boolean) => setOpen(val)}>
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Add Inventory Item</DialogTitle>
-            <DialogDescription>
+          <DialogHeader title="Add Inventory Item" />
+          <VStack gap={4} className="py-4">
+            <Text type="supporting" className="text-sm">
               Create a new item in the club inventory.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Item Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Arduino Uno" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="qty">Total Quantity</Label>
-              <Input id="qty" type="number" min="1" value={qtyTotal} onChange={e => setQtyTotal(e.target.value)} required />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Add Item"}</Button>
-          </DialogFooter>
+            </Text>
+            
+            <TextInput 
+              id="name" 
+              label="Item Name"
+              value={name} 
+              onChange={val => setName(val)} 
+              isRequired
+              placeholder="e.g. Arduino Uno" 
+            />
+            
+            <TextInput 
+              id="qty" 
+              label="Total Quantity"
+              value={qtyTotal} 
+              onChange={val => setQtyTotal(val)} 
+              isRequired
+            />
+          </VStack>
+          <HStack gap={2} justify="end">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} isDisabled={loading} label="Cancel" />
+            <Button type="submit" isDisabled={loading} label={loading ? "Saving..." : "Add Item"} />
+          </HStack>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   );
 }
