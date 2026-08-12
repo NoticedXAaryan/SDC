@@ -95,6 +95,17 @@ export async function createEvent(session: AuthSession, data: any) {
     throw new AuthorizationError("You do not have permission to create events.");
   }
 
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(session.user.id, role);
+    if (data.domain && data.domain !== userDomain) {
+      throw new AuthorizationError("You can only create events within your own domain.");
+    }
+    if (!data.domain && userDomain) {
+      data.domain = userDomain; // Auto-assign domain if they have one
+    }
+  }
+
   await checkEmergencyFreeze(role);
 
   // Generate slug from title
@@ -192,8 +203,22 @@ export async function updateEvent(session: AuthSession, id: string, data: any) {
     return null;
   }
 
-  if (role === "co_lead" && event.createdBy !== session.user.id) {
-    throw new AuthorizationError("You can only edit events you created");
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(session.user.id, role);
+    const isCreator = event.createdBy === session.user.id;
+    
+    // A lead can edit if they created it OR if it belongs to their domain.
+    // co_leads can ONLY edit if they created it.
+    if (role === "co_lead" && !isCreator) {
+      throw new AuthorizationError("You can only edit events you created");
+    } else if (role === "lead" && !isCreator && event.domain !== userDomain) {
+      throw new AuthorizationError("You can only edit events within your domain");
+    }
+
+    if (data.domain !== undefined && data.domain !== userDomain) {
+      throw new AuthorizationError("You cannot move an event to a domain you do not belong to");
+    }
   }
 
   const updateData: Record<string, any> = {};
@@ -535,6 +560,14 @@ export async function updatePostEventDetails(sessionAuth: AuthSession, eventId: 
     throw new ValidationError("Event not found");
   }
 
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("Forbidden: Event is outside your domain");
+    }
+  }
+
   const metadata = (event.metadata as Record<string, any>) || {};
 
   const updatedMetadata = {
@@ -580,6 +613,14 @@ export async function scheduleMeeting(sessionAuth: AuthSession, eventId: string,
 
   if (!event) {
     throw new ValidationError("Event not found");
+  }
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("Forbidden: Event is outside your domain");
+    }
   }
 
   const sessionId = crypto.randomUUID();
@@ -987,13 +1028,20 @@ export async function checkInEvent(session: AuthSession, slug: string, signedPas
     throw new ValidationError("Invalid pass payload");
   }
 
-  const eventData = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
-  if (!eventData.length) {
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) {
     throw new ValidationError("Event not found");
   }
-  const event = eventData[0];
 
-  if (event.id !== eventId) {
+  const isAdmin = ["admin", "owner"].includes(session.user.role as string);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(session.user.id, session.user.role as string);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("You can only check-in users for events within your domain.");
+    }
+  }
+
+  if (event.slug !== slug) {
     throw new ValidationError("Pass belongs to a different event");
   }
 
@@ -1124,6 +1172,14 @@ export async function getInviteLink(sessionAuth: AuthSession, eventId: string) {
 
   if (!event) {
     throw new ValidationError("Event not found");
+  }
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("Forbidden: Event is outside your domain");
+    }
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://club.com";

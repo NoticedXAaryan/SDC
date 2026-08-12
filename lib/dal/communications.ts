@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { communications, eventInvites, user, events, notifications } from "@/lib/db/schema";
 import { eq, desc, inArray, or, ilike } from "drizzle-orm";
 import crypto from "crypto";
-import { emailQueue } from "@/lib/queues/email";
+
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 
@@ -10,6 +10,18 @@ export async function getEventCommunications(sessionAuth: AuthSession, eventId: 
   const role = sessionAuth.user.role as string;
   if (!["admin", "owner", "lead", "co_lead", "event_lead"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
+  }
+
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const { getUserDomain } = await import("@/lib/dal/auth");
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("You can only view communications for events within your domain.");
+    }
   }
 
   const comms = await db.select()
@@ -20,10 +32,22 @@ export async function getEventCommunications(sessionAuth: AuthSession, eventId: 
   return comms;
 }
 
-export async function createEventCommunication(sessionAuth: AuthSession, eventId: string, data: { subject: string; body: string; targetAudience: "all" | "confirmed" | "waitlist" }) {
+export async function createEventCommunicationDb(sessionAuth: AuthSession, eventId: string, data: { subject: string; body: string; targetAudience: "all" | "confirmed" | "waitlist" }) {
   const role = sessionAuth.user.role as string;
   if (!["admin", "owner", "lead", "co_lead", "event_lead"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
+  }
+
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const { getUserDomain } = await import("@/lib/dal/auth");
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("You can only create communications for events within your domain.");
+    }
   }
 
   const { subject, body: messageBody, targetAudience } = data;
@@ -44,18 +68,10 @@ export async function createEventCommunication(sessionAuth: AuthSession, eventId
     sentCount: 0,
   });
 
-  await emailQueue.add("broadcast_communication", {
-    commId,
-    eventId,
-    subject,
-    body: messageBody,
-    targetAudience,
-  });
-
-  return { success: true, id: commId };
+  return { id: commId, subject, messageBody, targetAudience };
 }
 
-export async function sendInvites(sessionAuth: AuthSession, eventId: string, emails: string[]) {
+export async function sendInvitesDb(sessionAuth: AuthSession, eventId: string, emails: string[]) {
   const role = sessionAuth.user.role as string;
   if (!["admin", "owner"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
@@ -101,10 +117,9 @@ export async function sendInvites(sessionAuth: AuthSession, eventId: string, ema
   let insertedInvites = [];
   if (invitesToInsert.length > 0) {
     insertedInvites = await db.insert(eventInvites).values(invitesToInsert).returning();
-    await emailQueue.addBulk(jobsToQueue);
   }
 
-  return { success: true, count: insertedInvites.length };
+  return { success: true, count: insertedInvites.length, jobsToQueue };
 }
 
 export async function notifyColleagues(sessionAuth: AuthSession, eventId: string, data: { subject: string; message: string }) {
@@ -125,6 +140,15 @@ export async function notifyColleagues(sessionAuth: AuthSession, eventId: string
 
   if (!event) {
     throw new ValidationError("Event not found");
+  }
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const { getUserDomain } = await import("@/lib/dal/auth");
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("You can only notify colleagues about events within your domain.");
+    }
   }
 
   const colleagues = await db.select({ id: user.id })
@@ -168,6 +192,15 @@ export async function getWhatsappTemplate(sessionAuth: AuthSession, eventId: str
 
   if (!event) {
     throw new ValidationError("Event not found");
+  }
+
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin) {
+    const { getUserDomain } = await import("@/lib/dal/auth");
+    const userDomain = await getUserDomain(sessionAuth.user.id, role);
+    if (event.domain !== userDomain) {
+      throw new AuthorizationError("You can only get templates for events within your domain.");
+    }
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://club.com";
