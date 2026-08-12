@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
-import { sendInvites } from "@/lib/dal/communications";
+import { CommunicationService } from "@/lib/services/communications";
 
 const inviteSchema = z.object({
   emails: z.array(z.string().email()),
@@ -15,7 +15,7 @@ export const POST = withApiHandler(async (req: Request, { params }: { params: Pr
   const body = await req.json();
   const { emails } = inviteSchema.parse(body);
 
-  const result = await sendInvites(session, id, emails);
+  const result = await CommunicationService.sendInvites(session, id, emails);
   return NextResponse.json(result);
 });
 

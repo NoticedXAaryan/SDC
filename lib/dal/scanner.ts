@@ -2,11 +2,11 @@ import { db } from "@/lib/db";
 import { events, registrations, user } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { HMACPassValidator } from "@/lib/passes/qr";
-import { logAuditEvent } from "@/lib/services/audit";
+
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 
-export async function checkInScanner(session: AuthSession, eventId: string, token: string, scannedFaceDescriptor?: number[]) {
+export async function checkInScannerDb(session: AuthSession, eventId: string, token: string, scannedFaceDescriptor?: number[]) {
   const validator = new HMACPassValidator();
   const payload = await validator.validate(token);
 
@@ -78,18 +78,10 @@ export async function checkInScanner(session: AuthSession, eventId: string, toke
     attendanceMethod: scannedFaceDescriptor ? "qr+face" : "qr"
   }).where(eq(registrations.id, registration.id));
 
-  await logAuditEvent({
-    actorId: session.user.id,
-    action: "scanner_checkin",
-    entity: "registration",
-    entityId: registration.id,
-    details: `Scanned and checked in user ${payload.userId} for event ${eventId}`
-  });
-
-  return { success: true, message: "Successfully checked in!" };
+  return { registrationId: registration.id, payload };
 }
 
-export async function batchCheckInScanner(session: AuthSession, checkIns: any[]) {
+export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[]) {
   if (!Array.isArray(checkIns)) {
     throw new ValidationError("Invalid payload");
   }
@@ -119,6 +111,7 @@ export async function batchCheckInScanner(session: AuthSession, checkIns: any[])
   }
 
   let checkedInCount = 0;
+  const idsToUpdate = [];
 
   if (validCheckIns.length > 0) {
     const userIds = validCheckIns.map(c => c.payload.userId);
@@ -136,7 +129,6 @@ export async function batchCheckInScanner(session: AuthSession, checkIns: any[])
       regMap.set(`${r.eventId}-${r.userId}-${r.passCode}`, r);
     }
 
-    const idsToUpdate = [];
     for (const checkIn of validCheckIns) {
       const key = `${checkIn.eventId}-${checkIn.payload.userId}-${checkIn.payload.passCode}`;
       const reg = regMap.get(key);
@@ -157,16 +149,8 @@ export async function batchCheckInScanner(session: AuthSession, checkIns: any[])
         status: "checked_in",
         checkedInAt: new Date()
       }).where(inArray(registrations.id, idsToUpdate));
-      
-      await logAuditEvent({
-        actorId: session.user.id,
-        action: "scanner_batch_checkin",
-        entity: "event",
-        entityId: "batch",
-        details: `Batch synced ${idsToUpdate.length} check-ins offline`
-      });
     }
   }
 
-  return { success: true, results, checkedInCount };
+  return { results, checkedInCount, idsToUpdateLength: idsToUpdate.length };
 }

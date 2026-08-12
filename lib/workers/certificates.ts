@@ -1,6 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { db } from "@/lib/db";
-import { certificatesV2, certTemplates, user, events } from "@/lib/db/schema";
+import { certificates, certTemplates, user, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PdfmeRenderer } from "@/lib/services/PdfmeRenderer";
 import { LocalMockStorageService } from "@/lib/services/storage";
@@ -51,7 +51,7 @@ export const certificateWorker = new Worker("certificate-generation", async (job
   const storage = new LocalMockStorageService();
   const pdfUrl = await storage.uploadFile(finalPdfBuffer, `certs/${verifyCode}.pdf`, "application/pdf");
 
-  await db.insert(certificatesV2).values({
+  await db.insert(certificates).values({
     id: crypto.randomUUID(),
     verifyId: verifyCode,
     userId,

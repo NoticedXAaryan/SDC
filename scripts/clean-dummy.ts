@@ -10,16 +10,16 @@ async function clean() {
 
   try {
     // 1. Delete Dummy Events
-    const deletedEvents = await db.delete(events).where(like(events.slug, "dummy-%")).returning();
+    const deletedEvents = await db.delete(events).where(like(events.slug, "dummy-%")).returning({ id: events.id });
     console.log(`✅ Deleted ${deletedEvents.length} dummy events.`);
 
     // 2. Delete Dummy Inventory
-    const deletedInventory = await db.delete(inventory).where(like(inventory.name, "[DUMMY]%")).returning();
+    const deletedInventory = await db.delete(inventory).where(like(inventory.name, "[DUMMY]%")).returning({ id: inventory.id });
     console.log(`✅ Deleted ${deletedInventory.length} dummy inventory items.`);
 
     // 3. Delete Dummy Forms (assuming forms table exists and has a title column)
     const { forms } = await import("../lib/db/schema");
-    const deletedForms = await db.delete(forms).where(like(forms.title, "[DUMMY]%")).returning();
+    const deletedForms = await db.delete(forms).where(like(forms.title, "[DUMMY]%")).returning({ id: forms.id });
     console.log(`✅ Deleted ${deletedForms.length} dummy forms.`);
 
     console.log("🎉 Cleanup complete!");

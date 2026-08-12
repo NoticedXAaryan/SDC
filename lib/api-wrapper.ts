@@ -51,22 +51,29 @@ export function withApiHandler(
         return NextResponse.json({ error: "Verify email first", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
       }
 
-      // 1. Rate Limiting (applied to mutating requests by default)
+      // 1. Strict Rate Limiting (applied to ALL requests now)
       if (options.requireRateLimit !== false) {
-        const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
-        if (isMutating) {
-          const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
-          if (!rl.success) {
-            const status = rl.error === "Service temporarily unavailable" ? 503 : 429;
-            return NextResponse.json(
-              { error: rl.error || "Too many requests. Please try again later." },
-              { status }
-            );
-          }
+        const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+        const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
+        if (!rl.success) {
+          logger.warn({ ip: clientIp, path: req.nextUrl.pathname }, "Rate limit exceeded");
+          const status = rl.error === "Service temporarily unavailable" ? 503 : 429;
+          return NextResponse.json(
+            { error: rl.error || "Too many requests. Please try again later." },
+            { status }
+          );
         }
       }
 
-      // 2. Execute actual handler
+      // 2. Audit Logging
+      logger.info({
+        method: req.method,
+        path: req.nextUrl.pathname,
+        userId: session?.user?.id || "anonymous",
+        ip: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "127.0.0.1"
+      }, "API Request");
+
+      // 3. Execute actual handler
       return await handler(req, ctx);
     } catch (error: any) {
       if (error instanceof AuthorizationError || error?.name === "AuthorizationError") {

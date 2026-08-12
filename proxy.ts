@@ -78,10 +78,28 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // 2. Auth Protection Logic
+    // 2. Enforce JSON Accept header on API routes
+    if (pathname.startsWith('/api/')) {
+      const acceptHeader = request.headers.get('accept') || '';
+      if (!acceptHeader.includes('application/json') && !acceptHeader.includes('*/*')) {
+          return new NextResponse(
+              JSON.stringify({ error: "Not Acceptable - API requires application/json" }),
+              { status: 406, headers: { "Content-Type": "application/json" } }
+          );
+      }
+    }
+
+    let response = NextResponse.next();
+
+    // 3. Auth Protection Logic
     // Allow public paths
     if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
-      return NextResponse.next();
+      // Set security headers even for public paths
+      response.headers.set("X-Frame-Options", "DENY");
+      response.headers.set("X-Content-Type-Options", "nosniff");
+      response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+      response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+      return response;
     }
 
     // Check if route is protected
@@ -101,7 +119,12 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    return NextResponse.next();
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+
+    return response;
   } catch (error) {
     // Proxy errors should never crash the request — return a clean 500
     // instead of letting the error propagate to a bad gateway.

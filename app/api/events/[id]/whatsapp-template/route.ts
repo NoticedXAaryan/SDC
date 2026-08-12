@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
-import { getWhatsappTemplate } from "@/lib/dal/communications";
+import { CommunicationService } from "@/lib/services/communications";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export const GET = withApiHandler(async (
   const session = await requireSession();
   const { id } = await params;
   
-  const result = await getWhatsappTemplate(session, id);
+  const result = await CommunicationService.getWhatsappTemplate(session, id);
   return NextResponse.json({ success: true, ...result });
 }, { requireRateLimit: false });
 

@@ -22,22 +22,21 @@ describe("Finance DAL Integration Tests", () => {
     await db.insert(events).values({
       id: eventId,
       title: "Finance Test Event",
-      slug: "finance-test-event",
+      slug: "finance-test-event-" + Math.random().toString(36).substring(7),
       description: "Test event for finance",
       status: "published",
       createdBy: adminId,
       startsAt: new Date(),
       endsAt: new Date(Date.now() + 3600000),
-      organizationId: "test-org",
       metadata: {},
-      isPublic: true,
-      requiresApproval: false
+      visibility: "public",
+      isInternal: false
     });
   });
 
   afterAll(async () => {
     // Clean up
-    await db.delete(expenses).where(eq(expenses.createdBy, memberId));
+    await db.delete(expenses);
     await db.delete(budgets).where(eq(budgets.eventId, eventId));
     await db.delete(events).where(eq(events.id, eventId));
     

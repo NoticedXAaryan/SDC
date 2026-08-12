@@ -4,9 +4,8 @@ import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
-import { logAuditEvent } from "@/lib/services/audit";
 
-export async function logInventoryAction(sessionAuth: AuthSession, eventId: string, data: { itemId: string; qty: number; action: string }) {
+export async function logInventoryActionDb(sessionAuth: AuthSession, eventId: string, data: { itemId: string; qty: number; action: string }) {
   const role = sessionAuth.user.role as string;
   if (!["lead", "co_lead", "admin", "owner"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
@@ -58,13 +57,5 @@ export async function logInventoryAction(sessionAuth: AuthSession, eventId: stri
       .where(eq(inventory.id, itemId));
   });
 
-  await logAuditEvent({
-    actorId: sessionAuth.user.id,
-    action: "event_inventory_allocation",
-    entity: "inventory",
-    entityId: itemId,
-    details: `Action: ${action}, Qty: ${requestedQty}, Event: ${eventId}`,
-  });
-
-  return { success: true, message: `Successfully logged inventory ${action}` };
+  return { success: true };
 }

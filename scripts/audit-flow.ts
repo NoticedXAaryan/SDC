@@ -8,10 +8,10 @@ async function runAudit() {
   const BASE_URL = 'http://localhost:3000';
   console.log("Starting System Audit against", BASE_URL);
 
-  let cookies = [];
+  let cookies: string[] = [];
 
   // Helper to fetch with cookies
-  const apiFetch = async (path, options = {}) => {
+  const apiFetch = async (path: string, options: any = {}) => {
     const res = await fetch(`${BASE_URL}${path}`, {
       ...options,
       headers: {
@@ -91,8 +91,7 @@ async function runAudit() {
         capacity: 100,
         status: "published",
         isPublic: true,
-        type: "workshop",
-        organizationId: "test-org"
+        type: "workshop"
       })
     });
     

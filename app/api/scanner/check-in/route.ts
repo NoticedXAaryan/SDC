@@ -7,7 +7,7 @@ import { HMACPassValidator } from "@/lib/passes/qr";
 import { requireRole } from "@/lib/dal/auth";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
-import { checkInScanner } from "@/lib/dal/scanner";
+import { ScannerService } from "@/lib/services/scanner";
 
 export const POST = withApiHandler(async (req: Request) => {
   const session = await requireRole(["owner", "admin", "lead", "co_lead", "volunteer_lead"]);
@@ -19,6 +19,6 @@ export const POST = withApiHandler(async (req: Request) => {
     throw new ValidationError("Missing token or eventId");
   }
 
-  const result = await checkInScanner(session, eventId, token, scannedFaceDescriptor);
+  const result = await ScannerService.checkInScanner(session, eventId, token, scannedFaceDescriptor);
   return NextResponse.json(result);
 });

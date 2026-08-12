@@ -3,7 +3,7 @@ import { requireRole, requireAdmin, requireLead, requireFinanceLead, canTransiti
 import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
 import { vi } from "vitest";
 import { db } from "@/lib/db";
-import { clubSettings, member } from "@/lib/db/schema";
+import { user, session, member, organization, clubSettings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 describe("Auth DAL Integration Tests", () => {
@@ -18,18 +18,28 @@ describe("Auth DAL Integration Tests", () => {
     coLeadId = await createTestUser("co_lead");
     financeLeadId = await createTestUser("finance_lead");
 
+    // Insert org first
+    await db.insert(organization).values({
+      id: "org-1",
+      name: "Test Org",
+      slug: "test-org",
+      createdAt: new Date(),
+    }).onConflictDoNothing();
+
     // Add a member record for the tech_lead domain test
     await db.insert(member).values({
       id: `mem-${memberId}`,
       userId: memberId,
+      role: "tech_lead",
       domain: "tech",
-      joinedAt: new Date(),
-      status: "active",
-      organizationId: "test-org-123"
+      createdAt: new Date(),
+      organizationId: "org-1"
     });
   });
 
   afterAll(async () => {
+    await db.delete(member).where(eq(member.id, `mem-${memberId}`));
+    await db.delete(organization).where(eq(organization.id, "org-1"));
     await cleanupTestUser(adminId);
     await cleanupTestUser(memberId);
     await cleanupTestUser(coLeadId);
@@ -62,9 +72,7 @@ describe("Auth DAL Integration Tests", () => {
     // Enable freeze
     await db.insert(clubSettings).values({
       id: "default",
-      isFrozen: true,
-      organizationId: "test-org-123",
-      setupCompleted: true
+      isFrozen: true
     }).onConflictDoUpdate({
       target: clubSettings.id,
       set: { isFrozen: true }

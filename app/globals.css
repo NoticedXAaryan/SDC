@@ -214,31 +214,49 @@
 }
 
 .dark[data-theme="space"], [data-theme="space"] .dark, [data-theme="space"].dark {
-  --background: oklch(0.12 0.01 280);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.15 0.01 280);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.15 0.01 280);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.7 0.15 300);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.2 0.02 280);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.2 0.02 280);
-  --muted-foreground: oklch(0.7 0.02 280);
-  --accent: oklch(0.3 0.05 300);
-  --accent-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.15 300);
-  --sidebar: oklch(0.12 0.01 280);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.7 0.15 300);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.15 0.02 280);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.15 300);
+  color-scheme: dark;
+  --background: oklch(0.08 0.01 270);
+  --foreground: oklch(0.95 0.01 270);
+  --card: oklch(0.13 0.015 270 / 0.6);
+  --card-foreground: oklch(0.95 0.01 270);
+  --popover: oklch(0.12 0.015 270 / 0.95);
+  --popover-foreground: oklch(0.95 0.01 270);
+  --primary: oklch(0.65 0.25 285);
+  --primary-foreground: oklch(0.98 0.01 270);
+  --secondary: oklch(0.18 0.02 270);
+  --secondary-foreground: oklch(0.95 0.01 270);
+  --muted: oklch(0.18 0.02 270);
+  --muted-foreground: oklch(0.65 0.02 270);
+  --accent: oklch(0.25 0.05 285);
+  --accent-foreground: oklch(0.95 0.01 270);
+  --border: oklch(1 1 1 / 0.08);
+  --input: oklch(1 1 1 / 0.08);
+  --ring: oklch(0.65 0.25 285);
+  --sidebar: oklch(0.08 0.01 270);
+  --sidebar-foreground: oklch(0.95 0.01 270);
+  --sidebar-primary: oklch(0.65 0.25 285);
+  --sidebar-primary-foreground: oklch(0.98 0.01 270);
+  --sidebar-accent: oklch(0.15 0.02 270);
+  --sidebar-accent-foreground: oklch(0.95 0.01 270);
+  --sidebar-border: oklch(1 1 1 / 0.08);
+  --sidebar-ring: oklch(0.65 0.25 285);
+
+  /* Map Astryx StyleX variables to Tailwind CSS variables */
+}
+
+/* Force Astryx neutral theme to use our Space theme colors when Space theme is active */
+[data-theme="space"] [data-astryx-theme="neutral"],
+[data-theme="space"][data-astryx-theme="neutral"],
+[data-theme="space"] {
+  --color-background-surface: var(--background) !important;
+  --color-background-body: var(--background) !important;
+  --color-background-card: var(--card) !important;
+  --color-background-popover: var(--popover) !important;
+  --color-background-muted: var(--muted) !important;
+  --color-text-primary: var(--foreground) !important;
+  --color-text-secondary: var(--muted-foreground) !important;
+  --color-border: var(--border) !important;
+  --color-border-emphasized: var(--border) !important;
 }
 
 @layer base {

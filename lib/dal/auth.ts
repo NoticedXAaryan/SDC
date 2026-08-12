@@ -68,6 +68,7 @@ export type SessionUser = {
   points?: number | null;
   level?: number | null;
   banned?: boolean;
+  domain?: string | null;
 };
 
 export type AuthSession = {

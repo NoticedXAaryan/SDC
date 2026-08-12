@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { z } from "zod";
-import { getEventCommunications, createEventCommunication } from "@/lib/dal/communications";
+import { CommunicationService } from "@/lib/services/communications";
 
 const createCommSchema = z.object({
   subject: z.string().min(1),
@@ -21,7 +21,7 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
     return NextResponse.json({ error: "Invalid payload", details: parsed.error }, { status: 400 });
   }
 
-  const result = await createEventCommunication(session, id, parsed.data);
+  const result = await CommunicationService.createEventCommunication(session, id, parsed.data);
   return NextResponse.json(result);
 });
 
@@ -29,7 +29,7 @@ export const GET = withApiHandler(async (req: NextRequest, { params }: { params:
   const session = await requireSession();
   const { id } = await params;
 
-  const comms = await getEventCommunications(session, id);
+  const comms = await CommunicationService.getEventCommunications(session, id);
   return NextResponse.json({ communications: comms });
 });
 

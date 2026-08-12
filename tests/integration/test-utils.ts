@@ -15,7 +15,6 @@ export async function createTestUser(role: string = "member") {
     emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
-    organizationId: TEST_ORG_ID,
   });
 
   return id;
@@ -34,7 +33,6 @@ export function getMockSession(userId: string, role: string = "member", orgId: s
       name: "Test User",
       email: "test@example.com",
       role,
-      organizationId: orgId,
       createdAt: new Date(),
       updatedAt: new Date(),
       emailVerified: true

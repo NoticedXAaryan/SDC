@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { certificatesV2 } from "@/lib/db/schema";
+import { certificates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
 
@@ -16,8 +16,8 @@ export const GET = withApiHandler(async (
 ) => {
   const { id } = await params;
 
-  const [cert] = await db.query.certificatesV2.findMany({
-    where: eq(certificatesV2.id, id),
+  const [cert] = await db.query.certificates.findMany({
+    where: eq(certificates.id, id),
   });
 
   if (!cert) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user, registrations, certificatesV2, applications } from "@/lib/db/schema";
+import { user, registrations, certificates, applications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
@@ -15,7 +15,7 @@ const userId = session.user.id;
 
 // Delete related records (in reality we might want to anonymize)
 await db.delete(applications).where(eq(applications.userId, userId));
-await db.delete(certificatesV2).where(eq(certificatesV2.userId, userId));
+await db.delete(certificates).where(eq(certificates.userId, userId));
 await db.delete(registrations).where(eq(registrations.userId, userId));
 
 // Soft delete user

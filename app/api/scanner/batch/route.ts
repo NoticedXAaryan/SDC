@@ -7,7 +7,7 @@ import { HMACPassValidator } from "@/lib/passes/qr";
 import { requireRole } from "@/lib/dal/auth";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
-import { batchCheckInScanner } from "@/lib/dal/scanner";
+import { ScannerService } from "@/lib/services/scanner";
 
 export const POST = withApiHandler(async (req: Request) => {
   const session = await requireRole(["owner", "admin", "lead", "co_lead", "volunteer_lead"]);
@@ -15,6 +15,6 @@ export const POST = withApiHandler(async (req: Request) => {
   const body = await req.json();
   const { checkIns } = body;
 
-  const result = await batchCheckInScanner(session, checkIns);
+  const result = await ScannerService.batchCheckInScanner(session, checkIns);
   return NextResponse.json(result);
 });

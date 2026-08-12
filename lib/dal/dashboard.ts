@@ -1,6 +1,6 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { user, events, registrations, applications, insights, certificatesV2, auditLogs, budgets, expenses, inventory } from "@/lib/db/schema";
+import { user, events, registrations, applications, insights, certificates, auditLogs, budgets, expenses, inventory } from "@/lib/db/schema";
 import { eq, sql, and, desc, gte, lte, or, inArray } from "drizzle-orm";
 
 export async function getStudentDashboardData(userId: string) {
@@ -21,8 +21,8 @@ export async function getStudentDashboardData(userId: string) {
     }).from(applications).where(eq(applications.userId, userId)).orderBy(desc(applications.createdAt)).limit(1),
 
     db.select({
-      id: certificatesV2.id, verifyId: certificatesV2.verifyId, issuedAt: certificatesV2.issuedAt, data: certificatesV2.data,
-    }).from(certificatesV2).where(eq(certificatesV2.userId, userId)).orderBy(desc(certificatesV2.issuedAt)).limit(3)
+      id: certificates.id, verifyId: certificates.verifyId, issuedAt: certificates.issuedAt, data: certificates.data,
+    }).from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt)).limit(3)
   ]);
 
   const myApplication = myApplicationRows[0] || null;

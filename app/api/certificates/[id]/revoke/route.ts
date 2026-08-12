@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { certificatesV2 } from "@/lib/db/schema";
+import { certificates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { requireRole } from "@/lib/dal/auth";
 import { logAuditEvent } from "@/lib/services/audit";
@@ -26,7 +26,7 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
   const { id } = await params;
   const { reason } = parsed.data;
 
-  const [cert] = await db.select().from(certificatesV2).where(eq(certificatesV2.id, id)).limit(1);
+  const [cert] = await db.select().from(certificates).where(eq(certificates.id, id)).limit(1);
   if (!cert) {
     return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
   }
@@ -35,10 +35,10 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
     return NextResponse.json({ error: "Certificate is already revoked" }, { status: 400 });
   }
 
-  await db.update(certificatesV2).set({
+  await db.update(certificates).set({
     status: "revoked",
     revokedReason: reason,
-  }).where(eq(certificatesV2.id, id));
+  }).where(eq(certificates.id, id));
 
   await logAuditEvent({
     actorId: sessionAuth.user.id,
