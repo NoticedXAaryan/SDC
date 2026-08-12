@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { applications, user, applicationReviews } from "@/lib/db/schema";
-import { requireAdmin } from "@/lib/dal/auth";
+import { requireAdmin, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -16,6 +16,8 @@ const statusSchema = z.object({
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
     const resolvedParams = await params;
     const session = await requireAdmin();
+    
+    
     const body = await req.json();
     const { status, domain, reasonCode, reasonNote } = statusSchema.parse(body);
 

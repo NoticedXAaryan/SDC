@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { forms, formResponses } from "@/lib/db/schema";
-import { requireSession, requireRole } from "@/lib/dal/auth";
+import { requireSession, requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { eq, and } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withApiHandler, AuthorizationError } from "@/lib/api-wrapper";
@@ -13,6 +13,8 @@ export const POST = withApiHandler(async (
   const { id } = await params;
   const body = await req.json();
   const session = await requireSession();
+    
+    
   const user = session?.user;
 
   const [form] = await db.query.forms.findMany({

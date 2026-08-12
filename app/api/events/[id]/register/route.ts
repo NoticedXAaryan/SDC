@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { registerForEvent } from "@/lib/dal/events";
@@ -13,6 +13,8 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
   }
 
   const session = await requireSession();
+    
+    
   const { id: eventId } = await params;
   const body = await req.json().catch(() => ({}));
   const formResponses = body.formResponses || null;

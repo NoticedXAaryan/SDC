@@ -1,4 +1,4 @@
-import { requireLead } from "@/lib/dal/auth";
+import { requireLead, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { interviews, applications } from "@/lib/db/schema";
 import { NextResponse, NextRequest } from "next/server";
@@ -14,6 +14,8 @@ const scheduleSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
   const session = await requireRole(["admin", "lead", "co_lead"]);
   
   const body = await req.json();

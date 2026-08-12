@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { achievementSubmissions, pointLogs, user } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -22,6 +22,8 @@ const reviewSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const sessionAuth = await requireRole(["member", "alumni", "co_lead", "event_lead", "lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -46,6 +48,8 @@ return NextResponse.json(submission, { status: 201 });
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
+    
+    
 // Only leads and admins can review
 const sessionAuth = await requireRole(["event_lead", "lead", "admin", "owner"]);
 

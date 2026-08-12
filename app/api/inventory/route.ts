@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { inventory } from "@/lib/db/schema";
 import { createInventoryItemSchema } from "@/lib/validators/inventory";
@@ -20,6 +20,8 @@ export const GET = withApiHandler(async () => {
 }, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await requireRole(["finance_lead", "admin", "owner"]);
 const body = await req.json();
 const parsed = createInventoryItemSchema.safeParse(body);

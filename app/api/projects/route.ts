@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession, isManagementRole } from "@/lib/dal/auth";
+import { requireSession, isManagementRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { projects, projectMembers, projectImages } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -36,6 +36,8 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();
+    
+    
 const reqBody = await req.json();
 
 const rl = await checkRateLimit(req, "submit_project");

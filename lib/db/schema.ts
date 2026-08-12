@@ -145,10 +145,13 @@ export const events = pgTable("events", {
     staff: jsonb("staff"), // array of assigned members
     forms: jsonb("forms"), // array of form IDs attached
     certificateTemplateId: text("certificateTemplateId"),
+    livenessRequired: boolean("livenessRequired").default(false), // For high-security face matching
   }, (table) => [
     index("events_status_idx").on(table.status), 
     index("events_starts_at_idx").on(table.startsAt), 
     index("events_created_by_idx").on(table.createdBy),
+    index("events_status_domain_idx").on(table.status, table.domain),
+    index("events_deleted_at_idx").on(table.deletedAt),
     foreignKey({
       columns: [table.parentId],
       foreignColumns: [table.id],
@@ -167,6 +170,8 @@ export const registrations = pgTable("registrations", {
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   attendanceMethod: text("attendanceMethod").default("qr"), // qr, qr+face, manual
   faceMatchDistance: real("faceMatchDistance"),
+  scanConfidence: real("scanConfidence"),
+  livenessVerified: boolean("livenessVerified").default(false),
   needsFaceEnrollment: boolean("needsFaceEnrollment").default(false),
   formResponses: jsonb("formResponses"), // DFD 34: Custom form answers
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().$onUpdateFn(() => new Date())
@@ -582,7 +587,7 @@ export const inventoryLogsRelations = relations(inventoryLogs, ({ one }) => ({
   }),
 }));
 
-export const eventsRelations = relations(events, ({ many }) => ({
+export const eventsRelations = relations(events, ({ many, one }) => ({
   sessions: many(eventSessions),
   incomes: many(incomes),
   registrations: many(registrations),

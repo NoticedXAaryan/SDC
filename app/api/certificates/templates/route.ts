@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { certTemplates } from "@/lib/db/schema";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -20,6 +20,8 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const session = await requireSession();
+    
+    
   const userRole = session.user.role || "member";
   if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });

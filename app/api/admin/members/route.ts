@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/dal/auth";
+import { requireAdmin, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { user, session as sessionTable } from "@/lib/db/schema";
 import { eq, ilike, or, sql, desc, asc } from "drizzle-orm";
@@ -114,6 +114,8 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
 const session = await requireAdmin();
+    
+    
 const body = await req.json();
 
 const parsed = roleChangeSchema.safeParse(body);

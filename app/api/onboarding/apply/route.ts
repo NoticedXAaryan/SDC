@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { checkEmergencyFreeze } from "@/lib/dal/auth";
 
 const applySchema = z.object({
   year: z.number().min(1).max(5),
@@ -16,6 +17,8 @@ const applySchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await auth.api.getSession({
   headers: req.headers,
 });

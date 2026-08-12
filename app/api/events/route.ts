@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { createEventSchema, eventSearchSchema } from "@/lib/validators/event";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { getEvents, createEvent } from "@/lib/dal/events";
@@ -39,6 +39,8 @@ export const GET = withApiHandler(async (req: NextRequest) => {
  */
 export const POST = withApiHandler(async (req: NextRequest) => {
   const session = await requireSession();
+    
+    
   const body = await req.json();
   const parsed = createEventSchema.safeParse(body);
 

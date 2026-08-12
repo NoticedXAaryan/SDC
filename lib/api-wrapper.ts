@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 
 // Re-export AuthorizationError from its canonical source so existing imports keep working
 export { AuthorizationError } from "@/lib/dal/auth";
-import { AuthorizationError } from "@/lib/dal/auth";
+import { AuthorizationError, checkEmergencyFreeze } from "@/lib/dal/auth";
 
 export class ValidationError extends Error {
   constructor(message: string = "Validation failed") {
@@ -63,6 +63,11 @@ export function withApiHandler(
             { status }
           );
         }
+      }
+
+      // Enforce emergency freeze for all mutations (unless user is owner)
+      if (req.method !== "GET" && req.method !== "OPTIONS") {
+        await checkEmergencyFreeze(session?.user?.role || "user");
       }
 
       // 2. Audit Logging

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { forms, formFields } from "@/lib/db/schema";
-import { requireAdmin, requireSession } from "@/lib/dal/auth";
+import { requireAdmin, requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -56,6 +56,8 @@ export const PATCH = withApiHandler(async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   await requireAdmin();
+    
+    
   const { id } = await params;
   const body = await req.json();
   const data = formSchema.parse(body);
@@ -96,6 +98,8 @@ export const DELETE = withApiHandler(async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   await requireAdmin();
+    
+    
   const { id } = await params;
   
   await db.delete(formFields).where(eq(formFields.formId, id));

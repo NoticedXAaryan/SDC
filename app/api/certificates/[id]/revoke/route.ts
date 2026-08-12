@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { certificates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { logAuditEvent } from "@/lib/services/audit";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -14,6 +14,8 @@ const revokeSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
   const sessionAuth = await requireRole(["admin", "owner"]); // only high level admins should revoke
 
   const body = await req.json();

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { getSessions, createSession } from "@/lib/dal/events";
@@ -23,6 +23,8 @@ export const GET = withApiHandler(async (req: NextRequest, { params }: { params:
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const sessionAuth = await requireSession();
+    
+    
   
   const body = await req.json();
   const parsed = sessionSchema.safeParse(body);

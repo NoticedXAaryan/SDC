@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { inventory, inventoryLogs } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -11,6 +11,8 @@ import crypto from "crypto";
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
 const body = await req.json();
 const parsed = logInventoryActionSchema.safeParse(body);

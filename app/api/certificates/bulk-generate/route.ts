@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { CertificateService } from "@/lib/services/certificates";
 import { logAuditEvent } from "@/lib/services/audit";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const session = await requireSession();
+    
+    
   
   const body = await req.json().catch(() => ({}));
   const { templateId, userIds, eventId } = body;

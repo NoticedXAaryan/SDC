@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { certTemplates } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,6 +8,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
 const { id } = await params;
 const session = await requireSession();
+    
+    
 
 // Check role (must be at least lead)
 const userRole = session.user.role || "member";

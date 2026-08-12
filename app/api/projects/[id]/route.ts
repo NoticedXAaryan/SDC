@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { projects, projectImages } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -14,6 +14,8 @@ import { LocalMockStorageService } from "@/lib/services/storage";
 const storage = new LocalMockStorageService();
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
   await requireRole(["admin", "owner", "tech_lead", "co_lead"]);
   
   const { id } = await params;
@@ -37,6 +39,8 @@ export const PATCH = withApiHandler(async (req: NextRequest, { params }: { param
 });
 
 export const DELETE = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
   await requireRole(["admin", "owner"]);
   
   const { id } = await params;

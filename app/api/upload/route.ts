@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -14,6 +14,8 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await requireRole(["member", "lead", "co_lead", "finance_lead", "admin", "owner"]);
 
 const formData = await req.formData();

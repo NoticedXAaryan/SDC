@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { updateEventSchema } from "@/lib/validators/event";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { getEventById, updateEvent, deleteEvent } from "@/lib/dal/events";
@@ -26,6 +26,8 @@ export const GET = withApiHandler(async (
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
+    
+    
   const { id } = await params;
 
   const body = await req.json();
@@ -48,6 +50,8 @@ export const PATCH = withApiHandler(async (req: NextRequest, { params }: { param
 
 export const DELETE = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
+    
+    
   const { id } = await params;
 
   const result = await deleteEvent(session, id);

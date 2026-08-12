@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { requireAdmin } from "@/lib/dal/auth";
+import { requireAdmin, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   await requireAdmin();
+    
+    
   const { reasonCode, context } = await req.json();
 
   if (!reasonCode) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { tasks, user, events } from "@/lib/db/schema";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -43,6 +43,8 @@ export const GET = withApiHandler(async (req: Request) => {
 });
 
 export const POST = withApiHandler(async (req: Request) => {
+    
+    
   await requireRole(["lead", "admin", "owner", "tech_lead", "event_lead", "marketing_lead", "finance_lead", "content_lead", "vice_lead", "co_lead"]);
   
   const body = await req.json();
@@ -62,6 +64,8 @@ export const POST = withApiHandler(async (req: Request) => {
 });
 
 export const PATCH = withApiHandler(async (req: Request) => {
+    
+    
   await requireRole(["lead", "admin", "owner", "tech_lead", "event_lead", "marketing_lead", "finance_lead", "content_lead", "vice_lead", "co_lead"]);
   
   const body = await req.json();

@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { vendors } from "@/lib/db/schema";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { nanoid } from "nanoid";
 import { desc } from "drizzle-orm";
 import { z } from "zod";
@@ -25,6 +25,8 @@ export const GET = withApiHandler(async () => {
 }, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
 
 const body = await req.json();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { researchPapers, notifications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,6 +9,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
 // Only content leads and admins can approve research papers
 await requireRole(["content_lead", "admin", "owner"]);
 

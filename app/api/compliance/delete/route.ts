@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { user, registrations, certificates, applications } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -7,6 +7,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 
 export const DELETE = withApiHandler(async (req: Request) => {
 const session = await requireSession();
+    
+    
 const userId = session.user.id;
 
 // A true GDPR delete should cascade or nullify identifying info

@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { contentItems } from "@/lib/db/schema";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { nanoid } from "nanoid";
 import Papa from "papaparse";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -9,6 +9,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const sessionAuth = await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
 // Expect multipart/form-data with a file

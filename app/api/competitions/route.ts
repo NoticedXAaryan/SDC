@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { competitions, user } from "@/lib/db/schema";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { desc, eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -35,6 +35,8 @@ export const GET = withApiHandler(async (req: Request) => {
 
 export const POST = withApiHandler(async (req: Request) => {
   const session = await requireSession();
+    
+    
   
   const body = await req.json();
   const parsed = createCompetitionSchema.parse(body);

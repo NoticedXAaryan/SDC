@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { guestRegister } from "@/lib/dal/events";
+import { checkEmergencyFreeze } from "@/lib/dal/auth";
 
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
   const { name, email } = body;

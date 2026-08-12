@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { callAI } from "@/lib/services/ai";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -12,6 +12,8 @@ const prefillSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 await requireRole(["member", "alumni", "co_lead", "event_lead", "lead", "admin", "owner"]);
 
 // Accept a raw text prompt for now (could be OCR text or a description of the proof)

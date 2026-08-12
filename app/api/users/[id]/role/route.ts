@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,8 @@ const VALID_ROLES = [
 ];
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
 const session = await requireRole(["admin", "owner", "lead"]);
 const currentUserRole = session.user.role as string;
 

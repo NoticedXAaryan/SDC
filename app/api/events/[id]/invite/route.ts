@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { CommunicationService } from "@/lib/services/communications";
@@ -10,6 +10,8 @@ const inviteSchema = z.object({
 
 export const POST = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
+    
+    
   const { id } = await params;
   
   const body = await req.json();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { forms, formFields, formResponses } from "@/lib/db/schema";
-import { requireAdmin } from "@/lib/dal/auth";
+import { requireAdmin, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
@@ -32,6 +32,8 @@ const formSchema = z.object({
 
 export const POST = withApiHandler(async (req: Request) => {
     const session = await requireAdmin();
+    
+    
     const body = await req.json();
     const data = formSchema.parse(body);
 

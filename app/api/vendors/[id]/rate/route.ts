@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { vendors } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 
@@ -14,6 +14,8 @@ const rateSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    
+    
 await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
 
 const body = await req.json();

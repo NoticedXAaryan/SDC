@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { NotificationService } from "@/lib/services/notifications";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { checkEmergencyFreeze } from "@/lib/dal/auth";
 
 const approveSchema = z.object({
   userId: z.string(),
@@ -14,6 +15,8 @@ const approveSchema = z.object({
 });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await auth.api.getSession({
   headers: req.headers,
 });

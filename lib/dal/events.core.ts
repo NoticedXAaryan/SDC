@@ -7,7 +7,8 @@ import { aiQueue } from "@/lib/queues/ai";
 import { logAuditEvent } from "@/lib/services/audit";
 import { createDefaultEventTasks } from "@/lib/services/tasks";
 import crypto from "crypto";
-import { and, desc, eq, gte, ilike, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNull, sql } from "drizzle-orm";
+import { getRedisClient } from "@/lib/redis";
 
 export async function getEvents(session: AuthSession, filters: {
   page?: number;
@@ -31,7 +32,7 @@ export async function getEvents(session: AuthSession, filters: {
   const page = filters.page || 1;
   const offset = (page - 1) * limit;
 
-  const conditions = [];
+  const conditions = [isNull(events.deletedAt)];
 
   if (filters.search) {
     conditions.push(ilike(events.title, `%${filters.search}%`));
@@ -69,15 +70,34 @@ export async function getEvents(session: AuthSession, filters: {
     .limit(limit)
     .offset(offset);
 
-  const [countResult] = await countQuery;
+  const redis = getRedisClient();
+  const cacheKey = `events:count:${JSON.stringify(filters)}:${userDomain || ""}:${isManagement}`;
+  let totalCount = 0;
+  
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) totalCount = parseInt(cached, 10);
+  } catch (e) {
+    // Ignore redis errors
+  }
+
+  if (!totalCount) {
+    const [countResult] = await countQuery;
+    totalCount = Number(countResult.count);
+    try {
+      await redis.setex(cacheKey, 60, totalCount.toString());
+    } catch (e) {
+      // Ignore redis errors
+    }
+  }
 
   return {
     events: allEvents,
     pagination: {
       page,
       limit,
-      total: Number(countResult.count),
-      totalPages: Math.ceil(Number(countResult.count) / limit),
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     },
   };
 }

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { clubSettings } from "@/lib/db/schema";
 import { logAuditEvent } from "@/lib/services/audit";
@@ -9,6 +9,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
+    
+    
 const session = await requireRole(["admin", "owner", "faculty_coordinator"]);
 
 const body = await req.json();

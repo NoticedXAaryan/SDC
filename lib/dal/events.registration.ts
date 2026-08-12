@@ -8,7 +8,7 @@ import { emailQueue } from "@/lib/queues/email";
 import { logAuditEvent } from "@/lib/services/audit";
 import { NotificationService } from "@/lib/services/notifications";
 import crypto from "crypto";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import Papa from "papaparse";
 
@@ -72,74 +72,66 @@ export async function importEventAttendees(sessionAuth: AuthSession, eventId: st
     throw new ValidationError("No valid rows with 'email' column found");
   }
 
-  let importedCount = 0;
-  const errors = [];
+    const emails = validRows.map(r => r.email!.trim().toLowerCase());
+  if (emails.length === 0) return { imported: 0, total: 0, errors: [] };
+
+  const existingUsers = await db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.email, emails));
+  const existingEmails = new Set(existingUsers.map(u => u.email));
   
-  for (let i = 0; i < validRows.length; i++) {
-    const row = validRows[i];
-    const rowNumber = i + 1; // 1-indexed for user readability
-    
-    try {
-      const email = row.email?.trim().toLowerCase();
-      const name = row.name?.trim() || "Unknown";
-      const rawStatus = row.status?.trim().toLowerCase();
-      const status = (["confirmed", "waitlist", "checked_in", "cancelled", "no_show"].includes(rawStatus || "") ? rawStatus : "confirmed") as "confirmed" | "waitlist" | "checked_in" | "cancelled" | "no_show";
-      
-      if (!email) {
-        errors.push({ rowNumber, error: "Missing email" });
-        continue;
-      }
+  const usersToInsert = validRows
+    .filter(r => !existingEmails.has(r.email!.trim().toLowerCase()))
+    .map(r => ({
+      id: nanoid(),
+      name: r.name?.trim() || "Unknown",
+      email: r.email!.trim().toLowerCase(),
+      emailVerified: false,
+      role: "member",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
 
-      // Check for valid email format roughly
-      if (!email.includes("@")) {
-        errors.push({ rowNumber, error: "Invalid email format" });
-        continue;
-      }
-
-      await db.transaction(async (tx) => {
-        let [existingUser] = await tx.select().from(user).where(eq(user.email, email)).limit(1);
-        
-        if (!existingUser) {
-          const newUserId = nanoid();
-          [existingUser] = await tx.insert(user).values({
-            id: newUserId,
-            name,
-            email,
-            emailVerified: false,
-            role: "member",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }).returning();
-        }
-
-        const [existingReg] = await tx.select().from(registrations).where(
-          and(
-            eq(registrations.eventId, eventId),
-            eq(registrations.userId, existingUser.id)
-          )
-        ).limit(1);
-
-        if (!existingReg) {
-          await tx.insert(registrations).values({
-            id: nanoid(),
-            eventId,
-            userId: existingUser.id,
-            passCode: nanoid(10),
-            status,
-            createdAt: new Date(),
-          });
-          importedCount++;
-        } else {
-          // Already registered, we can treat this as a skipped row error or just ignore
-          errors.push({ rowNumber, error: `User ${email} is already registered` });
-        }
-      });
-    } catch (error: any) {
-      errors.push({ rowNumber, error: error.message || "Unknown database error" });
-    }
+  if (usersToInsert.length > 0) {
+    await db.insert(user).values(usersToInsert).onConflictDoNothing();
   }
 
-  return { imported: importedCount, total: validRows.length, errors };
+  const allTargetUsers = await db.select({ id: user.id, email: user.email }).from(user).where(inArray(user.email, emails));
+  const userIdMap = new Map(allTargetUsers.map(u => [u.email, u.id]));
+  const userIds = Array.from(userIdMap.values());
+
+  if (userIds.length === 0) return { imported: 0, total: validRows.length, errors: [{ rowNumber: 0, error: "Failed to map users" }] };
+
+  const existingRegs = await db.select({ userId: registrations.userId }).from(registrations).where(
+    and(
+      eq(registrations.eventId, eventId),
+      inArray(registrations.userId, userIds)
+    )
+  );
+  const existingRegUserIds = new Set(existingRegs.map(r => r.userId));
+
+  const regsToInsert = validRows
+    .map(r => {
+      const email = r.email!.trim().toLowerCase();
+      const userId = userIdMap.get(email);
+      if (!userId || existingRegUserIds.has(userId)) return null;
+      
+      const rawStatus = r.status?.trim().toLowerCase();
+      const status = (["confirmed", "waitlist", "checked_in", "cancelled", "no_show"].includes(rawStatus || "") ? rawStatus : "confirmed") as "confirmed" | "waitlist" | "checked_in" | "cancelled" | "no_show";
+      return {
+        id: nanoid(),
+        eventId,
+        userId,
+        passCode: nanoid(10),
+        status,
+        createdAt: new Date(),
+      };
+    })
+    .filter(Boolean) as any[];
+
+  if (regsToInsert.length > 0) {
+    await db.insert(registrations).values(regsToInsert).onConflictDoNothing();
+  }
+
+  return { imported: regsToInsert.length, total: validRows.length, errors: [] };
 }
 
 export async function registerForEvent(session: AuthSession, eventId: string, formResponses: any = null) {

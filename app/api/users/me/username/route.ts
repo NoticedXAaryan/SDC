@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { user, auditLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
 
 const RESERVED_HANDLES = ["admin", "root", "api", "www", "events", "forms", "recruitment", "finance", "inventory", "settings", "profile", "dashboard", "u"];
@@ -11,6 +11,8 @@ const MAX_CHANGES = 3;
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
   const session = await requireSession();
+    
+    
 
   const body = await req.json();
   const { username } = body;

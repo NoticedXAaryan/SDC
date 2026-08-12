@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { procurementRequests, vendors, user, expenses } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -45,6 +45,8 @@ export const GET = withApiHandler(async () => {
 }, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 const sessionAuth = await requireRole(["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"]);
 
 const body = await req.json();
@@ -73,6 +75,8 @@ return NextResponse.json(newRequest, { status: 201 });
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
+    
+    
 const sessionAuth = await requireRole(["finance_lead", "lead", "vice_lead", "admin", "owner"]);
 
 const body = await req.json();

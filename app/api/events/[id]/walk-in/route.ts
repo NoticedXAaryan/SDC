@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { walkInRegister } from "@/lib/dal/events";
@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
+    
+    
   const body = await req.json();
   const parsed = walkInSchema.safeParse(body);
   if (!parsed.success) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
+import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
 import crypto from "crypto";
@@ -8,6 +8,8 @@ import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-w
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
+    
+    
 // Only leads and admins can broadcast announcements
 await requireRole(["lead", "admin", "owner"]);
 

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { requireSession } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { z } from "zod";
 import { CommunicationService } from "@/lib/services/communications";
@@ -12,6 +12,8 @@ const createCommSchema = z.object({
 
 export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   const session = await requireSession();
+    
+    
   const { id } = await params;
 
   const body = await req.json();

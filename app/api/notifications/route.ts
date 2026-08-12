@@ -5,6 +5,7 @@ import { notifications } from "@/lib/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { checkEmergencyFreeze } from "@/lib/dal/auth";
 
 export const GET = withApiHandler(async (req: NextRequest) => {
   const session = await auth.api.getSession({
@@ -29,6 +30,8 @@ const markReadSchema = z.object({
 });
 
 export const PATCH = withApiHandler(async (req: NextRequest) => {
+    
+    
   const session = await auth.api.getSession({
     headers: req.headers,
   });
