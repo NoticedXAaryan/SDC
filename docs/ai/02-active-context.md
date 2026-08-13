@@ -1,16 +1,23 @@
 # Active Context
 
-**Current Focus:** The Frontend Reconstruction Phase is COMPLETE. We have successfully rebuilt the Landing Page (`app/page.tsx`) using the mandated space/cosmic design theme and verified that the dashboard UI (`AdminDashboard`, `LeadDashboard`, `StudentDashboard`) is intact, fully styled with `@astryxdesign/core`, and compiling without errors.
+**Current Focus:** Handing off the remainder of the project (Steps 6 through 15) to three parallel/sequential specialized agents.
 
-**Recent Accomplishments (Frontend Reconstruction):**
-- **Landing Page Rebuild:** Deployed a responsive, dark-mode cosmic themed landing page featuring orbital UI elements and clear calls to action.
-- **Dashboard UI Validation:** Verified the complete component suite of the dashboards, confirming the integration of the Astryx design system and role-based access rendering.
-- **Build Verification:** Successfully executed a full `npm run build` which compiled 54/54 static routes with 0 TypeScript or module errors.
-- **Version Control:** Committed all changes and pushed to the upstream/origin repositories.
+**What we just did:**
+- Successfully completed **Step 4 (Event Lifecycle)** and **Step 5 (QR Scanner & Check-In)**.
+- Wrote integration tests `05-event-lifecycle.test.ts` and `06-scanner.test.ts` which successfully pass the core API pipelines.
+- Marked Step 5 as `[x]` in `docs/EXECUTION_ROADMAP.md`.
+- Drafted a strategic division of labor in `docs/ai/agent_prompts.md` to split the remaining work into three major clusters:
+  1. Logistics & Outreach (Steps 6 & 15)
+  2. Data & AI Pipeline (Steps 7, 8, 12, 14)
+  3. Operations & Finance (Steps 9, 10, 11, 13)
 
-**Next Steps:**
-- Monitor the application in production/development for any edge cases.
-- Begin the next phase defined in `docs/SPECIFICATION.md` or wait for user requests regarding specific dashboard features (e.g., expanding on the advanced form builder or recruitment grading UI).
+**Next Steps for the next Engineer (or Agents):**
+- **Agent 1** should begin with **Step 6 (Certificates)**, focusing on PDF generation templates and BullMQ integration, followed by **Step 15 (Communications Engine)**.
+- **Agent 2** should handle **Step 7 (Recruitment)** and **Step 8 (Forms)**, ensuring dynamic JSON schemas validate properly.
+- **Agent 3** should handle **Step 9 (Inventory)** and **Step 11 (Finance)**, deploying aggressive IDOR auditing.
+
+All agents must strictly follow the "Think -> Check -> Implement -> Audit -> Repeat" cycle.
+
 
 **Rule Checklist Status:**
 - [x] Environment validated

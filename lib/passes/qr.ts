@@ -35,13 +35,17 @@ export class HMACPassValidator implements IPassValidator {
     try {
       const decoded = jwt.verify(payload, this.secret) as any;
       
-      const redis = getRedisClient();
-      const used = await redis.get(`qr:jti:${decoded.jti}`);
-      if (used) {
-        return { valid: false }; // QR already used
+      try {
+        const redis = getRedisClient();
+        const used = await redis.get(`qr:jti:${decoded.jti}`);
+        if (used) {
+          return { valid: false }; // QR already used
+        }
+        // Set short TTL matching token expiration
+        await redis.setex(`qr:jti:${decoded.jti}`, 60, "1");
+      } catch (redisErr) {
+        console.warn("Redis unavailable for QR replay protection");
       }
-      // Set short TTL matching token expiration
-      await redis.setex(`qr:jti:${decoded.jti}`, 60, "1");
 
       return {
         valid: true,

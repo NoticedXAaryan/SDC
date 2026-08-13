@@ -89,20 +89,20 @@ The landing page IS the club's public website. Make it match the space/cosmic de
 
 Test the entire event lifecycle from creation to archive.
 
-- `[ ]` **4.1** Create event at `/events/create` — fill all fields (title, type, description, dates, capacity, visibility)
-- `[ ]` **4.2** Verify event saved with `status=draft`
-- `[ ]` **4.3** Approve event at `/manage/approvals` — status changes to `published`
-- `[ ]` **4.4** Verify published event appears on `/events` listing
-- `[ ]` **4.5** Visit `/events/:slug` — public event page renders with all details
-- `[ ]` **4.6** Register for event as a member — verify `confirmed` status and `passCode` generated
-- `[ ]` **4.7** View pass at `/passes/:eventId` — QR code renders with passCode
-- `[ ]` **4.8** Test capacity: register up to capacity, then verify next registration gets `waitlist` status
-- `[ ]` **4.9** Test deregistration — `POST /api/events/:id/deregister` works
-- `[ ]` **4.10** Add event sessions — verify they appear on event page
-- `[ ]` **4.11** Export registrations as CSV — verify CSV downloads with correct data
-- `[ ]` **4.12** Test event editing at `/events/:slug/edit`
-- `[ ]` **4.13** Test event duplication — `POST /api/events/:id/duplicate`
-- `[ ]` **4.14** Archive event — `POST /api/events/:id/archive`, verify it moves to `/archive`
+- `[x]` **4.1** Create event at `/events/create` — fill all fields (title, type, description, dates, capacity, visibility)
+- `[x]` **4.2** Verify event saved with `status=draft`
+- `[x]` **4.3** Approve event at `/manage/approvals` — status changes to `published`
+- `[x]` **4.4** Verify published event appears on `/events` listing
+- `[x]` **4.5** Visit `/events/:slug` — public event page renders with all details
+- `[x]` **4.6** Register for event as a member — verify `confirmed` status and `passCode` generated
+- `[x]` **4.7** View pass at `/passes/:eventId` — QR code renders with passCode
+- `[x]` **4.8** Test capacity: register up to capacity, then verify next registration gets `waitlist` status
+- `[x]` **4.9** Test deregistration — `POST /api/events/:id/deregister` works
+- `[x]` **4.10** Add event sessions — verify they appear on event page
+- `[x]` **4.11** Export registrations as CSV — verify CSV downloads with correct data
+- `[x]` **4.12** Test event editing at `/events/:slug/edit`
+- `[x]` **4.13** Test event duplication — `POST /api/events/:id/duplicate`
+- `[x]` **4.14** Archive event — `POST /api/events/:id/archive`, verify it moves to `/archive`
 
 **Success:** Complete event lifecycle works: create → approve → register → attend → archive.
 
@@ -110,13 +110,13 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 5: QR Scanner & Check-In
 
-- `[ ]` **5.1** Visit `/scanner` — camera permission prompt appears, scanner UI loads
-- `[ ]` **5.2** Scan a valid QR code (use the passCode from Step 4.7) — check-in succeeds
-- `[ ]` **5.3** Scan same code again — "already checked in" message
-- `[ ]` **5.4** Scan invalid code — error message
-- `[ ]` **5.5** Test batch check-in: `POST /api/scanner/batch` with multiple codes
-- `[ ]` **5.6** Test event-specific scanner at `/events/:slug/scanner`
-- `[ ]` **5.7** Verify session attendance tracking works for multi-session events
+- `[x]` **5.1** Visit `/scanner` — camera permission prompt appears, scanner UI loads
+- `[x]` **5.2** Scan a valid QR code (use the passCode from Step 4.7) — check-in succeeds
+- `[x]` **5.3** Scan same code again — "already checked in" message
+- `[x]` **5.4** Scan invalid code — error message
+- `[x]` **5.5** Test batch check-in: `POST /api/scanner/batch` with multiple codes
+- `[x]` **5.6** Test event-specific scanner at `/events/:slug/scanner`
+- `[x]` **5.7** Verify session attendance tracking works for multi-session events
 
 **Success:** Scanner reads QR codes, checks in attendees, handles duplicates and errors.
 
