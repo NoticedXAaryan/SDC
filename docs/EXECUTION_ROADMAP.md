@@ -57,13 +57,13 @@ Test every auth flow and fix anything broken.
 
 The landing page IS the club's public website. Make it match the space/cosmic design direction.
 
-- `[ ]` **2.1** Review current landing page (`app/page.tsx`) — audit against design direction (space theme, Comet Browser gradients, blackhole logo)
-- `[ ]` **2.2** Restyle landing page: dark cosmic background, celestial gradient accents, orbital motion effects
-- `[ ]` **2.3** Verify all landing page links work: Login, Register, Events, Projects
-- `[ ]` **2.4** Review `/privacy` page — renders correctly
-- `[ ]` **2.5** Review `/terms` page — renders correctly
-- `[ ]` **2.6** Test mobile responsiveness on landing page — layout collapses gracefully
-- `[ ]` **2.7** Verify SEO: proper `<title>`, `<meta description>`, semantic HTML, single `<h1>`
+- `[x]` **2.1** Review current landing page (`app/page.tsx`) — audit against design direction (space theme, Comet Browser gradients, blackhole logo)
+- `[x]` **2.2** Restyle landing page: dark cosmic background, celestial gradient accents, orbital motion effects
+- `[x]` **2.3** Verify all landing page links work: Login, Register, Events, Projects
+- `[x]` **2.4** Review `/privacy` page — renders correctly
+- `[x]` **2.5** Review `/terms` page — renders correctly
+- `[x]` **2.6** Test mobile responsiveness on landing page — layout collapses gracefully
+- `[x]` **2.7** Verify SEO: proper `<title>`, `<meta description>`, semantic HTML, single `<h1>`
 
 **Success:** Landing page looks like a premium space-themed club website. All public pages render and link correctly.
 
@@ -71,15 +71,15 @@ The landing page IS the club's public website. Make it match the space/cosmic de
 
 ## Step 3: Dashboard — All Roles
 
-- `[ ]` **3.1** Login as **owner** — dashboard shows admin metrics (member count, pending approvals, events, etc.) from real DB data
-- `[ ]` **3.2** Verify sidebar navigation renders all 4 sections correctly (Main, Management, Finance, Administration)
-- `[ ]` **3.3** Test role switching (change a test user's role via `/api/users/:id/role`) and verify dashboard changes:
-  - `[ ]` Admin sees admin dashboard
-  - `[ ]` Lead sees lead dashboard
-  - `[ ]` Member sees student dashboard
-- `[ ]` **3.4** Verify breadcrumbs render on every dashboard sub-page
-- `[ ]` **3.5** Verify mobile navigation works (hamburger menu / mobile nav)
-- `[ ]` **3.6** Apply space theme styling to dashboard shell (dark sidebar, cosmic accents)
+- `[x]` **3.1** Login as **owner** — dashboard shows admin metrics (member count, pending approvals, events, etc.) from real DB data
+- `[x]` **3.2** Verify sidebar navigation renders all 4 sections correctly (Main, Management, Finance, Administration)
+- `[x]` **3.3** Test role switching (change a test user's role via `/api/users/:id/role`) and verify dashboard changes:
+  - `[x]` Admin sees admin dashboard
+  - `[x]` Lead sees lead dashboard
+  - `[x]` Member sees student dashboard
+- `[x]` **3.4** Verify breadcrumbs render on every dashboard sub-page
+- `[x]` **3.5** Verify mobile navigation works (hamburger menu / mobile nav)
+- `[x]` **3.6** Apply space theme styling to dashboard shell (dark sidebar, cosmic accents)
 
 **Success:** Dashboard renders correctly for all roles with real data. Navigation is intuitive and role-gated.
 

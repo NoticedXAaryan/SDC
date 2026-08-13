@@ -14,6 +14,8 @@ export function EventSettingsTab({ event }: { event: any }) {
     description: event.description || "",
     location: event.location || "",
     capacity: event.capacity || 50,
+    type: event.type || "workshop",
+    visibility: event.visibility || "public",
   });
 
   const handleSave = async () => {
@@ -77,6 +79,37 @@ export function EventSettingsTab({ event }: { event: any }) {
                 onChange={(val) => setFormData(prev => ({...prev, location: val}))}
                 placeholder="Location (e.g. Room 101, Zoom Link)"
               />
+            </VStack>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <VStack gap={2}>
+              <label className="text-sm font-medium">Event Type</label>
+              <select 
+                value={formData.type}
+                onChange={(e) => setFormData(prev => ({...prev, type: e.target.value}))}
+                className="w-full h-10 px-3 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="workshop">Workshop</option>
+                <option value="hackathon">Hackathon</option>
+                <option value="seminar">Seminar</option>
+                <option value="social">Social</option>
+                <option value="competition">Competition</option>
+              </select>
+            </VStack>
+            <VStack gap={2}>
+              <label className="text-sm font-medium">Visibility</label>
+              <select 
+                value={formData.visibility}
+                onChange={(e) => setFormData(prev => ({...prev, visibility: e.target.value}))}
+                className="w-full h-10 px-3 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="members_only">Members Only</option>
+                <option value="invite_only">Invite Only</option>
+              </select>
             </VStack>
           </div>
           

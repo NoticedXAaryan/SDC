@@ -26,6 +26,8 @@ import { X } from "lucide-react";
 const eventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   slug: z.string().min(3, "Slug must be at least 3 characters").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
+  type: z.enum(["hackathon", "workshop", "seminar", "social", "competition"]).default("workshop"),
+  visibility: z.enum(["public", "private", "unlisted", "members_only", "invite_only"]).default("public"),
   description: z.string().optional(),
   startsAt: z.string().min(1, "Start time is required"),
   endsAt: z.string().min(1, "End time is required"),
@@ -56,6 +58,8 @@ export function CreateEventWizard() {
     defaultValues: {
       title: "",
       slug: "",
+      type: "workshop",
+      visibility: "public",
       description: "",
       coverImage: "",
       startsAt: "",
@@ -81,7 +85,7 @@ export function CreateEventWizard() {
   const handleNext = async () => {
     // Validate current step before proceeding
     let fieldsToValidate: (keyof EventFormValues)[] = [];
-    if (step === 1) fieldsToValidate = ["title", "slug", "description", "startsAt", "endsAt", "location", "coverImage"];
+    if (step === 1) fieldsToValidate = ["title", "slug", "type", "visibility", "description", "startsAt", "endsAt", "location", "coverImage"];
     if (step === 2) fieldsToValidate = ["capacity", "isPaid", "price"];
     if (step === 3) fieldsToValidate = ["forms"];
     if (step === 4) fieldsToValidate = ["certificateTemplateId"];
@@ -104,7 +108,7 @@ export function CreateEventWizard() {
         }))
       };
 
-      const res = await fetch("/api/events/create", {
+      const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -166,6 +170,44 @@ export function CreateEventWizard() {
                       <TextInput label="Slug" {...field} placeholder="event-slug" />
                       {errors.slug && <span className="text-red-500 text-xs mt-1">{errors.slug.message}</span>}
                     </div>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="type"
+                  control={control}
+                  render={({ field }) => (
+                    <Selector 
+                      label="Event Type" 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      options={[
+                        { value: "workshop", label: "Workshop" },
+                        { value: "hackathon", label: "Hackathon" },
+                        { value: "seminar", label: "Seminar" },
+                        { value: "social", label: "Social" },
+                        { value: "competition", label: "Competition" },
+                      ]}
+                    />
+                  )}
+                />
+                <Controller
+                  name="visibility"
+                  control={control}
+                  render={({ field }) => (
+                    <Selector 
+                      label="Visibility" 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      options={[
+                        { value: "public", label: "Public" },
+                        { value: "private", label: "Private" },
+                        { value: "unlisted", label: "Unlisted" },
+                        { value: "members_only", label: "Members Only" },
+                        { value: "invite_only", label: "Invite Only" },
+                      ]}
+                    />
                   )}
                 />
               </div>
@@ -354,6 +396,8 @@ export function CreateEventWizard() {
             <VStack gap={4}>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm border p-6 rounded-lg bg-muted/10">
                 <span className="text-muted-foreground">Title:</span> <span className="font-medium">{formData.title || "—"}</span>
+                <span className="text-muted-foreground">Type:</span> <span className="font-medium capitalize">{formData.type}</span>
+                <span className="text-muted-foreground">Visibility:</span> <span className="font-medium capitalize">{formData.visibility.replace("_", " ")}</span>
                 <span className="text-muted-foreground">Starts:</span> <span className="font-medium">{formData.startsAt ? new Date(formData.startsAt).toLocaleString() : "—"}</span>
                 <span className="text-muted-foreground">Capacity:</span> <span className="font-medium">{formData.capacity || "Unlimited"}</span>
                 <span className="text-muted-foreground">Price:</span> <span className="font-medium">{formData.isPaid ? `₹${formData.price}` : "Free"}</span>
