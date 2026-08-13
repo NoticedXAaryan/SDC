@@ -1,14 +1,32 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { requireRole } from "@/lib/dal/auth";
+import { db } from "@/lib/db";
+import { applications, user } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckSquare, CheckCircle2, UserPlus, Users, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CheckSquare, CheckCircle2, UserPlus, Users, MessageSquare } from "lucide-react";
+import { ApplicationActions } from "./actions";
 
-export default function RecruitmentManagementPage() {
-  const [stats, setStats] = useState({ applied: 124, oa: 85, interview: 42, offered: 15 });
-  
+export default async function RecruitmentManagementPage() {
+  await requireRole(["admin", "lead", "co_lead"]);
+
+  const allApps = await db.select({
+    app: applications,
+    applicant: {
+      name: user.name,
+      email: user.email,
+    }
+  }).from(applications)
+    .leftJoin(user, eq(applications.userId, user.id))
+    .orderBy(desc(applications.createdAt));
+
+  const stats = {
+    applied: allApps.filter(a => a.app.status === "applied").length,
+    ai_graded: allApps.filter(a => a.app.status === "ai_graded").length,
+    interviewing: allApps.filter(a => a.app.status === "interviewing").length,
+    offered: allApps.filter(a => a.app.status === "accepted").length,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -16,7 +34,9 @@ export default function RecruitmentManagementPage() {
           <h2 className="text-2xl font-bold tracking-tight">Recruitment Dashboard</h2>
           <p className="text-muted-foreground">Manage ongoing recruitment cycles and candidate reviews</p>
         </div>
-        <Button><UserPlus className="mr-2 h-4 w-4" /> Start New Cycle</Button>
+        <a href="/api/applications/export" target="_blank" rel="noreferrer">
+          <Button variant="outline">Export CSV</Button>
+        </a>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -31,11 +51,11 @@ export default function RecruitmentManagementPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In OA Stage</CardTitle>
+            <CardTitle className="text-sm font-medium">AI Graded</CardTitle>
             <CheckSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.oa}</div>
+            <div className="text-2xl font-bold">{stats.ai_graded}</div>
           </CardContent>
         </Card>
         <Card>
@@ -44,7 +64,7 @@ export default function RecruitmentManagementPage() {
             <MessageSquare className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.interview}</div>
+            <div className="text-2xl font-bold">{stats.interviewing}</div>
           </CardContent>
         </Card>
         <Card>
@@ -64,21 +84,30 @@ export default function RecruitmentManagementPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
+            {allApps.map(({ app, applicant }) => (
+              <div key={app.id} className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 last:border-0 last:pb-0 gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">Candidate #{1042 + i}</p>
-                    <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">Pending OA Review</Badge>
+                    <p className="font-medium">{applicant?.name || "Unknown"} ({applicant?.email})</p>
+                    <Badge variant="outline" className="uppercase text-xs">{app.status}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">Applied for Tech Team • 2 days ago</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Applied Domain: <span className="font-medium">{app.domain || "Any"}</span> • AI Score: <span className="font-medium">{app.aiScore ?? "Pending"}</span>
+                  </p>
+                  {app.aiFeedback && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic">"{app.aiFeedback}"</p>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">View Profile</Button>
-                  <Button size="sm">Evaluate</Button>
+                <div className="shrink-0">
+                  <ApplicationActions application={app} />
                 </div>
               </div>
             ))}
+            {allApps.length === 0 && (
+              <div className="text-center p-4 text-muted-foreground border border-dashed rounded-lg">
+                No applications found.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

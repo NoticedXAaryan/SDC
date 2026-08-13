@@ -19,6 +19,7 @@ vi.mock("bullmq", () => ({
   Queue: vi.fn(function() {
     return {
       add: vi.fn(),
+      addBulk: vi.fn(),
       close: vi.fn(),
     };
   }),

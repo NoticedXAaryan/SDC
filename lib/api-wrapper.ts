@@ -51,12 +51,14 @@ export function withApiHandler(
         return NextResponse.json({ error: "Verify email first", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
       }
 
+      const path = (req as any).nextUrl?.pathname || (req.url ? new URL(req.url).pathname : "unknown");
+
       // 1. Strict Rate Limiting (applied to ALL requests now)
       if (options.requireRateLimit !== false) {
         const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
-        const rl = await checkRateLimit(req, options.rateLimitPrefix || req.nextUrl.pathname);
+        const rl = await checkRateLimit(req, options.rateLimitPrefix || path);
         if (!rl.success) {
-          logger.warn({ ip: clientIp, path: req.nextUrl.pathname }, "Rate limit exceeded");
+          logger.warn({ ip: clientIp, path }, "Rate limit exceeded");
           const status = rl.error === "Service temporarily unavailable" ? 503 : 429;
           return NextResponse.json(
             { error: rl.error || "Too many requests. Please try again later." },
@@ -73,7 +75,7 @@ export function withApiHandler(
       // 2. Audit Logging
       logger.info({
         method: req.method,
-        path: req.nextUrl.pathname,
+        path: path,
         userId: session?.user?.id || "anonymous",
         ip: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "127.0.0.1"
       }, "API Request");
@@ -97,10 +99,11 @@ export function withApiHandler(
       }
 
       // Log unexpected errors — never leak internals to client
-      logger.error({ err: error, path: req.nextUrl.pathname }, "API Error");
+      const path = (req as any).nextUrl?.pathname || (req.url ? new URL(req.url).pathname : "unknown");
+      logger.error({ err: error, path }, "API Error");
 
       return NextResponse.json(
-        { error: "Internal server error" },
+        { error: "An unexpected error occurred" },
         { status: 500 }
       );
     }

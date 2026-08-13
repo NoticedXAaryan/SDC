@@ -81,3 +81,49 @@ export async function addExpense(sessionAuth: AuthSession, eventId: string, rawD
 
   return { expenseId };
 }
+
+export async function updateExpenseStatus(sessionAuth: AuthSession, expenseId: string, status: "approved" | "rejected", reason?: string) {
+  const role = sessionAuth.user.role as string;
+  if (!["finance_lead", "admin", "owner"].includes(role)) {
+    throw new AuthorizationError("Unauthorized");
+  }
+
+  const expense = await db.query.expenses.findFirst({
+    where: eq(expenses.id, expenseId),
+  });
+
+  if (!expense) {
+    throw new ValidationError("Expense not found");
+  }
+
+  if (status === "approved" && expense.createdBy === sessionAuth.user.id) {
+    throw new AuthorizationError("You cannot approve your own expense.");
+  }
+
+  if (status === "approved") {
+    // Check if it overdraws the budget
+    const budget = await db.query.budgets.findFirst({
+      where: eq(budgets.id, expense.budgetId),
+    });
+
+    if (!budget) throw new ValidationError("Budget not found");
+
+    const allApproved = await db.select().from(expenses).where(eq(expenses.budgetId, budget.id));
+    const totalApproved = allApproved
+      .filter((e) => e.status === "approved")
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    if (totalApproved + Number(expense.amount) > Number(budget.allocated)) {
+      throw new ValidationError("Approving this expense would overdraw the budget.");
+    }
+  }
+
+  await db.update(expenses)
+    .set({
+      status,
+      approvedBy: status === "approved" ? sessionAuth.user.id : null,
+    })
+    .where(eq(expenses.id, expenseId));
+
+  return { success: true };
+}

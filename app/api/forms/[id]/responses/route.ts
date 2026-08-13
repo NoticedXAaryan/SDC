@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { forms, formResponses } from "@/lib/db/schema";
+import { forms, formResponses, formFields } from "@/lib/db/schema";
 import { requireSession, requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { eq, and } from "drizzle-orm";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { withApiHandler, AuthorizationError } from "@/lib/api-wrapper";
+import { z } from "zod";
 
 export const POST = withApiHandler(async (
   req: NextRequest,
@@ -39,6 +40,51 @@ export const POST = withApiHandler(async (
     return NextResponse.json({ error: "College domain only" }, { status: 403 });
   }
 
+  // Fetch form fields to build dynamic Zod schema
+  const fields = await db.query.formFields.findMany({
+    where: eq(formFields.formId, id),
+  });
+
+  const schemaShape: Record<string, z.ZodTypeAny> = {};
+  for (const field of fields) {
+    let fieldSchema: z.ZodTypeAny = z.any();
+    switch (field.type) {
+      case "short_text":
+      case "long_text":
+      case "dropdown":
+        fieldSchema = z.string();
+        break;
+      case "email":
+        fieldSchema = z.string().email();
+        break;
+      case "number":
+      case "rating":
+        fieldSchema = z.number();
+        break;
+      case "checkbox":
+        fieldSchema = z.boolean();
+        break;
+      case "date":
+        fieldSchema = z.string().datetime().or(z.string()); // loose date check
+        break;
+      default:
+        fieldSchema = z.any();
+    }
+    
+    if (field.required) {
+      schemaShape[field.id] = fieldSchema;
+    } else {
+      schemaShape[field.id] = fieldSchema.optional();
+    }
+  }
+
+  const dynamicSchema = z.object(schemaShape).passthrough();
+  const parsed = dynamicSchema.safeParse(body.answers);
+  
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Validation failed", details: parsed.error.format() }, { status: 400 });
+  }
+
   // Rate Limiting
   const rateLimit = await checkRateLimit(req as any, `form_submit_${id}`);
   if (!rateLimit.success) {
@@ -60,11 +106,11 @@ export const POST = withApiHandler(async (
     }
   }
 
-  // Insert response
+  // Insert response using strictly validated data
   const [response] = await db.insert(formResponses).values({
     formId: id,
     userId: user?.id,
-    answers: body.answers,
+    answers: parsed.data,
   }).returning();
 
   return NextResponse.json({ success: true, responseId: response.id });

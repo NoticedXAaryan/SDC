@@ -13,6 +13,7 @@ import {
   Briefcase,
   QrCode,
   ClipboardList,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
   Plus,
@@ -184,6 +185,13 @@ export function AppSideNav({ role = "member", user }: AppSideNavProps) {
           icon={<Briefcase className="w-4 h-4" />} 
           label="Projects" 
           isSelected={pathname?.startsWith("/internal-projects")}
+        />
+
+        <SideNavItem 
+          href="/tasks" 
+          icon={<CheckSquare className="w-4 h-4" />} 
+          label="Tasks" 
+          isSelected={pathname?.startsWith("/tasks")}
         />
 
         <SideNavItem 

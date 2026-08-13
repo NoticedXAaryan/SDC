@@ -35,8 +35,16 @@ export async function logInventoryActionDb(sessionAuth: AuthSession, eventId: st
 
   const requestedQty = Number(qty);
 
+  if (isNaN(requestedQty) || requestedQty <= 0) {
+    throw new ValidationError("Quantity must be a positive number");
+  }
+
   if (action === "check_out" && item.qtyAvailable < requestedQty) {
     throw new ValidationError("Insufficient inventory available");
+  }
+
+  if (action === "check_in" && item.qtyAvailable + requestedQty > item.qtyTotal) {
+    throw new ValidationError("Cannot check in more than total quantity");
   }
 
   await db.transaction(async (tx) => {

@@ -30,6 +30,16 @@ export const PATCH = withApiHandler(async (req: Request, { params }: { params: P
       return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
 
+    // State machine enforcement
+    if (app.status === "rejected" && status === "accepted") {
+      return NextResponse.json({ error: "Cannot accept a previously rejected application directly." }, { status: 400 });
+    }
+    
+    // Some roles might require interviews
+    if (app.status === "applied" && status === "accepted") {
+      return NextResponse.json({ error: "Cannot accept application directly from applied. It must be reviewed/interviewed first." }, { status: 400 });
+    }
+
     const [updated] = await db.update(applications)
       .set({ status })
       .where(eq(applications.id, resolvedParams.id))

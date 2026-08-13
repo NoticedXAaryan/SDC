@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/dal/auth";
-import { db } from "@/lib/db";
-import { expenses } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { requireSession } from "@/lib/dal/auth";
 import { updateExpenseStatusSchema } from "@/lib/validators/finance";
 import { logAuditEvent } from "@/lib/services/audit";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { withApiHandler } from "@/lib/api-wrapper";
+import { updateExpenseStatus } from "@/lib/dal/finance";
 
 export const dynamic = "force-dynamic";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-const session = await requireRole(["finance_lead", "admin", "owner"]);
+const session = await requireSession();
 const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
 await checkEmergencyFreeze(session.user.role as string);
 const { id } = await params;
-
-const [expense] = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
-if (!expense) {
-  return NextResponse.json({ error: "Expense not found" }, { status: 404 });
-}
 
 const body = await req.json();
 const parsed = updateExpenseStatusSchema.safeParse(body);
@@ -36,21 +29,7 @@ if (status === "rejected" && !reason) {
   return NextResponse.json({ error: "A reason is required when rejecting an expense." }, { status: 400 });
 }
 
-const { canTransition } = await import("@/lib/dal/auth");
-if (!canTransition(session.user.role, "expense", expense.status || "pending", status)) {
-  return NextResponse.json({ error: "Your role cannot transition the expense to this status" }, { status: 403 });
-}
-
-if (status === "approved" && expense.createdBy === session.user.id) {
-  return NextResponse.json({ error: "You cannot approve your own expense." }, { status: 403 });
-}
-
-await db.update(expenses)
-  .set({
-    status,
-    approvedBy: status === "approved" ? session.user.id : null,
-  })
-  .where(eq(expenses.id, id));
+await updateExpenseStatus(session, id, status as "approved" | "rejected", reason);
 
 await logAuditEvent({
   actorId: session.user.id,

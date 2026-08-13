@@ -5,6 +5,8 @@ import { desc, eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+import { CreateContentDialog } from "./create-dialog";
+
 export default async function ContentCalendarPage() {
   await requireRole(["content_lead", "lead", "admin", "owner"]);
 
@@ -26,9 +28,12 @@ export default async function ContentCalendarPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-12 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Content Calendar</h1>
-        <p className="text-muted-foreground">Manage social media posts and blog content across platforms.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Content Calendar</h1>
+          <p className="text-muted-foreground">Manage social media posts and blog content across platforms.</p>
+        </div>
+        <CreateContentDialog />
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">

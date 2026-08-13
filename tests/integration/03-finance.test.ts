@@ -3,7 +3,7 @@ import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
 import { db } from "@/lib/db";
 import { budgets, expenses, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { allocateBudget, addExpense } from "@/lib/dal/finance";
+import { allocateBudget, addExpense, updateExpenseStatus } from "@/lib/dal/finance";
 
 describe("Finance DAL Integration Tests", () => {
   let adminId: string;
@@ -74,5 +74,46 @@ describe("Finance DAL Integration Tests", () => {
     });
     expect(expenseRecord?.status).toBe("pending");
     expect(expenseRecord?.amount).toBe("200");
+  });
+
+  it("should prevent self-approval of expenses (IDOR)", async () => {
+    const expense = await addExpense(adminSession, eventId, {
+      amount: 100,
+      category: "marketing"
+    });
+
+    await expect(
+      updateExpenseStatus(adminSession, expense.expenseId, "approved")
+    ).rejects.toThrow("You cannot approve your own expense.");
+  });
+
+  it("should prevent approving expenses that overdraw the budget", async () => {
+    // Budget is 1000.
+    // Create an expense of 900. Another admin approves it.
+    const leadId = await createTestUser("finance_lead");
+    const leadSession = getMockSession(leadId, "finance_lead");
+    
+    const expense = await addExpense(adminSession, eventId, {
+      amount: 900,
+      category: "equipment"
+    });
+
+    await updateExpenseStatus(leadSession, expense.expenseId, "approved");
+
+    // Try to approve an expense of 200 created by admin
+    const expense2 = await addExpense(adminSession, eventId, {
+      amount: 200,
+      category: "equipment"
+    });
+
+    await expect(
+      updateExpenseStatus(leadSession, expense2.expenseId, "approved")
+    ).rejects.toThrow("Approving this expense would overdraw the budget.");
+
+    // Delete the expenses created in this test so the user can be deleted
+    await db.delete(expenses).where(eq(expenses.id, expense.expenseId));
+    await db.delete(expenses).where(eq(expenses.id, expense2.expenseId));
+    
+    await cleanupTestUser(leadId);
   });
 });

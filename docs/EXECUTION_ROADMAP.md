@@ -124,15 +124,15 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 6: Certificates
 
-- `[ ]` **6.1** Create certificate template at `/lead/certificates` — design with pdfme editor
-- `[ ]` **6.2** Verify template saved via `GET /api/certificates/templates`
-- `[ ]` **6.3** Link template to an event
-- `[ ]` **6.4** Issue certificates for all checked-in attendees: `POST /api/events/:id/certificates/issue-all`
-- `[ ]` **6.5** Verify BullMQ certificate worker processes the job (check worker logs)
-- `[ ]` **6.6** Verify certificates appear in user's `/certificates` page
-- `[ ]` **6.7** Test public verification at `/verify/:code` — shows certificate details
-- `[ ]` **6.8** Test revocation: `POST /api/certificates/:id/revoke` — verify status changes and verify page shows revoked
-- `[ ]` **6.9** Test template editing at `/lead/certificates/templates/:id/edit`
+- `[x]` **6.1** Create certificate template at `/lead/certificates` — design with pdfme editor
+- `[x]` **6.2** Verify template saved via `GET /api/certificates/templates`
+- `[x]` **6.3** Link template to an event
+- `[x]` **6.4** Issue certificates for all checked-in attendees: `POST /api/events/:id/certificates/issue-all`
+- `[x]` **6.5** Verify BullMQ certificate worker processes the job (check worker logs)
+- `[x]` **6.6** Verify certificates appear in user's `/certificates` page
+- `[x]` **6.7** Test public verification at `/verify/:code` — shows certificate details
+- `[x]` **6.8** Test revocation: `POST /api/certificates/:id/revoke` — verify status changes and verify page shows revoked
+- `[x]` **6.9** Test template editing at `/lead/certificates/templates/:id/edit`
 
 **Success:** Full certificate lifecycle: design template → issue → download → verify → revoke.
 
@@ -140,16 +140,16 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 7: Recruitment Pipeline
 
-- `[ ]` **7.1** Create recruitment form template (run `scripts/init-form-template.ts` or create via API)
-- `[ ]` **7.2** Visit `/recruitment/apply` — form renders with all fields
-- `[ ]` **7.3** Submit application — verify saved with `status=applied`
-- `[ ]` **7.4** If `OPENAI_API_KEY` is set: verify grading worker scores the application
-- `[ ]` **7.5** Review applications at `/manage/recruitment` — list renders with real data
-- `[ ]` **7.6** Accept an application — verify user role changes to "member"
-- `[ ]` **7.7** Reject an application — verify AI-generated rejection message (`POST /api/ai/generate-rejection`)
-- `[ ]` **7.8** Schedule interview — verify interview record created
-- `[ ]` **7.9** View interviews at `/recruitment/interviews`
-- `[ ]` **7.10** Export applications as CSV
+- `[x]` **7.1** Create recruitment form template (run `scripts/init-form-template.ts` or create via API)
+- `[x]` **7.2** Visit `/recruitment/apply` — form renders with all fields
+- `[x]` **7.3** Submit application — verify saved with `status=applied`
+- `[x]` **7.4** If `OPENAI_API_KEY` is set: verify grading worker scores the application
+- `[x]` **7.5** Review applications at `/manage/recruitment` — list renders with real data
+- `[x]` **7.6** Accept an application — verify user role changes to "member"
+- `[x]` **7.7** Reject an application — verify AI-generated rejection message (`POST /api/ai/generate-rejection`)
+- `[x]` **7.8** Schedule interview — verify interview record created
+- `[x]` **7.9** View interviews at `/recruitment/interviews`
+- `[x]` **7.10** Export applications as CSV
 
 **Success:** Full recruitment pipeline: apply → grade → review → accept/reject/interview.
 
@@ -157,16 +157,16 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 8: Finance & Procurement
 
-- `[ ]` **8.1** Create budget at `/finance/budget` — linked to an event
-- `[ ]` **8.2** Submit expense at `/finance/expenses` — verify `status=pending`
-- `[ ]` **8.3** Approve expense as admin — status changes, amount tracked
-- `[ ]` **8.4** Reject expense — verify status changes
-- `[ ]` **8.5** View finance dashboard — allocated vs. spent vs. remaining
-- `[ ]` **8.6** Create procurement request at `/finance/procurement`
-- `[ ]` **8.7** Add vendor at `/api/vendors`
-- `[ ]` **8.8** Rate vendor — `POST /api/vendors/:id/rate`
-- `[ ]` **8.9** Complete procurement lifecycle: draft → quotes → approval → completed
-- `[ ]` **8.10** Track income: `POST /api/finance/incomes`
+- `[x]` **8.1** Create budget at `/finance/budget` — linked to an event
+- `[x]` **8.2** Submit expense at `/finance/expenses` — verify `status=pending`
+- `[x]` **8.3** Approve expense as admin — status changes, amount tracked
+- `[x]` **8.4** Reject expense — verify status changes
+- `[x]` **8.5** View finance dashboard — allocated vs. spent vs. remaining
+- `[x]` **8.6** Create procurement request at `/finance/procurement`
+- `[x]` **8.7** Add vendor at `/api/vendors`
+- `[x]` **8.8** Rate vendor — `POST /api/vendors/:id/rate`
+- `[x]` **8.9** Complete procurement lifecycle: draft → quotes → approval → completed
+- `[x]` **8.10** Track income: `POST /api/finance/incomes`
 
 **Success:** Finance and procurement workflows are fully functional.
 
@@ -174,12 +174,12 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 9: Forms Builder
 
-- `[ ]` **9.1** Create form at `/manage/forms` — add various field types (text, email, dropdown, file, etc.)
-- `[ ]` **9.2** Publish form
-- `[ ]` **9.3** Fill out form as a member at `/forms/:id`
-- `[ ]` **9.4** View responses at `/manage/forms/:id/edit`
-- `[ ]` **9.5** Close form — verify no more submissions accepted
-- `[ ]` **9.6** Test form settings: `allowExternal`, `requireLogin`, `quotaPerUser`
+- `[x]` **9.1** Create form at `/manage/forms` — add various field types (text, email, dropdown, file, etc.)
+- `[x]` **9.2** Publish form
+- `[x]` **9.3** Fill out form as a member at `/forms/:id`
+- `[x]` **9.4** View responses at `/manage/forms/:id/edit`
+- `[x]` **9.5** Close form — verify no more submissions accepted
+- `[x]` **9.6** Test form settings: `allowExternal`, `requireLogin`, `quotaPerUser`
 
 **Success:** Dynamic forms can be created, published, filled, and responses viewed.
 
@@ -187,11 +187,11 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 10: Inventory
 
-- `[ ]` **10.1** Add inventory items at `/inventory`
-- `[ ]` **10.2** Check out items — verify `qtyAvailable` decreases
-- `[ ]` **10.3** Check in items — verify `qtyAvailable` increases
-- `[ ]` **10.4** View inventory logs — audit trail shows who checked what when
-- `[ ]` **10.5** Verify low-stock alerts appear on admin dashboard
+- `[x]` **10.1** Add inventory items at `/inventory`
+- `[x]` **10.2** Check out items — verify `qtyAvailable` decreases
+- `[x]` **10.3** Check in items — verify `qtyAvailable` increases
+- `[x]` **10.4** View inventory logs — audit trail shows who checked what when
+- `[x]` **10.5** Verify low-stock alerts appear on admin dashboard
 
 **Success:** Inventory CRUD and check-in/check-out tracking works.
 
@@ -212,12 +212,12 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 12: Communications & Notifications
 
-- `[ ]` **12.1** Send event communication at `/communications` — target all registrants
-- `[ ]` **12.2** Verify emails sent via email worker (check logs)
-- `[ ]` **12.3** Create announcement at `/api/announcements`
-- `[ ]` **12.4** Verify notifications appear in user's `/notifications` page
-- `[ ]` **12.5** Mark notification as read
-- `[ ]` **12.6** Test content pipeline at `/lead/content` — create content item, set scheduled date
+- `[x]` **12.1** Send event communication at `/communications` — target all registrants
+- `[x]` **12.2** Verify emails sent via email worker (check logs)
+- `[x]` **12.3** Create announcement at `/api/announcements`
+- `[x]` **12.4** Verify notifications appear in user's `/notifications` page
+- `[x]` **12.5** Mark notification as read
+- `[x]` **12.6** Test content pipeline at `/lead/content` — create content item, set scheduled date
 
 **Success:** Email communications send, notifications appear, content pipeline tracks items.
 
@@ -238,10 +238,10 @@ Test the entire event lifecycle from creation to archive.
 
 ## Step 14: Admin & Audit
 
-- `[ ]` **14.1** Visit `/admin/ai-logs` — AI usage logs render (if any)
-- `[ ]` **14.2** View audit log at admin dashboard — shows recent actions
-- `[ ]` **14.3** Test member management: change roles, ban/unban users
-- `[ ]` **14.4** Verify audit trail: every action from Steps 1-13 has an audit log entry
+- `[x]` **14.1** Visit `/admin/ai-logs` — AI usage logs render (if any)
+- `[x]` **14.2** View audit log at admin dashboard — shows recent actions
+- `[x]` **14.3** Test member management: change roles, ban/unban users
+- `[x]` **14.4** Verify audit trail: every action from Steps 1-13 has an audit log entry
 
 **Success:** Admin tools and audit trail are comprehensive and functional.
 
