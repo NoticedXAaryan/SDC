@@ -87,7 +87,7 @@ export async function requireSession(): Promise<AuthSession> {
     headers: await headers()
   });
   if (!session || !session.user) {
-    redirect("/login");
+    throw new AuthorizationError("Unauthorized");
   }
   return session as unknown as AuthSession;
 }

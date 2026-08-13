@@ -14,13 +14,13 @@ export const GET = withApiHandler(async (req: NextRequest) => {
   
   const url = new URL(req.url);
   const params = eventSearchSchema.safeParse({
-    page: url.searchParams.get("page"),
-    limit: url.searchParams.get("limit"),
-    search: url.searchParams.get("search"),
-    type: url.searchParams.get("type"),
-    status: url.searchParams.get("status"),
-    domain: url.searchParams.get("domain"),
-    upcoming: url.searchParams.get("upcoming"),
+    page: url.searchParams.get("page") || undefined,
+    limit: url.searchParams.get("limit") || undefined,
+    search: url.searchParams.get("search") || undefined,
+    type: url.searchParams.get("type") || undefined,
+    status: url.searchParams.get("status") || undefined,
+    domain: url.searchParams.get("domain") || undefined,
+    upcoming: url.searchParams.get("upcoming") || undefined,
   });
 
   if (!params.success) {

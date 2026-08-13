@@ -18,13 +18,13 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
   const url = new URL(req.url);
   const params = memberSearchSchema.safeParse({
-    page: url.searchParams.get("page"),
-    limit: url.searchParams.get("limit"),
-    search: url.searchParams.get("search"),
-    role: url.searchParams.get("role"),
-    year: url.searchParams.get("year"),
-    sortBy: url.searchParams.get("sortBy"),
-    sortOrder: url.searchParams.get("sortOrder"),
+    page: url.searchParams.get("page") || undefined,
+    limit: url.searchParams.get("limit") || undefined,
+    search: url.searchParams.get("search") || undefined,
+    role: url.searchParams.get("role") || undefined,
+    year: url.searchParams.get("year") || undefined,
+    sortBy: url.searchParams.get("sortBy") || undefined,
+    sortOrder: url.searchParams.get("sortOrder") || undefined,
   });
 
   if (!params.success) {

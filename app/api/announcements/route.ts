@@ -11,7 +11,7 @@ export const POST = withApiHandler(async (req: NextRequest) => {
     
     
 // Only leads and admins can broadcast announcements
-await requireRole(["lead", "admin", "owner"]);
+const session = await requireRole(["lead", "admin", "owner"]);
 
 const reqBody = await req.json().catch(() => ({}));
 const { title, message, link } = reqBody;
@@ -20,7 +20,7 @@ if (!title || !message) {
   return NextResponse.json({ error: "Title and message are required" }, { status: 400 });
 }
 
-const { user } = await import("@/lib/db/schema");
+const { user, communications } = await import("@/lib/db/schema");
 const { ne } = await import("drizzle-orm");
 
 // Find all users who are members (not outsiders)
@@ -46,9 +46,31 @@ if (notifsToInsert.length > 0) {
   }
 }
 
+// Insert communication record
+const commId = crypto.randomUUID();
+await db.insert(communications).values({
+  id: commId,
+  senderId: session.user.id,
+  subject: title,
+  body: message,
+  targetAudience: "all",
+  status: "pending"
+});
+
+// Enqueue email broadcast job
+const { emailQueue } = await import("@/lib/queues/email");
+await emailQueue.add("broadcast_announcement", {
+  type: "broadcast_communication",
+  payload: {
+    commId,
+    subject: title,
+    body: message,
+    targetAudience: "all"
+  }
+});
+
 return NextResponse.json({ 
   success: true, 
   message: `Broadcasted announcement to ${notifsToInsert.length} members` 
 }, { status: 201 });
-
 });
