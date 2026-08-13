@@ -9,6 +9,8 @@ import { Badge } from "@astryxdesign/core/Badge";
 import { Text } from "@astryxdesign/core/Text";
 import { HStack } from "@astryxdesign/core/HStack";
 import { VStack } from "@astryxdesign/core/VStack";
+import { CreateProcurementDialog } from "./create-procurement-dialog";
+import { ProcurementActions } from "./procurement-actions";
 
 export default async function ProcurementPage() {
   await requireRole(["finance_lead", "lead", "admin", "owner", "faculty_coordinator"]);
@@ -26,10 +28,13 @@ export default async function ProcurementPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <PageHeader 
-        title="Procurement & Vendors" 
-        description="Manage external vendors and internal procurement requests." 
-      />
+      <div className="flex justify-between items-start">
+        <PageHeader 
+          title="Procurement & Vendors" 
+          description="Manage external vendors and internal procurement requests." 
+        />
+        <CreateProcurementDialog />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <VStack gap={4} className="lg:col-span-2">
@@ -71,6 +76,10 @@ export default async function ProcurementPage() {
                         </a>
                       )}
                     </HStack>
+                    
+                    <div className="pt-2">
+                      <ProcurementActions reqId={req.id} status={req.status || "draft"} />
+                    </div>
                   </VStack>
                 </Card>
               ))}

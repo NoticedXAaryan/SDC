@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Budget, Expense } from "@/lib/types";
+import { SubmitExpenseDialog } from "./submit-expense-dialog";
+import { ExpenseActions } from "./expense-actions";
 
 // Income type matches actual DB schema: { id, eventId, amount, source, createdAt }
 interface Income {
@@ -41,6 +43,13 @@ export default function FinancePage() {
     load();
   }, []);
 
+  const refreshExpenses = async () => {
+    try {
+      const res = await fetch("/api/finance/expenses").then(r => r.json());
+      setExpenses(res.expenses || res || []);
+    } catch (err) {}
+  };
+
   const totalBudget = Array.isArray(budgets) ? budgets.reduce((s: number, b) => s + (Number(b.allocated) || 0), 0) : 0;
   const totalExpenses = Array.isArray(expenses) ? expenses.reduce((s: number, e) => s + (Number(e.amount) || 0), 0) : 0;
   const totalIncome = Array.isArray(incomes) ? incomes.reduce((s: number, i) => s + (Number(i.amount) || 0), 0) : 0;
@@ -61,9 +70,12 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6 pt-8 md:pt-0">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Finance</h1>
-        <p className="text-sm text-muted-foreground">Track budgets, expenses, and income across all events.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Finance</h1>
+          <p className="text-sm text-muted-foreground">Track budgets, expenses, and income across all events.</p>
+        </div>
+        <SubmitExpenseDialog budgets={budgets} onSubmitted={refreshExpenses} />
       </div>
 
       {/* Summary cards */}
@@ -184,6 +196,7 @@ export default function FinancePage() {
                     <th className="px-4 py-3 font-medium">Amount</th>
                     <th className="px-4 py-3 font-medium">Date</th>
                     <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -199,6 +212,9 @@ export default function FinancePage() {
                         )}>
                           {e.status || "pending"}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <ExpenseActions expense={e} onUpdate={refreshExpenses} />
                       </td>
                     </tr>
                   ))}

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
 import { db } from "@/lib/db";
 import { events, registrations, tasks } from "@/lib/db/schema";
-import { eq, like } from "drizzle-orm";
+import { eq, like, inArray } from "drizzle-orm";
 import { createEvent, duplicateEvent, getEvents } from "@/lib/dal/events";
 import { registerForEvent } from "@/lib/dal/events";
 
@@ -21,8 +21,12 @@ describe("Events DAL Integration Tests", () => {
 
   afterAll(async () => {
     // Clean up created events and tasks FIRST to avoid FK constraint error
-    await db.delete(registrations);
-    await db.delete(tasks);
+    const testEvents = await db.select({ id: events.id }).from(events).where(like(events.slug, "test-audit-event%"));
+    if (testEvents.length > 0) {
+      const eventIds = testEvents.map(e => e.id);
+      await db.delete(tasks).where(inArray(tasks.eventId, eventIds));
+      await db.delete(registrations).where(inArray(registrations.eventId, eventIds));
+    }
     await db.delete(events).where(like(events.slug, "test-audit-event%"));
 
     await cleanupTestUser(adminId);

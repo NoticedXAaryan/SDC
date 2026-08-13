@@ -4,14 +4,12 @@ import { inventory } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { PageHeader } from "@/components/astryx/page-header";
 import { EmptyState } from "@/components/astryx/empty-state";
-import { Card } from "@astryxdesign/core/Card";
-import { Text } from "@astryxdesign/core/Text";
-import { HStack } from "@astryxdesign/core/HStack";
-import { VStack } from "@astryxdesign/core/VStack";
-import { Badge } from "@astryxdesign/core/Badge";
+import { InventoryItemCard } from "./inventory-client";
 
 export default async function InventoryPage() {
-  await requireSession();
+  const session = await requireSession();
+  const userRole = session.user.role as string;
+  const isLead = ["lead", "co_lead", "finance_lead", "admin", "owner"].includes(userRole);
 
   const items = await db.select().from(inventory).orderBy(desc(inventory.createdAt));
 
@@ -30,22 +28,7 @@ export default async function InventoryPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {items.map(item => (
-            <Card key={item.id}>
-              <VStack gap={4}>
-                <VStack gap={1}>
-                  <Text weight="semibold" className="text-lg">{item.name}</Text>
-                  <HStack gap={2} align="center">
-                    <Badge 
-                      variant={item.qtyAvailable > 0 ? "success" : "error"}
-                      label={item.qtyAvailable > 0 ? "In Stock" : "Out of Stock"}
-                    />
-                    <Text type="supporting" className="text-sm">
-                      {item.qtyAvailable} / {item.qtyTotal} available
-                    </Text>
-                  </HStack>
-                </VStack>
-              </VStack>
-            </Card>
+            <InventoryItemCard key={item.id} item={item} isLead={isLead} />
           ))}
         </div>
       )}

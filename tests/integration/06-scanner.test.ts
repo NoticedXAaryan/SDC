@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
 import { db } from "@/lib/db";
 import { events, registrations, tasks } from "@/lib/db/schema";
-import { eq, like } from "drizzle-orm";
+import { eq, like, inArray } from "drizzle-orm";
 import { createEvent, approveEvent } from "@/lib/dal/events";
 import { registerForEvent } from "@/lib/dal/events.registration";
 import { ScannerService } from "@/lib/services/scanner";
@@ -57,8 +57,12 @@ describe("Scanner & Check-In Integration Tests", () => {
   });
 
   afterAll(async () => {
-    await db.delete(tasks);
-    await db.delete(registrations);
+    const testEvents = await db.select({ id: events.id }).from(events).where(like(events.slug, "scanner-test-event%"));
+    if (testEvents.length > 0) {
+      const eventIds = testEvents.map(e => e.id);
+      await db.delete(tasks).where(inArray(tasks.eventId, eventIds));
+      await db.delete(registrations).where(inArray(registrations.eventId, eventIds));
+    }
     await db.delete(events).where(like(events.slug, "scanner-test-event%"));
 
     await cleanupTestUser(adminId);
