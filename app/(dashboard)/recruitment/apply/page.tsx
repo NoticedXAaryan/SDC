@@ -66,7 +66,7 @@ export default function RecruitmentApplyPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">Which domain are you applying for?</label>
-              <Select value={formData.domain} onValueChange={(v) => setFormData({...formData, domain: v})}>
+              <Select value={formData.domain} onValueChange={(v) => setFormData({...formData, domain: v || ""})}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a domain" />
                 </SelectTrigger>

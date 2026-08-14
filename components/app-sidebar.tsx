@@ -67,7 +67,7 @@ export function AppSidebar() {
     return true;
   });
 
-  const NavContent = () => (
+  const renderNavContent = () => (
     <div className="flex h-full flex-col bg-[#0D1117] text-[#C9D1D9]">
       {/* User Header */}
       <div className="flex flex-col px-4 pt-6 pb-4">
@@ -166,7 +166,7 @@ export function AppSidebar() {
           <div className="fixed inset-0 z-50 flex">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
             <div className="relative z-50 flex w-72 flex-col bg-[#0D1117]">
-              <NavContent />
+              {renderNavContent()}
             </div>
           </div>
         )}
@@ -178,7 +178,7 @@ export function AppSidebar() {
           collapsed ? "w-16" : "w-64"
         )}
       >
-        <NavContent />
+        {renderNavContent()}
       </div>
     </>
   );

@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckSquare, CheckCircle2, UserPlus, Users, MessageSquare } from "lucide-react";
 import { ApplicationActions } from "./actions";
+import { Button } from "@/components/ui/button";
 
 export default async function RecruitmentManagementPage() {
   await requireRole(["admin", "lead", "co_lead"]);
@@ -92,7 +93,7 @@ export default async function RecruitmentManagementPage() {
                     <Badge variant="outline" className="uppercase text-xs">{app.status}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Applied Domain: <span className="font-medium">{app.domain || "Any"}</span> • AI Score: <span className="font-medium">{app.aiScore ?? "Pending"}</span>
+                    Applied Domain: <span className="font-medium">{app.teamPreference || "Any"}</span> • AI Score: <span className="font-medium">{app.aiScore ?? "Pending"}</span>
                   </p>
                   {app.aiFeedback && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic">"{app.aiFeedback}"</p>

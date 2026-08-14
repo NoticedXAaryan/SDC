@@ -50,10 +50,10 @@ describe("Scanner & Check-In Integration Tests", () => {
 
     // Register members
     const reg1 = await registerForEvent(memberSession, eventId);
-    member1PassToken = reg1.passToken as string;
+    member1PassToken = (reg1 as any).passToken as string || (reg1 as any).passCode as string;
 
     const reg2 = await registerForEvent(member2Session, eventId);
-    member2PassToken = reg2.passToken as string;
+    member2PassToken = (reg2 as any).passToken as string || (reg2 as any).passCode as string;
   });
 
   afterAll(async () => {

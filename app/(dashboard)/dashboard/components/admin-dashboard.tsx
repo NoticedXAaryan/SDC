@@ -1,23 +1,41 @@
+/**
+ * AdminDashboard — SOC space-themed admin overview.
+ * Real data from lib/dal/dashboard. All states handled: loading (parent Suspense),
+ * empty, and forbidden via role guard in parent.
+ *
+ * Doc ref: §02 journey "Govern the club", §04 space brand, §03 Astryx-first,
+ * §09 accessibility.
+ *
+ * Component layer: Feature (maps real data into approved OrbitalMetric / CosmicSurface patterns).
+ * Shadcn exception: toast via sonner (stable, no Astryx toast equivalent).
+ */
 "use client";
 
 import React from "react";
 import Link from "next/link";
-import { Shield, Activity, Bell, FileText, Package, DollarSign, Sparkles, TerminalSquare, Inbox } from "lucide-react";
-import { Card, Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
-import { MetricCard } from "@/components/astryx/metric-card";
+import {
+  Shield, Activity, FileText, Bell, Sparkles, ChevronRight,
+  AlertTriangle, Wallet, Package, Calendar, Clock,
+  ArrowRight, RotateCcw, Users,
+} from "lucide-react";
+import { Button, Badge } from "@astryxdesign/core";
+import { OrbitalMetric, OrbitalMetricGrid } from "@/components/design-system/cosmic/OrbitalMetric";
+import { LensingDivider, CosmicSurface, EmptyCosmicState } from "@/components/design-system/cosmic/CosmicSurface";
+import { SectionHeader } from "@/components/astryx/page-header";
+import { RelativeTime } from "@/components/app/relative-time";
 import { AdminCharts } from "./admin-charts";
 import { generateInsightsAction, deleteInsightAction } from "@/lib/actions/insights";
 import { toast } from "sonner";
 
-import { 
-  DashboardUser, 
-  ManagementStats, 
-  AIInsight, 
-  AuditLog, 
-  FinanceSnapshot, 
-  InventoryAlert, 
+import {
+  DashboardUser,
+  ManagementStats,
+  AIInsight,
+  AuditLog,
+  FinanceSnapshot,
+  InventoryAlert,
   UpcomingEvent,
-  ChartData 
+  ChartData,
 } from "./dashboard-types";
 
 interface AdminDashboardProps {
@@ -32,235 +50,362 @@ interface AdminDashboardProps {
   chartData: ChartData;
 }
 
-export function AdminDashboard({ 
-  user, managementStats, upcomingEvents, insights = [],
-  pendingApprovalsCount, recentAuditLogs, financeSnapshot, inventoryAlerts, chartData
+export function AdminDashboard({
+  user,
+  managementStats,
+  upcomingEvents,
+  insights = [],
+  pendingApprovalsCount,
+  recentAuditLogs,
+  financeSnapshot,
+  inventoryAlerts,
+  chartData,
 }: AdminDashboardProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    toast.info("Generating new insights...");
-    const res = await generateInsightsAction();
-    setIsRefreshing(false);
-    if (res?.error) {
-      toast.error(res.error);
-    } else {
-      toast.success("Insights updated!");
+    toast.info("Generating new insights…");
+    try {
+      const res = await generateInsightsAction();
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Insights updated!");
+      }
+    } catch {
+      toast.error("Failed to generate insights. Please try again.");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   const handleDismiss = async (id: string) => {
-    const res = await deleteInsightAction(id);
-    if (res?.error) {
-      toast.error(res.error);
-    } else {
-      toast.success("Insight dismissed.");
+    try {
+      const res = await deleteInsightAction(id);
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Insight dismissed.");
+      }
+    } catch {
+      toast.error("Failed to dismiss insight.");
     }
   };
 
   return (
-    <VStack gap={8}>
-      {/* 1. Global KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard
-          title="Club Members"
-          value={managementStats?.totalMembers || 0}
-          icon={<Shield />}
-        />
-        <MetricCard
-          title="Active Events"
-          value={managementStats?.activeEvents || 0}
-          icon={<Activity />}
-        />
-        <MetricCard
-          title="Total Registrations"
-          value={managementStats?.totalRegistrations || 0}
-          icon={<FileText />}
-        />
-        <MetricCard
-          title="Pending Approvals"
-          value={pendingApprovalsCount}
-          icon={<Bell />}
-          variant={pendingApprovalsCount > 0 ? "red" : "default"}
-        />
-      </div>
+    <div className="space-y-8 max-w-6xl mx-auto animate-enter">
 
-      {/* 2. Charts */}
+      {/* ── 1. Global KPIs ──────────────────────────────────────── */}
+      <section aria-labelledby="kpi-heading">
+        <h2 id="kpi-heading" className="sr-only">Club overview metrics</h2>
+        <OrbitalMetricGrid cols={4}>
+          <OrbitalMetric
+            title="Club Members"
+            value={managementStats?.totalMembers ?? 0}
+            icon={<Shield aria-hidden="true" size={16} />}
+            accent="violet"
+          />
+          <OrbitalMetric
+            title="Active Events"
+            value={managementStats?.activeEvents ?? 0}
+            icon={<Activity aria-hidden="true" size={16} />}
+            accent="blue"
+          />
+          <OrbitalMetric
+            title="Total Registrations"
+            value={managementStats?.totalRegistrations ?? 0}
+            icon={<FileText aria-hidden="true" size={16} />}
+            accent="lime"
+          />
+          <OrbitalMetric
+            title="Pending Approvals"
+            value={pendingApprovalsCount}
+            icon={<Bell aria-hidden="true" size={16} />}
+            accent={pendingApprovalsCount > 0 ? "lime" : "none"}
+            trend={pendingApprovalsCount > 5 ? "up" : "neutral"}
+            trendLabel={pendingApprovalsCount > 5 ? "Needs attention" : "Stable"}
+          />
+        </OrbitalMetricGrid>
+      </section>
+
+      {/* Pending approvals alert banner */}
+      {pendingApprovalsCount > 0 && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-warning)]/30 bg-[rgba(245,158,11,0.08)] px-5 py-3.5"
+        >
+          <div className="flex items-center gap-3">
+            <AlertTriangle aria-hidden="true" size={18} className="text-[var(--color-warning)] shrink-0" />
+            <p className="text-sm font-medium text-[var(--color-fg)]">
+              {pendingApprovalsCount} approval{pendingApprovalsCount !== 1 ? "s" : ""} waiting for review
+            </p>
+          </div>
+          <Link
+            href="/manage/approvals"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-warning)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] whitespace-nowrap min-h-[var(--touch-target)] min-w-[var(--touch-target)]"
+          >
+            Review <ArrowRight aria-hidden="true" size={14} />
+          </Link>
+        </div>
+      )}
+
+      {/* ── 2. Charts ───────────────────────────────────────────── */}
       {chartData && <AdminCharts data={chartData} />}
+
+      {/* ── 3. Three-column operational grid ─────────────────────── */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
+        {/* Left: AI Insights + Upcoming Events (span 2) */}
         <div className="space-y-6 lg:col-span-2">
-          
-          {/* 3. AI Insights Panel */}
-          {(insights.length > 0 || isRefreshing) && (
-            <Card padding={5} className="border-primary/20 bg-primary/5 dark:bg-primary/10">
-              <VStack gap={5}>
-                <HStack justify="between" align="center">
-                  <HStack align="center" gap={2}>
-                    <Sparkles className="text-primary w-5 h-5" />
-                    <Heading level={3} className="font-semibold text-lg text-primary">
-                      AI Insights
-                    </Heading>
-                  </HStack>
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    label={isRefreshing ? "Generating..." : "Refresh"} 
-                    onClick={handleRefresh}
-                    isDisabled={isRefreshing}
-                  />
-                </HStack>
-                
-                <VStack gap={3}>
-                  {insights.map((insight) => (
-                    <Card key={insight.id} padding={4} className="bg-background/80 backdrop-blur border-border/50 shadow-sm relative group">
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleDismiss(insight.id)}
-                          className="text-muted-foreground hover:text-foreground text-xs p-1 rounded hover:bg-muted"
-                          title="Dismiss Insight"
+
+          {/* AI Insights */}
+          <CosmicSurface variant="default" padding="none">
+            <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--d-line)]">
+              <div className="flex items-center gap-2">
+                <Sparkles aria-hidden="true" size={16} className="text-[var(--soc-accretion-violet)]" />
+                <h3 className="text-sm font-semibold text-[var(--color-fg)]">AI Insights</h3>
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh AI insights"
+                aria-busy={isRefreshing}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-fg-dim)] hover:text-[var(--color-fg)] transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)] px-2 rounded-md"
+              >
+                <RotateCcw aria-hidden="true" size={13} className={isRefreshing ? "animate-spin" : ""} />
+                {isRefreshing ? "Generating…" : "Refresh"}
+              </button>
+            </div>
+
+            <div className="divide-y divide-[var(--d-line)]">
+              {insights.length === 0 ? (
+                <EmptyCosmicState
+                  title="No insights yet"
+                  description="Click refresh to generate AI-powered insights for your club."
+                  illustration="orbit"
+                  size="sm"
+                />
+              ) : (
+                insights.map((insight) => (
+                  <div key={insight.id} className="flex items-start gap-3 px-5 py-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--color-fg)] truncate">{insight.title}</p>
+                      <p className="text-xs text-[var(--color-fg-dim)] mt-0.5 line-clamp-2">{insight.description}</p>
+                      {insight.metricTrend && (
+                        <Badge variant="purple" label={insight.metricTrend} />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {insight.actionLink && (
+                        <Link
+                          href={insight.actionLink}
+                          className="text-xs text-[var(--soc-accretion-violet)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)] flex items-center"
                         >
-                          ✕
-                        </button>
-                      </div>
-                      <HStack justify="between" align="start" className="mb-2 pr-6">
-                        <Text weight="medium">
-                          {insight.title}
-                        </Text>
-                        {insight.metricTrend && (
-                          <Badge variant={insight.metricTrend.startsWith('+') ? 'success' : insight.metricTrend.startsWith('-') ? 'error' : 'neutral'} label={insight.metricTrend} />
-                        )}
-                      </HStack>
-                      <Text type="supporting" className="mt-1">
-                        {insight.description}
-                      </Text>
-                      {insight.isActionable && insight.actionLink && (
-                        <Link href={insight.actionLink} className="text-xs text-primary hover:underline mt-3 inline-block font-medium">
-                          Take Action →
+                          Act
                         </Link>
                       )}
-                    </Card>
-                  ))}
-                </VStack>
-              </VStack>
-            </Card>
-          )}
-
-          {/* 4. Recent Audit Logs — Real Data */}
-          <Card padding={5}>
-            <VStack gap={5}>
-              <HStack justify="between" align="center">
-                <VStack>
-                  <Heading level={3} className="font-semibold text-lg">Recent Activity</Heading>
-                  <Text type="supporting">System activity stream</Text>
-                </VStack>
-                <Button variant="secondary" size="sm" href="/admin/audit" label="View All" icon={<TerminalSquare className="w-4 h-4" />} />
-              </HStack>
-              
-              <VStack gap={4}>
-                {recentAuditLogs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Inbox className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <Text type="supporting">No activity logged yet.</Text>
-                  </div>
-                ) : (
-                  recentAuditLogs.map((log) => (
-                    <HStack key={log.id} align="start" gap={4} className="border-b border-border pb-3 last:border-0">
-                      <div className="bg-zinc-100 dark:bg-zinc-800 text-xs font-mono px-2 py-1 rounded text-zinc-500 shrink-0">
-                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      <VStack gap={1}>
-                        <Text weight="medium" className="capitalize">
-                          {log.action.replace(/_/g, " ")}
-                        </Text>
-                        {log.details && (
-                          <Text type="supporting" className="text-xs truncate max-w-sm">{log.details}</Text>
-                        )}
-                      </VStack>
-                    </HStack>
-                  ))
-                )}
-              </VStack>
-            </VStack>
-          </Card>
-        </div>
-        
-        {/* Sidebar: Finance & Inventory */}
-        <VStack gap={6}>
-          {/* Finance Snapshot — Real Data */}
-          <Card padding={5}>
-            <VStack gap={5}>
-              <Heading level={3} className="font-semibold text-lg">Finance Snapshot</Heading>
-              
-              {financeSnapshot ? (
-                <>
-                  <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-border">
-                    <HStack align="center" gap={3}>
-                      <div className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 p-2 rounded-full"><DollarSign className="w-4 h-4" /></div>
-                      <VStack gap={0}>
-                        <Text weight="semibold" className="text-sm">Budget Remaining</Text>
-                        <Text type="supporting" className="text-xs">Across all events</Text>
-                      </VStack>
-                    </HStack>
-                    <span className="font-bold font-mono">
-                      ₹{financeSnapshot.budgetRemaining.toLocaleString()}
-                    </span>
-                  </div>
-                  
-                  {financeSnapshot.pendingExpenses.length > 0 && (
-                    <div className="pt-2">
-                      <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Pending Expenses</h4>
-                      <div className="space-y-2 flex flex-col">
-                        {financeSnapshot.pendingExpenses.map((exp) => (
-                          <Link key={exp.id} href="/admin/finance" className="text-sm flex justify-between p-2 hover:bg-muted rounded-md transition">
-                            <Text className="capitalize">{exp.category}</Text>
-                            <Text weight="medium" className="text-amber-600">₹{Number(exp.amount).toLocaleString()}</Text>
-                          </Link>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => handleDismiss(insight.id)}
+                        aria-label={`Dismiss insight: ${insight.title}`}
+                        className="text-xs text-[var(--color-fg-dim)] hover:text-[var(--color-fg)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)] flex items-center"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-4">
-                  <Text type="supporting">No budgets configured yet.</Text>
-                </div>
+                  </div>
+                ))
               )}
-            </VStack>
-          </Card>
+            </div>
+          </CosmicSurface>
 
-          {/* Inventory Alerts — Real Data */}
-          <Card padding={5}>
-            <VStack gap={5}>
-              <Heading level={3} className="font-semibold text-lg">Inventory Alerts</Heading>
-              
-              {inventoryAlerts.length === 0 ? (
-                <div className="text-center py-4">
-                  <Text type="supporting">All items are well stocked.</Text>
-                </div>
+          {/* Upcoming Events */}
+          <CosmicSurface variant="default" padding="none">
+            <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--d-line)]">
+              <div className="flex items-center gap-2">
+                <Calendar aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+                <h3 className="text-sm font-semibold text-[var(--color-fg)]">Upcoming Events</h3>
+              </div>
+              <Link
+                href="/events"
+                className="text-xs text-[var(--soc-accretion-violet)] hover:underline flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)]"
+              >
+                All events <ChevronRight aria-hidden="true" size={12} />
+              </Link>
+            </div>
+
+            <div className="divide-y divide-[var(--d-line)]">
+              {upcomingEvents.length === 0 ? (
+                <EmptyCosmicState
+                  title="No upcoming events"
+                  description="Create your first event to get started."
+                  illustration="void"
+                  size="sm"
+                />
               ) : (
-                <>
-                  {inventoryAlerts.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between border-l-2 pl-3" style={{ borderLeftColor: item.qtyAvailable === 0 ? 'var(--destructive)' : '#f59e0b' }}>
-                      <VStack gap={0}>
-                        <Text weight="medium" className="text-sm">{item.name}</Text>
-                        <Text type="supporting" className="text-xs">
-                          {item.qtyAvailable === 0 ? "Out of stock" : "Low stock warning"}
-                        </Text>
-                      </VStack>
-                      <Badge 
-                        variant={item.qtyAvailable === 0 ? "error" : "warning"} 
-                        label={`${item.qtyAvailable} left`} 
+                upcomingEvents.slice(0, 5).map((event) => (
+                  <Link
+                    key={event.id}
+                    href={`/events/${event.slug}`}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--d-panel-alt)] transition-colors group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+                  >
+                    {event.coverImage ? (
+                      <img
+                        src={event.coverImage}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-10 w-10 rounded-lg object-cover shrink-0"
                       />
+                    ) : (
+                      <div
+                        aria-hidden="true"
+                        className="h-10 w-10 rounded-lg bg-[var(--d-panel-alt)] flex items-center justify-center shrink-0"
+                      >
+                        <Calendar aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--color-fg)] truncate group-hover:text-[var(--soc-accretion-violet)] transition-colors">
+                        {event.title}
+                      </p>
+                      <p className="text-xs text-[var(--color-fg-dim)] flex items-center gap-1 mt-0.5">
+                        <Clock aria-hidden="true" size={11} />
+                        <RelativeTime date={event.startsAt} format="date" />
+                      </p>
                     </div>
-                  ))}
-                  <Button variant="secondary" className="w-full mt-2 text-xs" href="/admin/inventory" label="Manage Inventory" icon={<Package className="w-4 h-4" />} />
-                </>
+                    <ChevronRight aria-hidden="true" size={14} className="text-[var(--color-fg-dim)] shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                ))
               )}
-            </VStack>
-          </Card>
-        </VStack>
+            </div>
+          </CosmicSurface>
+        </div>
+
+        {/* Right column: Finance + Inventory + Audit */}
+        <div className="space-y-6">
+
+          {/* Finance Snapshot */}
+          <CosmicSurface variant="default" padding="none">
+            <div className="px-5 py-4 flex items-center gap-2 border-b border-[var(--d-line)]">
+              <Wallet aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+              <h3 className="text-sm font-semibold text-[var(--color-fg)]">Finance</h3>
+            </div>
+            {financeSnapshot ? (
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[var(--color-fg-dim)]">Budget Remaining</span>
+                  <span className="text-sm font-bold text-[var(--color-fg)]">
+                    ₹{financeSnapshot.budgetRemaining.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[var(--color-fg-dim)]">Pending Expenses</span>
+                  <Badge
+                    variant={financeSnapshot.pendingExpenses.length > 0 ? "warning" : "success"}
+                    label={String(financeSnapshot.pendingExpenses.length)}
+                  />
+                </div>
+                <LensingDivider />
+                <Link
+                  href="/finance"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--soc-accretion-violet)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)]"
+                >
+                  View finance <ArrowRight aria-hidden="true" size={12} />
+                </Link>
+              </div>
+            ) : (
+              <EmptyCosmicState title="No finance data" illustration="none" size="sm" />
+            )}
+          </CosmicSurface>
+
+          {/* Inventory Alerts */}
+          <CosmicSurface variant="default" padding="none">
+            <div className="px-5 py-4 flex items-center gap-2 border-b border-[var(--d-line)]">
+              <Package aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+              <h3 className="text-sm font-semibold text-[var(--color-fg)]">Inventory Alerts</h3>
+            </div>
+            {inventoryAlerts.length === 0 ? (
+              <EmptyCosmicState
+                title="All stocked"
+                description="No inventory alerts at this time."
+                illustration="none"
+                size="sm"
+              />
+            ) : (
+              <div className="divide-y divide-[var(--d-line)]">
+                {inventoryAlerts.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between px-5 py-3">
+                    <p className="text-sm text-[var(--color-fg)] truncate flex-1">{item.name}</p>
+                    <Badge
+                      variant={item.qtyAvailable <= 0 ? "error" : "warning"}
+                      label={item.qtyAvailable <= 0 ? "Out" : `${item.qtyAvailable} left`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CosmicSurface>
+
+          {/* Recent Audit */}
+          <CosmicSurface variant="default" padding="none">
+            <div className="px-5 py-4 flex items-center gap-2 border-b border-[var(--d-line)]">
+              <Shield aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+              <h3 className="text-sm font-semibold text-[var(--color-fg)]">Audit Trail</h3>
+            </div>
+            {recentAuditLogs.length === 0 ? (
+              <EmptyCosmicState title="No recent activity" illustration="none" size="sm" />
+            ) : (
+              <div className="divide-y divide-[var(--d-line)]">
+                {recentAuditLogs.slice(0, 5).map((log) => (
+                  <div key={log.id} className="px-5 py-3">
+                    <p className="text-xs font-medium text-[var(--color-fg)] truncate">
+                      {log.action} on {log.entity}
+                    </p>
+                    <p className="text-xs text-[var(--color-fg-dim)] mt-0.5">
+                      <RelativeTime date={log.timestamp} />
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CosmicSurface>
+        </div>
       </div>
-    </VStack>
+
+      {/* ── 4. Quick actions ─────────────────────────────────────── */}
+      <section aria-labelledby="quick-actions-heading">
+        <SectionHeader title="Quick actions" id="quick-actions-heading" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[
+            { label: "Review approvals", href: "/manage/approvals", icon: Bell },
+            { label: "Create event", href: "/events/create", icon: Calendar },
+            { label: "Manage members", href: "/admin", icon: Users },
+            { label: "Finance overview", href: "/finance", icon: Wallet },
+          ].map(({ label, href, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="
+                flex flex-col items-start gap-3 rounded-xl border border-[var(--d-line)]
+                bg-[var(--d-panel)] p-4 transition-all duration-[var(--motion-micro)]
+                hover:border-[var(--soc-accretion-violet)]/40 hover:bg-[var(--d-panel-alt)]
+                hover:shadow-[var(--shadow-glow-violet)]
+                focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]
+                group min-h-[var(--touch-target)]
+              "
+            >
+              <div
+                aria-hidden="true"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(124,58,237,0.1)] text-[var(--soc-accretion-violet)] group-hover:scale-105 transition-transform"
+              >
+                <Icon size={16} />
+              </div>
+              <span className="text-sm font-medium text-[var(--color-fg)] leading-tight">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

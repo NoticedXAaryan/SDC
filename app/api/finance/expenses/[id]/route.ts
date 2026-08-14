@@ -29,16 +29,7 @@ if (status === "rejected" && !reason) {
   return NextResponse.json({ error: "A reason is required when rejecting an expense." }, { status: 400 });
 }
 
-await updateExpenseStatus(session, id, status as "approved" | "rejected", reason);
-
-await logAuditEvent({
-  actorId: session.user.id,
-  action: status === "approved" ? "expense_approve" : "expense_reject",
-  entity: "expense",
-  entityId: id,
-  details: `Expense ${id} marked as ${status}${reason ? `. Reason: ${reason}` : ''}`,
-});
+await updateExpenseStatus(session, id, { status, reason });
 
 return NextResponse.json({ success: true, status });
-
 });

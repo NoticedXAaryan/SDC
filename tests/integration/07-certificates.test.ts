@@ -60,7 +60,7 @@ describe("Certificates Integration Tests", () => {
 
     // Register and check-in member
     const regRes = await registerForEvent(memberSession, eventId, { answers: {} });
-    memberPassToken = regRes.passToken as string;
+    memberPassToken = (regRes as any).passToken as string || (regRes as any).passCode as string;
     await ScannerService.checkInScanner(adminSession, eventId, memberPassToken);
   });
 

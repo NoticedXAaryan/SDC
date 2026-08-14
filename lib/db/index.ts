@@ -3,9 +3,13 @@ import { Pool } from "pg";
 import * as schema from "./schema";
 import { logger } from "@/lib/logger";
 
+if (process.env.NODE_ENV === "test" && !process.env.DATABASE_URL?.includes("test")) {
+  throw new Error("Test environment must use a database URL containing 'test' to prevent modifying production or development data.");
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 30000, // Increased to 30s for Neon cold starts
   max: 10,
 });
 

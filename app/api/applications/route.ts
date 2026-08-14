@@ -5,7 +5,7 @@ import { getCurrentUser, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
-import { ApplicationService } from "@/lib/services/applications";
+import { submitApplication } from "@/lib/services/applications";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const rl = await checkRateLimit(req, "apply");
@@ -68,7 +68,8 @@ export const POST = withApiHandler(async (req: NextRequest) => {
   }
 
   try {
-    const responseBody = await ApplicationService.submitApplication(session.user.id, body, cycle);
+    const rawData = { ...body, applicationCycle: cycle, isDraft: body.status === "draft" };
+    const responseBody = await submitApplication(session as any, rawData);
 
     if (idemKey) {
       const { getRedisClient } = await import("@/lib/redis");

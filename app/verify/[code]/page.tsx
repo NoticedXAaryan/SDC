@@ -41,13 +41,13 @@ export default async function VerifyCertificatePage({ params }: { params: Promis
         
         <VStack className="p-8 items-center text-center relative z-10" gap={6}>
           {isRevoked ? (
-            <Badge variant="error" size="lg" className="uppercase tracking-widest text-lg py-2 px-4 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+            <div className="inline-flex items-center rounded-md border border-red-900/50 bg-red-950/30 text-red-400 font-semibold uppercase tracking-widest text-lg py-2 px-4 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
               Certificate Revoked
-            </Badge>
+            </div>
           ) : (
-            <Badge variant="success" size="lg" className="uppercase tracking-widest text-lg py-2 px-4 shadow-[0_0_20px_rgba(22,163,74,0.3)]">
+            <div className="inline-flex items-center rounded-md border border-green-900/50 bg-green-950/30 text-green-400 font-semibold uppercase tracking-widest text-lg py-2 px-4 shadow-[0_0_20px_rgba(22,163,74,0.3)]">
               Verified & Authentic
-            </Badge>
+            </div>
           )}
 
           <div className="space-y-2 w-full mt-4">

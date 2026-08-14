@@ -26,6 +26,32 @@ export function FaceEnrollmentClient({ isEnrolled }: { isEnrolled: boolean }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    if (!modelsLoaded) return;
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setCameraActive(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Camera access denied or unavailable.");
+    }
+  };
+
   useEffect(() => {
     const loadModels = async () => {
       setStatusMsg("Loading ML models...");
@@ -49,32 +75,7 @@ export function FaceEnrollmentClient({ isEnrolled }: { isEnrolled: boolean }) {
     };
   }, []);
   
-  const startCamera = async () => {
-    if (!modelsLoaded) return;
-    setErrorMsg("");
-    setSuccessMsg("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setCameraActive(true);
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Camera access denied or unavailable.");
-    }
-  };
-  
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-  };
-  
+
   const handleEnroll = async () => {
     if (!videoRef.current || !cameraActive) return;
     

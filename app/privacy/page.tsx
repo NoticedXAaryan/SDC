@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/astryx/page-header";
 import { AppTopNav } from "@/components/astryx/app-topnav";
 import { AppShell, VStack, Text, Heading } from "@astryxdesign/core";
-import { Footer } from "@/components/footer"; // We need to check if Footer exists, or just omit it. Let's omit for now or use a basic footer.
+import { SiteFooter } from "@/components/landing/SiteFooter";
 
 export default function PrivacyPage() {
   return (

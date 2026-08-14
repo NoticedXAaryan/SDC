@@ -6,7 +6,7 @@ import { HMACPassValidator } from "@/lib/passes/qr";
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 
-export async function checkInScannerDb(session: AuthSession, eventId: string, token: string, scannedFaceDescriptor?: number[]) {
+export async function checkInScannerDb(session: AuthSession, eventId: string, token: string) {
   const validator = new HMACPassValidator();
   const payload = await validator.validate(token);
 
@@ -48,67 +48,10 @@ export async function checkInScannerDb(session: AuthSession, eventId: string, to
     throw new ValidationError("Already checked in");
   }
 
-  let finalDistance = 0;
-  let finalConfidence = 100;
-  let attendanceMethod = "qr";
-
-  if (scannedFaceDescriptor && Array.isArray(scannedFaceDescriptor)) {
-    const [attendee] = await db.select({ faceDescriptor: user.faceDescriptor })
-      .from(user).where(eq(user.id, payload.userId));
-      
-    if (!attendee?.faceDescriptor) {
-      throw new ValidationError("User has no face enrolled. Please perform a manual check-in.");
-    }
-    
-    const enrolledDescriptor = JSON.parse(attendee.faceDescriptor);
-    if (!Array.isArray(enrolledDescriptor) || enrolledDescriptor.length !== 128) {
-      throw new ValidationError("Invalid enrolled face data");
-    }
-    
-    let distance = 0;
-    for (let i = 0; i < 128; i++) {
-      distance += Math.pow(enrolledDescriptor[i] - scannedFaceDescriptor[i], 2);
-    }
-    distance = Math.sqrt(distance);
-    finalDistance = distance;
-    
-    // Confidence is roughly 100 at 0.2 distance, and 0 at 0.7 distance
-    finalConfidence = Math.max(0, Math.min(100, 100 - ((distance - 0.2) * 200)));
-    
-    // 100% Reliable Multi-Tier Threshold Engine
-    if (distance <= 0.40) {
-      // HIGH CONFIDENCE: Auto-approve & continuously learn face over time (EMA)
-      // This prevents false negatives as users age or change facial hair over months
-      const newEnrolled = new Array(128);
-      for (let i = 0; i < 128; i++) {
-        newEnrolled[i] = (0.9 * enrolledDescriptor[i]) + (0.1 * scannedFaceDescriptor[i]);
-      }
-      
-      // Fire-and-forget background update to user's enrolled face
-      db.update(user)
-        .set({ faceDescriptor: JSON.stringify(newEnrolled) })
-        .where(eq(user.id, payload.userId))
-        .catch(console.error);
-        
-    } else if (distance <= 0.55) {
-      // MEDIUM CONFIDENCE: Edge case (glasses, bad lighting). 
-      // If we had a pin/override parameter in the signature we could check it here.
-      // For now, allow it but log a lower confidence score for audit.
-    } else {
-      // LOW CONFIDENCE: Hard Reject
-      throw new ValidationError("Face mismatch. Access Denied. Distance: " + distance.toFixed(2));
-    }
-    
-    attendanceMethod = "qr+face";
-  }
-
   await db.update(registrations).set({
     status: "checked_in",
     checkedInAt: new Date(),
-    attendanceMethod,
-    faceMatchDistance: finalDistance > 0 ? finalDistance : null,
-    scanConfidence: finalConfidence,
-    livenessVerified: scannedFaceDescriptor ? true : false, // In a real app, liveness token comes from client
+    attendanceMethod: "qr",
   }).where(eq(registrations.id, registration.id));
 
   return { registrationId: registration.id, payload };

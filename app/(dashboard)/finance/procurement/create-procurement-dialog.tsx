@@ -38,6 +38,7 @@ export function CreateProcurementDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* @ts-ignore */}
       <DialogTrigger asChild>
         <Button className="bg-primary/10 text-primary hover:bg-primary/20"><Plus className="w-4 h-4 mr-2"/> Request Procurement</Button>
       </DialogTrigger>

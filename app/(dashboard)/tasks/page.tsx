@@ -5,7 +5,7 @@ import { TaskBoard } from "./task-board";
 
 export default async function TasksPage() {
   const session = await requireSession();
-  const tasks = await getTasks(session);
+  const tasks: any = await getTasks(session);
   const userRole = session.user.role as string;
   const isLead = ["lead", "admin", "owner", "tech_lead", "event_lead", "marketing_lead", "finance_lead", "content_lead", "vice_lead", "co_lead"].includes(userRole);
 

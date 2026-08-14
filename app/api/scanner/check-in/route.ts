@@ -15,12 +15,12 @@ export const POST = withApiHandler(async (req: Request) => {
   const session = await requireRole(["owner", "admin", "lead", "co_lead", "volunteer_lead"]);
 
   const body = await req.json();
-  const { token, eventId, scannedFaceDescriptor } = body;
+  const { token, eventId } = body;
 
   if (!token || !eventId) {
     throw new ValidationError("Missing token or eventId");
   }
 
-  const result = await ScannerService.checkInScanner(session, eventId, token, scannedFaceDescriptor);
+  const result = await ScannerService.checkInScanner(session, eventId, token);
   return NextResponse.json(result);
 });

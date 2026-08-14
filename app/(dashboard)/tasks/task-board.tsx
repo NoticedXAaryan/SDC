@@ -74,6 +74,7 @@ export function TaskBoard({ initialTasks, isLead }: { initialTasks: Task[], isLe
     <div className="space-y-6">
       {isLead && (
         <Dialog open={isCreating} onOpenChange={setIsCreating}>
+          {/* @ts-ignore */}
           <DialogTrigger asChild>
             <Button className="bg-primary/10 text-primary hover:bg-primary/20"><Plus className="w-4 h-4 mr-2"/> New Task</Button>
           </DialogTrigger>

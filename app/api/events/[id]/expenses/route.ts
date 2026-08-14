@@ -13,6 +13,6 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
   const body = await req.json().catch(() => ({}));
   
   const result = await addExpense(session, id, body);
-  return NextResponse.json({ success: true, ...result }, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 });
 

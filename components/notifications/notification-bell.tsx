@@ -54,7 +54,7 @@ export function NotificationBell() {
 
   const unread = notifications.filter(n => !n.read);
 
-  const NotificationList = ({ items, limit }: { items: Notification[], limit?: number }) => {
+  const renderNotificationList = (items: Notification[], limit?: number) => {
     const displayItems = limit ? items.slice(0, limit) : items;
     
     if (displayItems.length === 0) {
@@ -81,12 +81,12 @@ export function NotificationBell() {
     );
   };
 
-  const Glimpse = () => (
+  const renderGlimpse = () => (
     <div className="w-80 flex flex-col">
       <div className="p-3 border-b border-border/40 font-semibold text-sm">
         Recent Notifications
       </div>
-      <NotificationList items={unread.length > 0 ? unread : notifications} limit={3} />
+      {renderNotificationList(unread.length > 0 ? unread : notifications, 3)}
       <div className="p-2 border-t border-border/40 text-center text-xs text-muted-foreground">
         Click bell icon to view all
       </div>
@@ -95,7 +95,7 @@ export function NotificationBell() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <HoverCard content={<Glimpse />} placement="end" alignment="center">
+      <HoverCard content={renderGlimpse()} placement="end" alignment="center">
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" className="relative rounded-lg h-10 w-10 text-muted-foreground hover:text-foreground">
             <Bell className="h-5 w-5" />
@@ -122,7 +122,7 @@ export function NotificationBell() {
         </SheetHeader>
         
         <div className="flex-1 overflow-y-auto">
-          <NotificationList items={notifications} />
+          {renderNotificationList(notifications)}
         </div>
       </SheetContent>
     </Sheet>

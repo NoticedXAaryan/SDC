@@ -27,8 +27,8 @@ export default async function AILogsPage() {
             <CardHeader className="bg-muted/30 pb-4 border-b">
               <div className="flex justify-between items-center">
                 <div className="flex gap-2 items-center">
-                  <Badge variant={log.status === 'success' ? 'success' : 'destructive'}>
-                    {log.status.toUpperCase()}
+                  <Badge variant={log.status === 'success' ? 'default' : 'destructive'}>
+                    {(log.status || "UNKNOWN").toUpperCase()}
                   </Badge>
                   <span className="text-sm font-medium text-muted-foreground">
                     {log.entityType ? log.entityType.toUpperCase() : "GENERAL"}

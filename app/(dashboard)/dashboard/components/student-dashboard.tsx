@@ -1,11 +1,32 @@
+/**
+ * StudentDashboard — SOC space-themed member overview.
+ * Journey: "Discover and join" / "Contribute and grow"
+ * All states: empty, data, error handled via parent Suspense.
+ *
+ * Doc ref: §02 member workspace journey, §04 brand, §09 accessibility.
+ * Astryx-first: Button, Badge from @astryxdesign/core.
+ * SOC layer: OrbitalMetric, CosmicSurface, EmptyCosmicState.
+ * Shadcn exception: None in this component.
+ */
 "use client";
 
 import React from "react";
 import Link from "next/link";
-import { CheckCircle2, Circle, Clock, QrCode, FileText, ArrowRight, Zap, Trophy, TrendingUp } from "lucide-react";
-import { Button, Text, HStack, VStack, Badge, Heading } from "@astryxdesign/core";
+import {
+  Zap, Trophy, TrendingUp, Clock, QrCode,
+  FileText, ArrowRight, CheckCircle2, Circle,
+  Award, ChevronRight, Calendar,
+} from "lucide-react";
+import { Button, Badge } from "@astryxdesign/core";
+import { OrbitalMetric, OrbitalMetricGrid } from "@/components/design-system/cosmic/OrbitalMetric";
+import { CosmicSurface, EmptyCosmicState, LensingDivider } from "@/components/design-system/cosmic/CosmicSurface";
 
-import { DashboardUser, UserRegistration, UserApplication, UserCertificate } from "./dashboard-types";
+import {
+  DashboardUser,
+  UserRegistration,
+  UserApplication,
+  UserCertificate,
+} from "./dashboard-types";
 
 interface StudentDashboardProps {
   user: DashboardUser;
@@ -14,199 +35,275 @@ interface StudentDashboardProps {
   myCertificates?: UserCertificate[];
 }
 
-export function StudentDashboard({ user, myRegistrations = [], myApplication, myCertificates = [] }: StudentDashboardProps) {
+const APPLICATION_STEPS: { key: string; label: string; description: (status: string) => string }[] = [
+  { key: "applied",      label: "Applied",           description: () => "Application submitted" },
+  { key: "ai_graded",   label: "Online Assessment",  description: (s) => s === "ai_graded" ? "Under review" : s === "needs_manual_review" || s === "interviewing" || s === "accepted" ? "Completed" : "Pending" },
+  { key: "interviewing", label: "Interview",          description: (s) => s === "interviewing" ? "Scheduled" : s === "accepted" ? "Completed" : "Not scheduled" },
+  { key: "accepted",     label: "Result",             description: (s) => s === "accepted" ? "Accepted 🎉" : s === "rejected" ? "Not selected" : "TBD" },
+];
+
+function isStepDone(stepKey: string, status: string | null): boolean {
+  const order = ["applied", "ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"];
+  const stepIndex = order.indexOf(stepKey);
+  const statusIndex = order.indexOf(status || "");
+  return statusIndex >= stepIndex && statusIndex >= 0;
+}
+
+export function StudentDashboard({
+  user,
+  myRegistrations = [],
+  myApplication,
+  myCertificates = [],
+}: StudentDashboardProps) {
+  const nextEvent = myRegistrations[0];
+
   return (
-    <VStack gap={6}>
-      
-      {/* Overview Stats Row (Inspired by Image 2 - Colorful Metric Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Metric 1: Activity Score */}
-        <div className="rounded-3xl p-6 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/20 border-none shadow-sm relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 dark:bg-black/10 rounded-full blur-2xl" />
-          <VStack gap={4} className="relative z-10">
-            <div className="w-10 h-10 rounded-full bg-white/50 dark:bg-black/20 flex items-center justify-center text-orange-600 dark:text-orange-400">
-              <Zap className="w-5 h-5" />
-            </div>
-            <VStack gap={1}>
-              <Text type="supporting" className="text-sm font-medium text-orange-800/70 dark:text-orange-200/70">Activity Score</Text>
-              <h2 className="text-3xl font-bold text-orange-900 dark:text-orange-100">{user.points || 0}</h2>
-            </VStack>
-          </VStack>
-        </div>
+    <div className="space-y-8 max-w-5xl mx-auto animate-enter">
 
-        {/* Metric 2: Events Attended */}
-        <div className="rounded-3xl p-6 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/20 border-none shadow-sm relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 dark:bg-black/10 rounded-full blur-2xl" />
-          <VStack gap={4} className="relative z-10">
-            <div className="w-10 h-10 rounded-full bg-white/50 dark:bg-black/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <VStack gap={1}>
-              <Text type="supporting" className="text-sm font-medium text-emerald-800/70 dark:text-emerald-200/70">Events Attended</Text>
-              <h2 className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">{myRegistrations.length}</h2>
-            </VStack>
-          </VStack>
-        </div>
+      {/* ── 1. Orbital Metrics ─────────────────────────────────── */}
+      <section aria-labelledby="member-kpi-heading">
+        <h2 id="member-kpi-heading" className="sr-only">Your membership stats</h2>
+        <OrbitalMetricGrid cols={3}>
+          <OrbitalMetric
+            title="Activity Score"
+            value={user.points ?? 0}
+            icon={<Zap aria-hidden="true" size={16} />}
+            accent="lime"
+            trend={user.points && user.points > 50 ? "up" : "neutral"}
+            trendLabel={user.points && user.points > 50 ? "Active" : "Keep going"}
+          />
+          <OrbitalMetric
+            title="Events Attended"
+            value={myRegistrations.length}
+            icon={<Trophy aria-hidden="true" size={16} />}
+            accent="violet"
+          />
+          <OrbitalMetric
+            title="Current Level"
+            value={`Level ${user.level ?? 1}`}
+            icon={<TrendingUp aria-hidden="true" size={16} />}
+            accent="blue"
+          />
+        </OrbitalMetricGrid>
+      </section>
 
-        {/* Metric 3: User Level */}
-        <div className="rounded-3xl p-6 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/40 dark:to-indigo-800/20 border-none shadow-sm relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 dark:bg-black/10 rounded-full blur-2xl" />
-          <VStack gap={4} className="relative z-10">
-            <div className="w-10 h-10 rounded-full bg-white/50 dark:bg-black/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <VStack gap={1}>
-              <Text type="supporting" className="text-sm font-medium text-indigo-800/70 dark:text-indigo-200/70">Current Level</Text>
-              <h2 className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">Level {user.level || 1}</h2>
-            </VStack>
-          </VStack>
-        </div>
-      </div>
-
+      {/* ── 2. Up Next + Applications (two-column) ─────────────── */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* 1. Up Next Card - Image 4 Inspiration */}
-        <div className="rounded-3xl p-6 bg-card border border-border shadow-sm col-span-1 md:col-span-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-          
-          <VStack gap={5} className="relative z-10">
-            <HStack align="center" gap={2} justify="between">
-              <HStack align="center" gap={2}>
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <Heading level={3} className="font-semibold text-xl">Up Next</Heading>
-              </HStack>
-              <Link href="/events" className="text-sm text-primary hover:underline font-medium flex items-center">
-                Browse Events <ArrowRight className="w-4 h-4 ml-1" />
-              </Link>
-            </HStack>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myRegistrations.length === 0 ? (
-                <div className="col-span-full py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border">
-                  <Text type="supporting">You are all caught up! No upcoming events.</Text>
-                </div>
-              ) : (
-                myRegistrations.map((reg) => (
-                  <div key={reg.eventId} className="bg-background/80 hover:bg-muted/50 transition-colors border border-border shadow-sm p-4 rounded-2xl flex flex-col justify-between h-32">
-                    <VStack gap={1}>
-                      <Badge variant="neutral" className="w-fit text-[10px] uppercase font-bold tracking-wider" label="Registered" />
-                      <Text weight="semibold" className="text-base line-clamp-1">{reg.eventTitle}</Text>
-                    </VStack>
-                    <HStack justify="end">
-                      <Button variant="secondary" size="sm" href={`/passes/${reg.eventId}`} label="View Pass" className="rounded-full px-4" />
-                    </HStack>
-                  </div>
-                ))
-              )}
-            </div>
-          </VStack>
-        </div>
 
-        {/* 2. My Applications Timeline */}
-        <div className="rounded-3xl p-6 bg-card border border-border shadow-sm">
-          <VStack gap={6}>
-            <VStack gap={1}>
-              <Heading level={3} className="font-semibold text-xl">My Applications</Heading>
-              <Text type="supporting" className="text-sm">Current recruitment cycle status</Text>
-            </VStack>
-            
-            {myApplication ? (
-              <div className="relative border-l-2 border-primary/20 ml-3 space-y-8 my-4">
-                <div className="relative pl-6">
-                  <div className="absolute -left-[11px] top-0 bg-card p-1"><CheckCircle2 className="w-4 h-4 text-primary bg-card" /></div>
-                  <Text weight="semibold" className="text-sm text-foreground">Applied</Text>
-                  <Text type="supporting" className="text-xs">Application submitted</Text>
-                </div>
-                <div className="relative pl-6">
-                  <div className="absolute -left-[11px] top-0 bg-card p-1">
-                    {myApplication.status === "pending" ? <Circle className="w-4 h-4 text-primary fill-primary/20" /> : <CheckCircle2 className="w-4 h-4 text-primary bg-card" />}
-                  </div>
-                  <Text weight="semibold" className={`text-sm ${myApplication.status === "pending" ? "text-primary" : "text-foreground"}`}>Online Assessment</Text>
-                  <Text type="supporting" className="text-xs">{myApplication.status === "pending" ? "Pending review" : "Completed"}</Text>
-                </div>
-                <div className="relative pl-6 opacity-50">
-                  <div className="absolute -left-[11px] top-0 bg-card p-1"><Circle className="w-4 h-4 text-muted-foreground fill-card" /></div>
-                  <Text weight="semibold" className="text-sm">Interview</Text>
-                  <Text type="supporting" className="text-xs">Not scheduled</Text>
-                </div>
-                <div className="relative pl-6 opacity-50">
-                  <div className="absolute -left-[11px] top-0 bg-card p-1"><Circle className="w-4 h-4 text-muted-foreground fill-card" /></div>
-                  <Text weight="semibold" className="text-sm">Result</Text>
-                  <Text type="supporting" className="text-xs">TBD</Text>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-muted/30 rounded-2xl border border-dashed border-border mt-2">
-                <Text type="supporting" className="text-sm mb-3">No active applications found.</Text>
-                <Button variant="primary" size="sm" href="/apply" label="Apply Now" className="rounded-full" />
-              </div>
-            )}
-          </VStack>
-        </div>
-
-        <VStack gap={6}>
-          {/* 3. My Kit Card (ID Card Layout) */}
-          <div className="rounded-3xl p-6 overflow-hidden relative bg-gradient-to-br from-zinc-900 to-black text-white shadow-xl">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <QrCode className="w-32 h-32" />
+        {/* Up Next — upcoming registered events */}
+        <CosmicSurface variant="default" padding="none">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--d-line)]">
+            <div className="flex items-center gap-2">
+              <Clock aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+              <h3 className="text-sm font-semibold text-[var(--color-fg)]">Up Next</h3>
             </div>
-            
-            <div className="relative z-10 flex flex-col h-full justify-between min-h-[200px]">
-              <div>
-                <Badge variant="neutral" className="bg-white/10 text-white border-none mb-6 backdrop-blur-md rounded-full px-3" label="Member ID" />
-                <h3 className="text-3xl font-bold text-white tracking-tight">{user.name}</h3>
-                <p className="text-zinc-400 text-sm mt-1">@{user.username || "student"}</p>
-              </div>
-              
-              <HStack gap={6} className="mt-8">
-                <VStack gap={1}>
-                  <Text type="supporting" className="text-zinc-500 text-[10px] uppercase tracking-wider font-bold">Role</Text>
-                  <Text weight="semibold" className="text-zinc-100 capitalize">{user.role}</Text>
-                </VStack>
-                <VStack gap={1}>
-                  <Text type="supporting" className="text-zinc-500 text-[10px] uppercase tracking-wider font-bold">Joined</Text>
-                  <Text weight="semibold" className="text-zinc-100">{user.createdAt ? new Date(user.createdAt).getFullYear() : "—"}</Text>
-                </VStack>
-              </HStack>
-            </div>
+            <Link
+              href="/events"
+              className="text-xs text-[var(--soc-accretion-violet)] hover:underline flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)]"
+            >
+              Browse events <ChevronRight aria-hidden="true" size={12} />
+            </Link>
           </div>
 
-          {/* 4. Certificate Wallet Card */}
-          <div className="rounded-3xl p-6 bg-card border border-border shadow-sm">
-            <VStack gap={5}>
-              <HStack align="center" justify="between">
-                <Heading level={3} className="font-semibold text-xl">Certificate Wallet</Heading>
-                <Link href="/certificates" className="text-xs text-muted-foreground hover:text-foreground hover:underline">View All</Link>
-              </HStack>
-              
-              <div className="flex overflow-x-auto gap-4 pb-2 snap-x hide-scrollbar">
-                {myCertificates && myCertificates.length > 0 ? (
-                  myCertificates.map((cert) => (
-                    <Link href={`/verify/${cert.verifyId}`} key={cert.id} className="min-w-[220px] snap-center block group">
-                      <div className="aspect-[1.4/1] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/30 rounded-2xl p-5 flex flex-col justify-between group-hover:shadow-md transition-all group-hover:-translate-y-1">
-                        <div className="w-10 h-10 rounded-full bg-white dark:bg-black/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold truncate text-blue-900 dark:text-blue-100 mb-1">{cert.data?.eventName || "Certificate"}</p>
-                          <p className="text-xs text-blue-700/70 dark:text-blue-300/70 font-medium">Issued {cert.issuedAt ? new Date(cert.issuedAt).getFullYear() : "N/A"}</p>
-                        </div>
+          {myRegistrations.length === 0 ? (
+            <EmptyCosmicState
+              title="No upcoming events"
+              description="Register for an event to see it here."
+              illustration="orbit"
+              size="sm"
+              action={
+                <Button href="/events" label="Browse events" variant="primary" size="sm" />
+              }
+            />
+          ) : (
+            <div className="divide-y divide-[var(--d-line)]">
+              {myRegistrations.slice(0, 4).map((reg) => (
+                <div key={reg.eventId} className="flex items-center justify-between px-5 py-3.5 gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                      aria-hidden="true"
+                      className="h-8 w-8 rounded-lg bg-[rgba(124,58,237,0.12)] flex items-center justify-center shrink-0"
+                    >
+                      <Calendar aria-hidden="true" size={14} className="text-[var(--soc-accretion-violet)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--color-fg)] truncate">{reg.eventTitle}</p>
+                      <Badge variant="success" label="Registered" />
+                    </div>
+                  </div>
+                  <Link
+                    href={`/passes/${reg.eventId}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--soc-accretion-violet)] hover:underline shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)]"
+                  >
+                    <QrCode aria-hidden="true" size={12} />
+                    Pass
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </CosmicSurface>
+
+        {/* Applications Timeline */}
+        <CosmicSurface variant="default" padding="none">
+          <div className="px-5 py-4 border-b border-[var(--d-line)]">
+            <h3 className="text-sm font-semibold text-[var(--color-fg)]">My Application</h3>
+            <p className="text-xs text-[var(--color-fg-dim)] mt-0.5">Current recruitment cycle</p>
+          </div>
+
+          {myApplication ? (
+            <div className="px-5 py-5">
+              <ol aria-label="Application progress" className="relative border-l border-[var(--d-line)] ml-3 space-y-6">
+                {APPLICATION_STEPS.map((step) => {
+                  const done = isStepDone(step.key, myApplication.status);
+                  const active = myApplication.status === step.key ||
+                    (step.key === "ai_graded" && myApplication.status === "needs_manual_review");
+                  return (
+                    <li key={step.key} className="relative pl-6">
+                      {/* Timeline dot */}
+                      <div
+                        aria-hidden="true"
+                        className={`absolute -left-[9px] top-0 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
+                          done
+                            ? "bg-[var(--color-positive)] border-[var(--color-positive)]"
+                            : active
+                              ? "bg-[var(--d-panel)] border-[var(--soc-accretion-violet)]"
+                              : "bg-[var(--d-panel)] border-[var(--d-line)]"
+                        }`}
+                      >
+                        {done && <CheckCircle2 size={10} className="text-white" />}
+                        {!done && active && <Circle size={6} className="text-[var(--soc-accretion-violet)] fill-[var(--soc-accretion-violet)]" />}
                       </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-center py-8 w-full bg-muted/30 rounded-2xl border border-dashed border-border">
-                    <Text type="supporting" className="text-sm">
-                      No certificates earned yet.<br/>Attend events to get one!
-                    </Text>
-                  </div>
-                )}
-              </div>
-            </VStack>
-          </div>
-        </VStack>
+                      <p className={`text-sm font-medium ${active ? "text-[var(--soc-accretion-violet)]" : done ? "text-[var(--color-fg)]" : "text-[var(--color-fg-dim)]"}`}>
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-[var(--color-fg-dim)] mt-0.5">
+                        {step.description(myApplication.status || "")}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ) : (
+            <EmptyCosmicState
+              title="No active application"
+              description="Apply to become a club member and start your journey."
+              illustration="orbit"
+              size="sm"
+              action={
+                <Button href="/apply" label="Apply now" variant="primary" size="sm" />
+              }
+            />
+          )}
+        </CosmicSurface>
       </div>
-    </VStack>
+
+      {/* ── 3. Member ID Card + Certificate Wallet ─────────────── */}
+      <div className="grid gap-6 md:grid-cols-2">
+
+        {/* Member ID Card — cosmic dark card */}
+        <div
+          role="region"
+          aria-label="Your member ID card"
+          className="relative overflow-hidden rounded-[var(--radius-tile)] p-6 flex flex-col justify-between min-h-[200px]"
+          style={{
+            background: "linear-gradient(135deg, #1a0a3d 0%, #0a0514 60%, #04020a 100%)",
+            border: "1px solid rgba(124,58,237,0.2)",
+          }}
+        >
+          {/* Decorative orbital ring */}
+          <div
+            aria-hidden="true"
+            className="absolute right-4 top-4 w-32 h-32 rounded-full border border-[rgba(168,85,247,0.15)] pointer-events-none"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute right-4 top-4 w-20 h-20 rounded-full border border-[rgba(168,85,247,0.1)] pointer-events-none"
+          />
+
+          <div className="relative z-10">
+            <Badge variant="purple" label="Member ID" />
+            <h3 className="text-2xl font-bold text-white mt-4 tracking-tight">{user.name}</h3>
+            <p className="text-[rgba(255,255,255,0.5)] text-sm mt-1">@{user.username ?? "member"}</p>
+          </div>
+
+          <div className="relative z-10 flex items-end justify-between mt-6">
+            <div className="flex gap-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)]">Role</p>
+                <p className="text-sm font-semibold text-white capitalize mt-0.5">
+                  {(user.role ?? "member").replace(/_/g, " ")}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.4)]">Joined</p>
+                <p className="text-sm font-semibold text-white mt-0.5">
+                  {user.createdAt ? new Date(user.createdAt).getFullYear() : "—"}
+                </p>
+              </div>
+            </div>
+            <div
+              aria-hidden="true"
+              className="text-[rgba(168,85,247,0.3)]"
+            >
+              <QrCode size={32} />
+            </div>
+          </div>
+        </div>
+
+        {/* Certificate Wallet */}
+        <CosmicSurface variant="default" padding="none">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-[var(--d-line)]">
+            <div className="flex items-center gap-2">
+              <Award aria-hidden="true" size={16} className="text-[var(--color-fg-dim)]" />
+              <h3 className="text-sm font-semibold text-[var(--color-fg)]">Certificate Wallet</h3>
+            </div>
+            <Link
+              href="/certificates"
+              className="text-xs text-[var(--soc-accretion-violet)] hover:underline flex items-center gap-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] min-h-[var(--touch-target)] min-w-[var(--touch-target)]"
+            >
+              View all <ChevronRight aria-hidden="true" size={12} />
+            </Link>
+          </div>
+
+          {myCertificates.length === 0 ? (
+            <EmptyCosmicState
+              title="No certificates yet"
+              description="Attend events and complete activities to earn certificates."
+              illustration="void"
+              size="sm"
+            />
+          ) : (
+            <div className="flex gap-3 overflow-x-auto p-4 hide-scrollbar snap-x" role="list" aria-label="Your certificates">
+              {myCertificates.map((cert) => (
+                <Link
+                  key={cert.id}
+                  href={`/verify/${cert.verifyId}`}
+                  role="listitem"
+                  className="
+                    min-w-[180px] snap-center block group rounded-xl p-4 flex-shrink-0
+                    border border-[rgba(59,130,246,0.2)] bg-[rgba(59,130,246,0.05)]
+                    hover:border-[rgba(59,130,246,0.4)] hover:bg-[rgba(59,130,246,0.08)]
+                    hover:-translate-y-1 transition-all duration-[var(--motion-content)]
+                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]
+                  "
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(59,130,246,0.15)] text-blue-400 mb-3">
+                    <FileText aria-hidden="true" size={16} />
+                  </div>
+                  <p className="text-sm font-bold text-[var(--color-fg)] truncate">
+                    {cert.data?.eventName ?? "Certificate"}
+                  </p>
+                  <p className="text-xs text-[var(--color-fg-dim)] mt-1">
+                    {cert.issuedAt ? new Date(cert.issuedAt).getFullYear() : "N/A"}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CosmicSurface>
+      </div>
+    </div>
   );
 }

@@ -18,12 +18,6 @@ export function ThemeSwitcher() {
   const { theme: mode, setTheme: setMode } = useTheme();
   const [colorTheme, setColorTheme] = useState("default");
 
-  useEffect(() => {
-    const saved = localStorage.getItem("sdc-color-theme") || "default";
-    setColorTheme(saved);
-    applyColorTheme(saved);
-  }, []);
-
   const applyColorTheme = (id: string) => {
     const html = document.documentElement;
     if (id === "default") {
@@ -33,6 +27,12 @@ export function ThemeSwitcher() {
     }
     localStorage.setItem("sdc-color-theme", id);
   };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sdc-color-theme") || "default";
+    setColorTheme(saved);
+    applyColorTheme(saved);
+  }, []);
 
   const handleColorTheme = (id: string) => {
     setColorTheme(id);
