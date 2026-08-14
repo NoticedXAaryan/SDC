@@ -1,10 +1,17 @@
 import { checkInScannerDb, batchCheckInScannerDb } from "@/lib/dal/scanner";
 import { logAuditEvent } from "@/lib/services/audit";
-import type { AuthSession } from "@/lib/dal/auth";
+import { MANAGEMENT_ROLES } from "@/lib/dal/auth";
+import type { AuthSession, SDCRole } from "@/lib/dal/auth";
+import { AuthorizationError } from "@/lib/api-wrapper";
 
 export class ScannerService {
-  static async checkInScanner(session: AuthSession, eventId: string, token: string, scannedFaceDescriptor?: number[]) {
-    const { registrationId, payload } = await checkInScannerDb(session, eventId, token, scannedFaceDescriptor);
+  static async checkInScanner(session: AuthSession, eventId: string, token: string) {
+    const role = session.user.role as SDCRole;
+    if (!MANAGEMENT_ROLES.includes(role)) {
+      throw new AuthorizationError("You are not authorized to perform check-ins.");
+    }
+
+    const { registrationId, payload } = await checkInScannerDb(session, eventId, token);
     
     // Dispatch side-effect
     await logAuditEvent({
@@ -19,6 +26,11 @@ export class ScannerService {
   }
 
   static async batchCheckInScanner(session: AuthSession, checkIns: any[]) {
+    const role = session.user.role as SDCRole;
+    if (!MANAGEMENT_ROLES.includes(role)) {
+      throw new AuthorizationError("You are not authorized to perform batch check-ins.");
+    }
+
     const { results, checkedInCount, idsToUpdateLength } = await batchCheckInScannerDb(session, checkIns);
     
     if (idsToUpdateLength > 0) {
