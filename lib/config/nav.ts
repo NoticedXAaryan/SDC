@@ -24,7 +24,7 @@ export const managementNavItems: NavItem[] = [
   { href: "/finance/budget", label: "Finance & Budgets", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
   { href: "/finance/procurement", label: "Procurement", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
   { href: "/admin/audit", label: "Audit Logs", roles: ["admin", "owner", "faculty_coordinator"] },
-  { href: "/admin/members", label: "Members", roles: ["lead", "admin", "owner"] },
+  { href: "/admin/members", label: "Members", roles: ["admin", "owner"] },
   { href: "/manage/forms", label: "Form Builder", roles: ["lead", "admin", "owner"] },
   { href: "/manage/approvals", label: "Unified Approvals", roles: ["admin", "owner"] },
 ];

@@ -24,6 +24,16 @@ Last verified: 2026-08-18
 - Added a dedicated global announcement email job instead of incorrectly querying event registrations.
 - Added queued, queue-failed, partial, and sent delivery states with audit evidence.
 
+## Completed in the account lifecycle checkpoint
+
+- Added a shared member DAL and moved member listing and role mutations out of route handlers.
+- Added profile editing, protected role changes, filtered pagination, temporary/permanent bans, unban, session revocation, and owner-only account deletion.
+- Added self-management, executive-role, and final-owner safeguards with transactional audit records.
+- Added an Astryx account-management dialog with status details and explicit destructive-action confirmation.
+- Reconciled the legacy role endpoint and navigation with the admin/owner authorization policy.
+- Kept the product's documented community model as club domains/teams; a separate chat/community product remains outside the v1 scope.
+- TypeScript compilation and the Next.js 16.2.10 production build passed for this checkpoint. Broad test execution is deferred during the implementation-first pass.
+
 ## Open launch blockers
 
 1. Run migrations and all integration suites against an isolated database whose name contains `test`.
@@ -34,10 +44,11 @@ Last verified: 2026-08-18
 
 ## Next implementation order
 
-1. Isolated database and integration-test gate.
-2. Scanner camera policy and browser smoke test.
-3. Public-event routing decision and authorization tests.
-4. Remaining DAL extraction identified by `SPECIFICATION.md` SUB-01.
-5. Release evidence and deployment rehearsal.
+1. Make certificate files durable across the app and worker Docker containers.
+2. Make achievement approval idempotent and complete reward/redemption side features.
+3. Harden AI data handling, provider consistency, and fallback behavior.
+4. Complete remaining DAL extraction and UI consistency work.
+5. Reconcile scanner camera policy and public event routing.
+6. Resume integration, E2E, accessibility, visual, backup, and staging evidence after implementation stabilizes.
 
 Do not mark the platform production-ready until every applicable launch-acceptance item has objective evidence or signed risk acceptance.

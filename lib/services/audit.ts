@@ -12,6 +12,7 @@ import crypto from "crypto";
 export type AuditAction =
   // ── Identity / Auth ────────────────────────────────────────────────────
   | "role_change"
+  | "member_update"
   | "member_ban"
   | "member_unban"
   | "account_delete"

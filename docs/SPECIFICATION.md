@@ -139,6 +139,7 @@ These features are **in scope** because they address universal club operations. 
 | MEM-05 | Profile fields (year, branch, bio, skills, links) | `lib/db/schema.ts` → `user` | ✅ Complete |
 | MEM-06 | Points & level (gamification base) | `user.points`, `user.level` | ✅ Complete |
 | MEM-07 | Alumni role with read-only access | RBAC in `lib/dal/auth.ts` | ✅ Complete |
+| MEM-08 | Admin account lifecycle (edit, role, temporary/permanent ban, unban, revoke sessions, delete) | `lib/dal/members.ts`, `app/api/admin/members/`, `components/admin/member-table.tsx` | ✅ Complete |
 
 ### 2.3 Events (Core Module: `events`)
 
