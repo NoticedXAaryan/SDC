@@ -2,14 +2,13 @@ import { vi, beforeAll } from "vitest";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
-beforeAll(async function() {
-  const suite: any = arguments[1];
+beforeAll(async ({}, suite) => {
   try {
     await db.execute(sql`SELECT 1`);
   } catch (err) {
     console.warn("Database not available, skipping test suite.");
-    if (suite && typeof suite.skip === "function") {
-      suite.skip();
+    if (typeof (suite as any)?.skip === "function") {
+      (suite as any).skip();
     }
   }
 });
