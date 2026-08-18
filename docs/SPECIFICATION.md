@@ -773,6 +773,8 @@ Based on current state (Phase 1 largely complete, Phase 2–4 remaining):
 
 ## 11. Current State Assessment (2026-08-09)
 
+> This section is a historical implementation snapshot. Use `docs/MAINTENANCE_STATUS.md` for the latest validated build/test evidence and release decision; implementation presence alone does not satisfy launch acceptance.
+
 ### 11.1 Summary
 
 | Phase | Completion | Notes |

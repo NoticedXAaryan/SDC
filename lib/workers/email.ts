@@ -4,7 +4,8 @@ import { logger } from "@/lib/logger";
 import { getWorkerConfig } from "@/lib/redis";
 import { db } from "@/lib/db";
 import { communications, registrations, user } from "@/lib/db/schema";
-import { eq, inArray, and } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
+import { logAuditEvent } from "@/lib/services/audit";
 
 /**
  * Email worker — processes all email job types from the shared email-queue.
@@ -61,6 +62,51 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         await db.update(communications)
           .set({ status: "sent", sentCount: successCount })
           .where(eq(communications.id, commId));
+      }
+      break;
+
+    case "broadcast_announcement":
+      {
+        const { commId, senderId, subject, body } = payload;
+        const audience = await db.select({ email: user.email })
+          .from(user)
+          .where(ne(user.role, "outsider"));
+        const escapedBody = String(body).replace(
+          /[&<>"']/g,
+          (character) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;",
+          })[character] ?? character,
+        );
+        let successCount = 0;
+
+        for (const recipient of audience) {
+          try {
+            await Mailer.sendEmail({
+              to: recipient.email,
+              subject,
+              html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><p>${escapedBody.replace(/\n/g, "<br>")}</p><p style="font-size: 12px; color: #666; margin-top: 30px;">This is an automated announcement from SDC.</p></div>`,
+            });
+            successCount++;
+          } catch (error) {
+            logger.error({ email: recipient.email, commId, error }, "Failed to send announcement email");
+          }
+        }
+
+        const status = successCount === audience.length ? "sent" : "partial";
+        await db.update(communications)
+          .set({ status, sentCount: successCount })
+          .where(eq(communications.id, commId));
+        await logAuditEvent({
+          actorId: senderId,
+          action: "communication_sent",
+          entity: "communication",
+          entityId: commId,
+          details: JSON.stringify({ kind: "announcement", successCount, recipientCount: audience.length, status }),
+        });
       }
       break;
 

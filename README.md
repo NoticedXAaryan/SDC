@@ -128,6 +128,7 @@ For an in-depth understanding of the system, refer to the following documents in
 1. **`docs/SPECIFICATION.md`**: The master development specification detailing the core features, out-of-scope features, gap analysis, and the 4-phase implementation cycle.
 2. **`docs/ARCHITECTURE.md`**: Technical reference containing Data Flow Diagrams, full database schema maps (30+ tables), API route inventory, and the complete role hierarchy.
 3. **`docs/EXECUTION_ROADMAP.md`**: Step-by-step verification checklist for QA.
+4. **`docs/MAINTENANCE_STATUS.md`**: Dated validation evidence, current release decision, and ordered blockers.
 
 ---
 

@@ -68,6 +68,7 @@ export type AuditAction =
   | "certificate_template_delete"
 
   // ── Communications ────────────────────────────────────────────────────
+  | "communication_queued"
   | "communication_sent"
   | "whatsapp_template_generate"
 
