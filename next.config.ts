@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['clawpdf', '@pdfme/converter', '@pdfme/ui', '@pdfme/common', 'ioredis', 'bullmq'],
   output: "standalone",
   turbopack: {
+    root: process.cwd(),
     resolveAlias: {
       // clawpdf (used by @pdfme/converter) dynamically imports 'module' which doesn't
       // exist in browser context. Provide a no-op stub so Turbopack doesn't fail.
@@ -15,6 +16,7 @@ const nextConfig: NextConfig = {
     },
   },
   experimental: {
+    optimizePackageImports: ["@astryxdesign/core"],
     serverActions: {
       bodySizeLimit: "2mb",
     },

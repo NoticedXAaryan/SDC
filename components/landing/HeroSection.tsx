@@ -13,23 +13,15 @@ interface HeroSectionProps {
   viewer: Viewer;
 }
 
-const HERO_IMAGE = "/hero-crowd.jpg";
-
 const TRACK_FILTERS = [
-  { label: "Web Dev", href: "#events" },
-  { label: "App Dev", href: "#events" },
-  { label: "AI/ML", href: "#events" },
-  { label: "UI/UX", href: "#events" },
-  { label: "Open Source", href: "#events" },
+  { label: "Web Dev", href: "#highlights" },
+  { label: "App Dev", href: "#highlights" },
+  { label: "AI/ML", href: "#highlights" },
+  { label: "UI/UX", href: "#highlights" },
+  { label: "Open Source", href: "#highlights" },
 ] as const;
 
-const KNOCKOUT_CLASS =
-  "bg-clip-text text-transparent bg-cover bg-center bg-no-repeat";
 
-const KNOCKOUT_STYLE: React.CSSProperties = {
-  backgroundImage: `url(${HERO_IMAGE})`,
-  WebkitTextStroke: "1px rgba(0,0,0,0.14)",
-};
 
 const container = {
   hidden: { opacity: 0 },
@@ -51,7 +43,7 @@ const item = {
 export function HeroSection({ viewer }: HeroSectionProps) {
   const cta = viewer.authenticated
     ? { href: viewer.dashboardPath ?? "/dashboard/user", label: "Go to Dashboard" }
-    : { href: "/signup", label: "Register Now" };
+    : { href: "/register", label: "Register Now" };
 
   const sectionRef = useRef<HTMLElement>(null);
   const mouseX = useMotionValue(0);
@@ -101,7 +93,7 @@ export function HeroSection({ viewer }: HeroSectionProps) {
             className="font-black uppercase leading-[0.84] tracking-[-0.03em] text-4xl tablet:text-5xl desktop:text-6xl"
           >
             {/* Accessible label, since the visible glyphs are image-filled */}
-            <span className="sr-only">Goa Startup Festival 2026</span>
+            <span className="sr-only">Student Developer Club PU</span>
 
             <span aria-hidden="true" className="flex flex-wrap items-center gap-x-4">
               <span className="inline-block rounded-2xl bg-[#005ce6] px-[0.15em] py-[0.05em] text-[clamp(2.5rem,10vw,8rem)] leading-[0.84] text-surface mix-blend-normal shadow-sm">
@@ -280,30 +272,12 @@ export function HeroSection({ viewer }: HeroSectionProps) {
                 >
                   Explore Schedule
                 </a>
-                <a
-                  href="/brochure.pdf"
-                  download
-                  className="flex-1 inline-flex items-center justify-center rounded-full border border-surface/30 bg-white/5 backdrop-blur-md px-6 py-4 text-base font-bold text-surface transition-colors hover:bg-white/10 hover:border-surface shadow-sm whitespace-nowrap"
-                >
-                  Download Brochure
-                </a>
               </div>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* ── Full-bleed photo band, echoing the editorial strip ── */}
-      <motion.div
-        variants={item}
-        initial="hidden"
-        animate="visible"
-        aria-hidden="true"
-        className="relative z-10 mt-4 h-[26vw] min-h-[150px] w-full bg-cover bg-center bg-no-repeat tablet:h-[22vw] tablet:max-h-[340px]"
-        style={{
-          backgroundImage: `url(${HERO_IMAGE})`,
-        }}
-      />
 
       {/* ── Stats strip ── */}
       <div className="site-container relative z-10 pb-16 pt-10 tablet:pb-20">

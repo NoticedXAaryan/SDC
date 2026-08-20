@@ -62,6 +62,9 @@ services:
         condition: service_completed_successfully
     env_file: [.env]
     restart: unless-stopped
+    stop_grace_period: 30s
+    volumes:
+      - app_uploads:/app/public/uploads
     networks:
       - default
       - dokploy-network

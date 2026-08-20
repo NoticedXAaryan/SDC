@@ -14,7 +14,7 @@ interface CtaBandProps {
 export function CtaBand({ viewer }: CtaBandProps) {
   const cta = viewer.authenticated
     ? { href: viewer.dashboardPath ?? "/dashboard/user", label: "Go to Dashboard" }
-    : { href: "/signup", label: "Register Now" };
+    : { href: "/register", label: "Register Now" };
 
   return (
     <section

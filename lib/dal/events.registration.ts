@@ -4,7 +4,7 @@ import { checkEmergencyFreeze, getUserDomain } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations, user } from "@/lib/db/schema";
 import { generateSignedPass, HMACPassValidator } from "@/lib/passes/qr";
-import { emailQueue } from "@/lib/queues/email";
+import { getEmailQueue } from "@/lib/queues/email";
 import { logAuditEvent } from "@/lib/services/audit";
 import { NotificationService } from "@/lib/services/notifications";
 import crypto from "crypto";
@@ -206,7 +206,7 @@ export async function registerForEvent(session: AuthSession, eventId: string, fo
   });
 
   if (regStatus === "confirmed" && passToken) {
-    void emailQueue.add("send-qr-pass", {
+    void getEmailQueue().add("send-qr-pass", {
       type: "event_registration",
       payload: {
         email: session.user.email,

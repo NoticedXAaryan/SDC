@@ -60,7 +60,7 @@ export function CreateTemplateDialog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           name, 
-          basePdf: fileUrl 
+          backgroundUrl: fileUrl,
         }),
       });
 

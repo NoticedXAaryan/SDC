@@ -5,9 +5,9 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+# Keep container dependency resolution identical to local/CI installs.
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -41,15 +41,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
-
-# Install wget for healthcheck
 RUN apk add --no-cache wget
 
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Prepare writable runtime paths before the shared uploads volume is mounted.
+RUN mkdir -p .next public/uploads && chown -R nextjs:nodejs .next public/uploads
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -62,7 +59,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Healthcheck so Docker/Traefik knows when the app is ready
+# Healthcheck so Docker/Traefik knows when the app is alive.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/health || exit 1
 
@@ -77,18 +74,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+RUN apk add --no-cache wget
 
-# Copy dependencies
+# Copy dependencies and the source required by the TypeScript worker runtime.
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-
-# Copy source code required for worker (including lib, tsconfig, etc.)
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/worker.ts ./worker.ts
 COPY --from=builder /app/scripts ./scripts
 
+# Certificate jobs write here. docker-compose mounts the same volume in app and worker.
+RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads
+
 USER nextjs
 
-# Start worker using tsx
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:8080/health || exit 1
+
 CMD ["npx", "tsx", "worker.ts"]

@@ -78,8 +78,8 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // 2. Enforce JSON Accept header on API routes
-    if (pathname.startsWith('/api/')) {
+    // 2. Enforce JSON Accept header on API routes (except auth, health, ready)
+    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/health') && !pathname.startsWith('/api/ready')) {
       const acceptHeader = request.headers.get('accept') || '';
       if (!acceptHeader.includes('application/json') && !acceptHeader.includes('*/*')) {
           return new NextResponse(

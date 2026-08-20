@@ -50,20 +50,25 @@ export const session = pgTable("session", {
 				}, (table) => [index("session_user_id_idx").on(table.userId)]);
 
 export const account = pgTable("account", {
-					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-					accountId: text("accountId").notNull(),
-					providerId: text("providerId").notNull(),
-					userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
-					accessToken: text("accessToken"),
-					refreshToken: text("refreshToken"),
-					idToken: text("idToken"),
-					accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
-					refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
-					scope: text("scope"),
-					password: text("password"),
-					createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-					updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull()
-				}, (table) => [index("account_user_id_idx").on(table.userId)]);
+				id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+				accountId: text("accountId").notNull(),
+				providerId: text("providerId").notNull(),
+				// Better Auth 1.7: new required field for OAuth issuer URL
+				issuer: text("issuer"),
+				userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
+				accessToken: text("accessToken"),
+				refreshToken: text("refreshToken"),
+				idToken: text("idToken"),
+				accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+				refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+				scope: text("scope"),
+				password: text("password"),
+				createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+				updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull()
+			}, (table) => [
+				index("account_user_id_idx").on(table.userId),
+				unique("account_issuer_accountId_uidx").on(table.issuer, table.accountId),
+			]);
 
 export const verification = pgTable("verification", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

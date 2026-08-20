@@ -1,5 +1,5 @@
 import { getEventCommunications, createEventCommunicationDb, sendInvitesDb, notifyColleagues, getWhatsappTemplate } from "@/lib/dal/communications";
-import { emailQueue } from "@/lib/queues/email";
+import { getEmailQueue } from "@/lib/queues/email";
 import type { AuthSession } from "@/lib/dal/auth";
 
 export class CommunicationService {
@@ -11,7 +11,7 @@ export class CommunicationService {
     const { id, subject, messageBody, targetAudience } = await createEventCommunicationDb(sessionAuth, eventId, data);
     
     // Dispatch side-effect
-    await emailQueue.add("broadcast_communication", {
+    await getEmailQueue().add("broadcast_communication", {
       commId: id,
       eventId,
       subject,
@@ -26,7 +26,7 @@ export class CommunicationService {
     const { count, jobsToQueue } = await sendInvitesDb(sessionAuth, eventId, emails);
     
     if (jobsToQueue.length > 0) {
-      await emailQueue.addBulk(jobsToQueue);
+      await getEmailQueue().addBulk(jobsToQueue);
     }
 
     return { success: true, count };

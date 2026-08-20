@@ -16,7 +16,7 @@ import { getUserDomain, ADMIN_ROLES } from "@/lib/dal/auth";
 import type { AuthSession } from "@/lib/dal/auth";
 import type { SDCRole } from "@/lib/dal/auth";
 import { getEventWithTemplate, getEligibleAttendeesForCertificates } from "@/lib/dal/certificates";
-import { certificateQueue } from "@/lib/queues/certificates";
+import { getCertificateQueue } from "@/lib/queues/certificates";
 import { logAuditEvent } from "@/lib/services/audit";
 import { db } from "@/lib/db";
 import { user, certTemplates, certificates, auditLogs } from "@/lib/db/schema";
@@ -106,7 +106,7 @@ export class CertificateService {
       },
     }));
 
-    await certificateQueue.addBulk(jobs);
+    await getCertificateQueue().addBulk(jobs);
 
     return { success: true, count: jobs.length };
   }
@@ -180,7 +180,7 @@ export class CertificateService {
       },
     }));
 
-    await certificateQueue.addBulk(jobs);
+    await getCertificateQueue().addBulk(jobs);
 
     return { success: true, count: jobs.length };
   }

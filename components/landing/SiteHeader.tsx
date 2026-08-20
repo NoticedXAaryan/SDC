@@ -76,7 +76,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <img
-              src="/logo.png"
+              src="/logo.jpg"
               alt="SDC Parul University"
               className={cn(
                 "w-auto object-contain transition-all duration-300",
@@ -155,7 +155,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
                   Login
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/register"
                   className={cn(
                     "inline-flex items-center justify-center rounded-pill font-bold transition-colors",
                     isScrolled ? "bg-primary text-surface hover:bg-primary-strong px-5 py-2 text-[13px]" : "bg-surface text-primary hover:bg-surface-alt px-6 py-2.5 text-sm"

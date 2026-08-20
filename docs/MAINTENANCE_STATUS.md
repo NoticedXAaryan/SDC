@@ -34,6 +34,13 @@ Last verified: 2026-08-18
 - Kept the product's documented community model as club domains/teams; a separate chat/community product remains outside the v1 scope.
 - TypeScript compilation and the Next.js 16.2.10 production build passed for this checkpoint. Broad test execution is deferred during the implementation-first pass.
 
+## Completed in the certificate/Docker durability checkpoint
+
+- Switched container dependency installation to deterministic `npm ci` using the repository resolver settings.
+- Mounted the same persistent uploads volume into the app and worker, so generated certificate PDFs survive worker replacement and are served by the web container.
+- Prepared writable upload directories for the non-root runtime user in both images.
+- Added a worker image health check against its existing HTTP health endpoint and a graceful Compose shutdown window.
+
 ## Open launch blockers
 
 1. Run migrations and all integration suites against an isolated database whose name contains `test`.

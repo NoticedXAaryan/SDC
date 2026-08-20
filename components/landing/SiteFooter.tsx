@@ -4,15 +4,10 @@ import { Globe, Mail, MapPin, Users, Code } from "lucide-react";
 const QUICK_LINKS = [
   { label: "About", href: "#about" },
   { label: "Schedule", href: "#schedule" },
-  { label: "Register", href: "/signup" },
+  { label: "Register", href: "/register" },
   { label: "Login", href: "/login" },
 ] as const;
 
-const SOCIALS = [
-  { label: "Website", icon: Globe, href: "#" },
-  { label: "Community", icon: Users, href: "#" },
-  { label: "Projects", icon: Code, href: "#" },
-] as const;
 
 export function SiteFooter() {
   return (
@@ -26,7 +21,7 @@ export function SiteFooter() {
                 <h2 className="sr-only">Student Developer Club</h2>
                 <Link href="/" className="inline-block" aria-label="Student Developer Club Home">
                   <img 
-                    src="/logo.png" 
+                    src="/logo.jpg" 
                     alt="Student Developer Club Logo" 
                     className="h-16 w-auto object-contain"
                   />
@@ -87,22 +82,7 @@ export function SiteFooter() {
                   </li>
                 </ul>
 
-                <ul className="mt-6 flex gap-3">
-                  {SOCIALS.map((social) => {
-                    const Icon = social.icon;
-                    return (
-                      <li key={social.label}>
-                        <a
-                          href={social.href}
-                          aria-label={social.label}
-                          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-pill border border-surface-alt bg-surface text-primary shadow-sm transition-colors hover:bg-primary hover:text-surface"
-                        >
-                          <Icon aria-hidden="true" size={18} />
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
+
               </div>
             </div>
           </div>
@@ -116,7 +96,7 @@ export function SiteFooter() {
                 </p>
               </div>
               <Link
-                href="/signup"
+                href="/register"
                 className="inline-flex min-h-touch min-w-touch w-full items-center justify-center rounded-md bg-primary px-8 py-3 font-bold text-surface transition-colors hover:bg-primary-strong tablet:w-auto"
               >
                 Join Us
@@ -142,20 +122,7 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Goan skyline, blended with the card background */}
-          <div 
-            className="w-full pointer-events-none flex items-end mt-8"
-            style={{
-              maskImage: "linear-gradient(to bottom, transparent, black 25%)",
-              WebkitMaskImage: "linear-gradient(to bottom, transparent, black 25%)"
-            }}
-          >
-            <img
-              src="/footer_goa_buildings.jpg"
-              alt="Goa Architecture"
-              className="w-full h-auto object-cover object-bottom"
-            />
-          </div>
+
         </div>
       </div>
     </footer>

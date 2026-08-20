@@ -28,16 +28,17 @@ export const POST = withApiHandler(async (req: NextRequest) => {
   }
 
   const body = await req.json();
-  const { name, eventId, backgroundUrl, fields } = body;
+  const { name, eventId, backgroundUrl, basePdf, fields } = body;
+  const resolvedBackgroundUrl = backgroundUrl ?? basePdf;
 
-  if (!name) {
+  if (typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ success: false, error: "Missing name" }, { status: 400 });
   }
 
   const [template] = await db.insert(certTemplates).values({
-    name,
+    name: name.trim(),
     eventId: eventId || null,
-    backgroundUrl: backgroundUrl || "https://pdfme.com/blank.pdf",
+    backgroundUrl: resolvedBackgroundUrl || "https://pdfme.com/blank.pdf",
     fields: fields || [],
     createdBy: session.user.id
   }).returning();

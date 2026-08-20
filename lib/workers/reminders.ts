@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { events, registrations, user } from "@/lib/db/schema";
 import { eq, and, gte, lt } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { emailQueue } from "@/lib/queues/email";
+import { getEmailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { getWorkerConfig } from "@/lib/redis";
 
@@ -48,7 +48,7 @@ export const remindersWorker = new Worker("reminders-queue", async (job: Job) =>
       for (const attendee of attendees) {
         if (!attendee.email) continue;
         
-        await emailQueue.add("event_reminder", {
+        await getEmailQueue().add("event_reminder", {
           type: "event_reminder",
           payload: {
             email: attendee.email,

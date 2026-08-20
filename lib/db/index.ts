@@ -11,6 +11,9 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
   connectionTimeoutMillis: 30000, // Increased to 30s for Neon cold starts
   max: 10,
+  ssl: process.env.DATABASE_URL?.includes('sslmode=')
+    ? undefined // Let the connection string control SSL
+    : { rejectUnauthorized: false }, // Suppress pg v9 deprecation warning
 });
 
 pool.on("error", (err) => {

@@ -13,8 +13,8 @@
 import { db } from "@/lib/db";
 import { applications, user, interviews, applicationReviews, auditLogs, notifications } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { emailQueue } from "@/lib/queues/email";
-import { gradingQueue } from "@/lib/queues/grading";
+import { getEmailQueue } from "@/lib/queues/email";
+import { getGradingQueue } from "@/lib/queues/grading";
 import { NotificationService } from "@/lib/services/notifications";
 import { logAuditEvent } from "@/lib/services/audit";
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -143,7 +143,7 @@ export async function submitApplication(
       .update(`grade:${applicationId}`)
       .digest("hex");
 
-    await gradingQueue.add(
+    await getGradingQueue().add(
       "grade-application",
       { applicationId, answers: data.answers },
       { jobId, attempts: 3 }
@@ -332,7 +332,7 @@ export async function scheduleInterview(
     .update(`interview-invite:${interviewId}`)
     .digest("hex");
 
-  await emailQueue.add(
+  await getEmailQueue().add(
     "send-email",
     {
       to: application.user?.email,
@@ -472,7 +472,7 @@ async function _dispatchStatusSideEffects(
            ${data.reason ? `<p>Feedback: ${data.reason}</p>` : ""}
            <p>We encourage you to apply again in our next recruitment cycle.</p>`;
 
-    await emailQueue.add(
+    await getEmailQueue().add(
       "send-email",
       { to: application.user.email, subject: emailSubject, html: emailHtml },
       { jobId, attempts: 3 }

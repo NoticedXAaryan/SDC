@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { contentItems, user } from "@/lib/db/schema";
 import { eq, and, isNotNull, lte, gte } from "drizzle-orm";
 import { logger } from "@/lib/logger";
-import { emailQueue } from "@/lib/queues/email";
+import { getEmailQueue } from "@/lib/queues/email";
 import { startOfDay, endOfDay, addDays } from "date-fns";
 import { getWorkerConfig } from "@/lib/redis";
 
@@ -43,7 +43,7 @@ export const socialWorker = new Worker("social-queue", async (job: Job) => {
     for (const item of scheduledContent) {
       if (!item.authorEmail) continue;
       
-      await emailQueue.add("content_reminder", {
+      await getEmailQueue().add("content_reminder", {
         type: "content_reminder",
         payload: {
           email: item.authorEmail,

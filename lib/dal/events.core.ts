@@ -3,7 +3,7 @@ import type { AuthSession } from "@/lib/dal/auth";
 import { canTransition, checkEmergencyFreeze, getUserDomain, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations, user } from "@/lib/db/schema";
-import { aiQueue } from "@/lib/queues/ai";
+import { getAiQueue } from "@/lib/queues/ai";
 import { logAuditEvent } from "@/lib/services/audit";
 import { createDefaultEventTasks } from "@/lib/services/tasks";
 import crypto from "crypto";
@@ -171,7 +171,7 @@ export async function createEvent(session: AuthSession, data: any) {
 
   try {
     // Enqueue AI job to draft comms (WhatsApp & Email)
-    await aiQueue.add("draft_event_comms", {
+    await getAiQueue().add("draft_event_comms", {
       eventId,
       eventDetails: {
         title: data.title,

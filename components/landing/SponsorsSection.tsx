@@ -70,7 +70,7 @@ export function SponsorsSection() {
               src="/pu-vadodara.png"
               alt="Parul University Vadodara Logo"
               className="h-20 w-auto object-contain drop-shadow-md"
-              onError={(e) => { e.currentTarget.src = "/logo.png" }}
+              onError={(e) => { e.currentTarget.src = "/logo.jpg" }}
             />
             <p className="mt-5 font-bold text-white drop-shadow-sm">
               Parul University Vadodara
@@ -88,7 +88,7 @@ export function SponsorsSection() {
               src="/pu-goa.png"
               alt="Parul University Goa Logo"
               className="h-16 w-auto object-contain drop-shadow-md"
-              onError={(e) => { e.currentTarget.src = "/logo.png" }}
+              onError={(e) => { e.currentTarget.src = "/logo.jpg" }}
             />
             <p className="mt-5 font-bold text-white drop-shadow-sm">
               Parul University Goa
@@ -106,7 +106,7 @@ export function SponsorsSection() {
               src="/pierc.png"
               alt="PIERC Logo"
               className="h-16 w-auto object-contain drop-shadow-md"
-              onError={(e) => { e.currentTarget.src = "/logo.png" }}
+              onError={(e) => { e.currentTarget.src = "/logo.jpg" }}
             />
             <p className="mt-5 font-bold text-white drop-shadow-sm">
               PIERC

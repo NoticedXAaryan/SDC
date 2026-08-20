@@ -68,7 +68,7 @@ export const reportsWorker = new Worker("reports-queue", async (job: Job) => {
         </div>
       `;
 
-      const { emailQueue } = await import("@/lib/queues/email");
+      const { getEmailQueue } = await import("@/lib/queues/email");
       
       // We will create a new job type or just use the generic email sender
       const { Mailer } = await import("@/lib/services/mailer");

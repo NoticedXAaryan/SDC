@@ -239,7 +239,7 @@ export function MobileNavigationController({
       {/* Header with close button */}
       <div className="flex h-20 items-center justify-between px-4">
         <span className="text-xl font-bold tracking-tight text-ink">
-          GSF 2026
+          SDC
         </span>
         <button
           ref={closeButtonRef}
@@ -307,8 +307,8 @@ export function MobileNavigationController({
                 Login
               </Link>
               <Link
-                href="/signup"
-                onClick={(e) => handleLinkClick(e, "/signup")}
+                href="/register"
+                onClick={(e) => handleLinkClick(e, "/register")}
                 className="inline-flex items-center justify-center rounded-pill bg-primary px-8 py-3 text-lg font-semibold text-surface shadow-sm transition-colors hover:bg-primary-strong"
               >
                 Register
