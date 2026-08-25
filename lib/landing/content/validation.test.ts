@@ -37,10 +37,10 @@ function validContent(): LandingContent {
       { name: "Open Source", description: words(20) },
     ],
     statistics: [
-      { label: "Starships Launched", value: "300+" },
-      { label: "Galactic Credits", value: "₡200+ Billion" },
-      { label: "Colony Investments", value: "₡40+ Billion" },
-      { label: "Cosmic Roles Created", value: "1,600+" },
+      { label: "Learning Tracks", value: "6" },
+      { label: "Community Access", value: "Open" },
+      { label: "Build Sessions", value: "Weekly" },
+      { label: "Led By", value: "Students" },
     ],
     highlights: highlightTitles.map((title, index) => ({
       id: `highlight-${index}`,
@@ -95,10 +95,10 @@ test("reports exact-pair, range, coverage, icon, and image violations", () => {
   const content = validContent();
   content.aboutDescription = words(29);
   content.statistics = [
-    { label: "Starships Launched", value: "300+ WRONG" as any },
-    { label: "Galactic Credits", value: "₡200+ Billion" },
-    { label: "Colony Investments", value: "₡40+ Billion" },
-    { label: "Cosmic Roles Created", value: "1,600+" },
+    { label: "Community Access", value: "Open" },
+    { label: "Community Access", value: "Open" },
+    { label: "Build Sessions", value: "Weekly" },
+    { label: "Led By", value: "Students" },
   ];
   content.highlights[1].icon = content.highlights[0].icon;
   content.speakers[0].photo = { src: "/bad.jpg", width: 0, height: 400, alt: "" };

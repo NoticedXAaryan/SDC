@@ -10,7 +10,7 @@
  * SOC layer: EmptyCosmicState, CosmicSurface.
  * Shadcn exception: Skeleton from @/components/ui/skeleton (stable, well-tested).
  */
-import { requireSession, isManagementRole } from "@/lib/dal/auth";
+import { getCurrentUser, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations } from "@/lib/db/schema";
 import Link from "next/link";
@@ -54,8 +54,8 @@ export default async function EventsPage({
 }
 
 async function PageHeaderSection() {
-  const session = await requireSession();
-  const userRole = session.user.role || "member";
+  const session = await getCurrentUser();
+  const userRole = session?.user.role || "member";
   const canCreate = isManagementRole(userRole);
 
   return (
@@ -77,10 +77,28 @@ async function PageHeaderSection() {
 }
 
 async function EventsList({ filter, query }: { filter: string; query: string }) {
-  const session = await requireSession();
-  const userId = session.user.id;
-  const userRole = session.user.role || "member";
+  const session = await getCurrentUser();
+  const userId = session?.user.id;
+  const userRole = session?.user.role || "member";
   const canCreate = isManagementRole(userRole);
+
+  if (filter === "my-registrations" && !userId) {
+    return (
+      <EmptyCosmicState
+        title="Sign in to view your registrations"
+        description="Your registered events are linked to your club account."
+        illustration="orbit"
+        size="md"
+        action={
+          <Button
+            href="/login?callbackUrl=/events?filter=my-registrations"
+            label="Sign in"
+            variant="primary"
+          />
+        }
+      />
+    );
+  }
 
   const now = new Date();
 
@@ -105,7 +123,7 @@ async function EventsList({ filter, query }: { filter: string; query: string }) 
 
   let allEvents: typeof events.$inferSelect[] = [];
 
-  if (filter === "my-registrations") {
+  if (filter === "my-registrations" && userId) {
     const results = await db
       .select({ event: events })
       .from(events)

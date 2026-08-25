@@ -2,13 +2,20 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Metadata } from "next";
+import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
 
 export const metadata: Metadata = {
   title: "Setup Complete | Student Developer Club",
   description: "Your account is ready.",
 };
 
-export default function SetupPage() {
+interface SetupPageProps {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+}
+
+export default async function SetupPage({ searchParams }: SetupPageProps) {
+  const callbackUrl = sanitizeAuthRedirect((await searchParams).callbackUrl);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
       <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center space-y-6 text-center">
@@ -24,8 +31,8 @@ export default function SetupPage() {
         </div>
 
         <Button asChild className="w-full h-12 text-lg" size="lg">
-          <Link href="/dashboard">
-            Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+          <Link href={callbackUrl}>
+            Continue <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
         </Button>
       </div>

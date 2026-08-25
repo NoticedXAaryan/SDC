@@ -1,164 +1,129 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { AlertCircle, Loader2 } from "lucide-react";
 
-export function LoginForm() {
+interface LoginFormProps {
+  callbackUrl?: string;
+}
+
+function GoogleIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09A6.9 6.9 0 0 1 5.49 12c0-.73.13-1.43.35-2.09V7.07H2.18A10.9 10.9 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  );
+}
+
+export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoading(true);
     setError("");
-    
+
     try {
-      const result = await signIn.email({
-        email,
-        password,
-      });
-      
+      const result = await signIn.email({ email: email.trim(), password });
       if (result.error) {
-        setError(result.error.message || "Failed to login");
-      } else {
-        router.push("/dashboard");
+        setError(result.error.message || "We could not sign you in. Check your details and try again.");
+        return;
       }
-    } catch (err) {
-      setError("An unexpected error occurred");
+
+      router.replace(callbackUrl);
+      router.refresh();
+    } catch {
+      setError("The sign-in service is temporarily unavailable. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setSocialLoading(true);
+    setError("");
+    try {
+      const result = await signIn.social({ provider: "google", callbackURL: callbackUrl });
+      if (result?.error) setError(result.error.message || "Google sign-in could not be started.");
+    } catch {
+      setError("Google sign-in could not be started. Please try again.");
+      setSocialLoading(false);
+    }
+  };
+
+  const registerHref = callbackUrl === "/dashboard"
+    ? "/register"
+    : `/register?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Sign in</h2>
-        <p className="text-sm text-muted-foreground">
-          Enter your credentials to access the club portal.
-        </p>
+    <div className="space-y-7">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Member access</p>
+        <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-white">Sign in to your orbit</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-400">Your events, projects, passes, and team tools are waiting.</p>
       </div>
 
-      {/* Google OAuth */}
-      <Button 
-        type="button" 
-        variant="outline" 
-        className="w-full h-11"
-        onClick={async () => {
-          await signIn.social({
-            provider: "google",
-            callbackURL: "/dashboard"
-          });
-        }}
-      >
-        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-          <path
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            fill="#4285F4"
-          />
-          <path
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            fill="#34A853"
-          />
-          <path
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            fill="#FBBC05"
-          />
-          <path
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            fill="#EA4335"
-          />
-        </svg>
+      <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleLogin} disabled={loading || socialLoading}>
+        {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GoogleIcon />}
         Continue with Google
       </Button>
 
-      {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            or continue with email
-          </span>
-        </div>
+      <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
+        <span className="h-px flex-1 bg-white/10" />
+        or use email
+        <span className="h-px flex-1 bg-white/10" />
       </div>
 
-      {/* Form */}
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="login-email">Email</Label>
-          <Input 
-            id="login-email" 
-            type="email" 
-            placeholder="name@paruluniversity.ac.in" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="h-11"
-            autoComplete="email"
-          />
+          <Label htmlFor="login-email" className="text-slate-300">Email</Label>
+          <Input id="login-email" type="email" placeholder="name@paruluniversity.ac.in" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-600 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="login-password">Password</Label>
-            <Link 
-              href="/forgot-password" 
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot password?
-            </Link>
+            <Label htmlFor="login-password" className="text-slate-300">Password</Label>
+            <Link href="/forgot-password" className="text-xs font-semibold text-violet-300 transition-colors hover:text-violet-200">Forgot password?</Link>
           </div>
-          <Input 
-            id="login-password" 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="h-11"
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <Input id="login-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+            <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400" aria-label={showPassword ? "Hide password" : "Show password"}>
+              {showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-lg flex items-center gap-2 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div role="alert" aria-live="polite" className="flex items-start gap-2 rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-200">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {error}
           </div>
         )}
 
-        <Button type="submit" className="w-full h-11" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in…
-            </>
-          ) : (
-            "Sign in"
-          )}
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading || socialLoading}>
+          {loading ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Signing in…</> : <>Sign in<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
         </Button>
       </form>
 
-      {/* Footer */}
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link 
-          href="/register" 
-          className="font-medium text-foreground hover:underline underline-offset-4"
-        >
-          Create one
-        </Link>
+      <p className="text-center text-sm text-slate-500">
+        New to SDC?{" "}
+        <Link href={registerHref} className="font-bold text-white transition-colors hover:text-violet-200">Create an account</Link>
       </p>
     </div>
   );

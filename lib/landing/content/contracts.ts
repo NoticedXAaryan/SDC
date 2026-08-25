@@ -4,10 +4,10 @@ export const ORGANIZER_NAMES = ["Tech Workshops", "Hackathons", "Open Source"] a
 export type OrganizerName = (typeof ORGANIZER_NAMES)[number];
 
 export const REQUIRED_STATISTICS = [
-  { label: "Starships Launched", value: "300+" },
-  { label: "Galactic Credits", value: "₡200+ Billion" },
-  { label: "Colony Investments", value: "₡40+ Billion" },
-  { label: "Cosmic Roles Created", value: "1,600+" },
+  { label: "Learning Tracks", value: "6" },
+  { label: "Community Access", value: "Open" },
+  { label: "Build Sessions", value: "Weekly" },
+  { label: "Led By", value: "Students" },
 ] as const;
 export type FestivalStat = (typeof REQUIRED_STATISTICS)[number];
 

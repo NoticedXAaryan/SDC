@@ -192,7 +192,7 @@ export function StudentDashboard({
               illustration="orbit"
               size="sm"
               action={
-                <Button href="/apply" label="Apply now" variant="primary" size="sm" />
+                <Button href="/recruitment/apply" label="Apply now" variant="primary" size="sm" />
               }
             />
           )}

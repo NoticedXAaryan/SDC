@@ -10,9 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-type FormField = { id: string; type: string; question: string; required: boolean; options?: string[] };
+export type RegistrationFormField = {
+  id: string;
+  type: string;
+  question: string;
+  required: boolean;
+  options?: string[];
+};
 
-export function RegisterButton({ eventId, forms, isWaitlist }: { eventId: string; forms?: FormField[]; isWaitlist?: boolean }) {
+export function RegisterButton({ eventId, forms, isWaitlist }: { eventId: string; forms?: RegistrationFormField[]; isWaitlist?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formResponses, setFormResponses] = useState<Record<string, string>>({});

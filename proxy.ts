@@ -36,26 +36,52 @@ const PROTECTED_PREFIXES = [
   "/communications",
   "/archive",
   "/notifications",
+  "/tasks",
+  "/setup",
   "/forms",
   "/applications",
 ];
 
-/** Routes that are always public */
-const PUBLIC_PATHS = [
+/** Exact routes that are always public. */
+const PUBLIC_EXACT_PATHS = [
   "/login",
   "/register",
   "/forgot-password",
   "/reset-password",
   "/",
-  "/verify",
-  "/projects",
   "/privacy",
   "/terms",
-  "/setup",
+  "/events",
+];
+
+/** Public route families whose descendants are public too. */
+const PUBLIC_PREFIXES = [
+  "/verify",
+  "/projects",
   "/api/auth",
   "/api/health",
   "/api/ready",
 ];
+
+function isPublicPath(pathname: string) {
+  if (PUBLIC_EXACT_PATHS.includes(pathname)) return true;
+  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(`${prefix}/`))) {
+    return true;
+  }
+
+  // Event listings and published event details are public. Management routes
+  // such as /events/create and /events/:slug/edit remain protected.
+  const eventSegments = pathname.split("/").filter(Boolean);
+  return (
+    eventSegments.length === 2 &&
+    eventSegments[0] === "events" &&
+    eventSegments[1] !== "create"
+  );
+}
+
+function isPathWithinPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -93,7 +119,7 @@ export async function proxy(request: NextRequest) {
 
     // 3. Auth Protection Logic
     // Allow public paths
-    if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
+    if (isPublicPath(pathname)) {
       // Set security headers even for public paths
       response.headers.set("X-Frame-Options", "DENY");
       response.headers.set("X-Content-Type-Options", "nosniff");
@@ -103,7 +129,9 @@ export async function proxy(request: NextRequest) {
     }
 
     // Check if route is protected
-    const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));
+    const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+      isPathWithinPrefix(pathname, prefix),
+    );
 
     if (isProtected) {
       // Cookie prefix is "sdc" (configured in lib/auth.ts)

@@ -42,7 +42,7 @@ services:
       - app_uploads:/app/public/uploads
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sdc-main-router.rule=Host(`sdc.aaaryan.space`)"
+      - "traefik.http.routers.sdc-main-router.rule=Host(`${APP_HOST:-sdc.aaaryan.space}`)"
       - "traefik.http.routers.sdc-main-router.entrypoints=websecure"
       - "traefik.http.routers.sdc-main-router.tls.certresolver=letsencrypt"
       - "traefik.http.services.sdc-main-service.loadbalancer.server.port=3000"

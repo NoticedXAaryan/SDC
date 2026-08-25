@@ -1,9 +1,12 @@
-import { requireSession } from "@/lib/dal/auth";
+import { getCurrentUser } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, registrations, eventSessions } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { RegisterButton } from "@/components/events/register-button";
+import {
+  RegisterButton,
+  type RegistrationFormField,
+} from "@/components/events/register-button";
 import { generateSignedPass } from "@/lib/passes/qr";
 import { IssueCertificatesButton } from "@/components/events/issue-certificates-button";
 import { AdminEventControls } from "@/components/events/admin-event-controls";
@@ -16,9 +19,26 @@ import { Calendar, Clock, MapPin, CheckCircle2, Ticket } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+const MANAGEMENT_ROLES = ["owner", "admin", "lead", "co_lead"];
+const SESSION_MANAGEMENT_ROLES = [...MANAGEMENT_ROLES, "event_lead"];
+
+function isRegistrationFormField(value: unknown): value is RegistrationFormField {
+  if (!value || typeof value !== "object") return false;
+  const field = value as Record<string, unknown>;
+  return (
+    typeof field.id === "string" &&
+    typeof field.type === "string" &&
+    typeof field.question === "string" &&
+    typeof field.required === "boolean" &&
+    (field.options === undefined ||
+      (Array.isArray(field.options) &&
+        field.options.every((option) => typeof option === "string")))
+  );
+}
+
 export default async function EventDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const session = await requireSession();
+  const session = await getCurrentUser();
   
   let eventData = await db.select().from(events).where(eq(events.slug, slug)).limit(1);
   let event = eventData[0];
@@ -37,11 +57,17 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
     notFound();
   }
 
-  if (event.status !== "published" && !["owner", "admin", "lead", "co_lead"].includes(session.user.role as string)) {
+  const userRole = session?.user.role || "guest";
+  const canManageEvent = MANAGEMENT_ROLES.includes(userRole);
+  const canManageSessions = SESSION_MANAGEMENT_ROLES.includes(userRole);
+
+  if (event.status !== "published" && !canManageEvent) {
     notFound();
   }
 
-  const template = await db.query.certTemplates.findFirst();
+  const template = canManageEvent
+    ? await db.query.certTemplates.findFirst()
+    : null;
   
   // Get registered count dynamically
   const [countResult] = await db.select({ count: sql<number>`count(*)` })
@@ -57,19 +83,21 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
   const sessions = await db.select().from(eventSessions).where(eq(eventSessions.eventId, event.id)).orderBy(eventSessions.startTime);
 
   // Check if user is registered
-  const userRegistration = await db.select().from(registrations).where(
-    and(
-      eq(registrations.eventId, event.id),
-      eq(registrations.userId, session.user.id)
-    )
-  ).limit(1);
+  const userRegistration = session
+    ? await db.select().from(registrations).where(
+        and(
+          eq(registrations.eventId, event.id),
+          eq(registrations.userId, session.user.id)
+        )
+      ).limit(1)
+    : [];
   
   const isRegistered = userRegistration.length > 0 && userRegistration[0].status !== "cancelled";
   const registration = userRegistration[0];
   const canRegister = event.status === "published" && (!event.registrationDeadline || new Date() <= new Date(event.registrationDeadline));
   
   let signedPass = null;
-  if (isRegistered && registration?.status === "confirmed") {
+  if (session && isRegistered && registration?.status === "confirmed") {
     signedPass = generateSignedPass({
       userId: session.user.id,
       eventId: event.id,
@@ -128,7 +156,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
             <EventSessionsList 
               eventId={event.id} 
               sessions={sessions} 
-              canManage={["admin", "owner", "lead", "co_lead", "event_lead"].includes(session.user.role as string)} 
+              canManage={canManageSessions}
             />
           </div>
         </VStack>
@@ -163,11 +191,17 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                 )}
               </VStack>
               
-              {!isRegistered ? (
+              {!session ? (
+                <Button
+                  href={`/login?callbackUrl=/events/${event.slug}`}
+                  className="w-full"
+                  label="Sign in to register"
+                />
+              ) : !isRegistered ? (
                 canRegister ? (
                   <RegisterButton 
                     eventId={event.id} 
-                    forms={event.forms as any} 
+                    forms={Array.isArray(event.forms) ? event.forms.filter(isRegistrationFormField) : []}
                     isWaitlist={event.capacity ? registeredCount >= event.capacity : false} 
                   />
                 ) : (
@@ -199,7 +233,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                 </VStack>
               )}
               
-              {["admin", "owner", "lead", "co_lead"].includes(session.user.role as string) && (
+              {canManageEvent && (
                 <VStack gap={4} className="pt-6 border-t border-border mt-2">
                   <Heading level={3} className="text-lg font-semibold text-foreground">Admin Controls</Heading>
                   <VStack gap={2}>

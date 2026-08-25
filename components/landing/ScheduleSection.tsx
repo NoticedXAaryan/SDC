@@ -10,18 +10,18 @@ export function ScheduleSection({ schedule }: ScheduleSectionProps) {
     <section
       id="schedule"
       aria-labelledby="schedule-title"
-      className="bg-surface section-padding"
+      className="border-t border-white/5 bg-[#070914] section-padding"
     >
       <div className="site-container">
         <header className="max-w-3xl">
-          <p className="mb-2 font-semibold uppercase tracking-widest text-accent">
+          <p className="mb-2 font-semibold uppercase tracking-widest text-cyan-300">
             Plan your week
           </p>
-          <h2 id="schedule-title" className="font-bold text-ink">
+          <h2 id="schedule-title" className="font-bold text-white">
             Upcoming Events
           </h2>
-          <div aria-hidden="true" className="brand-rule mt-6 w-20 text-accent/40" />
-          <p className="mt-6 text-lg text-ink-muted">
+          <div aria-hidden="true" className="mt-6 h-px w-20 bg-gradient-to-r from-cyan-300 to-transparent" />
+          <p className="mt-6 text-lg text-slate-400">
             Explore our upcoming workshops, tech talks, and open-source events. Plan your schedule and join the community.
           </p>
         </header>
@@ -30,7 +30,7 @@ export function ScheduleSection({ schedule }: ScheduleSectionProps) {
           {schedule.state === "ready" ? (
             <ScheduleExplorer events={schedule.events} />
           ) : (
-            <p className="text-center text-ink-muted">
+            <p className="rounded-2xl border border-white/10 bg-white/[0.035] p-8 text-center text-slate-400">
               Event data is temporarily unavailable.
             </p>
           )}

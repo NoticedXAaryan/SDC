@@ -107,18 +107,18 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [], pend
                 </VStack>
               ) : role === "event_lead" ? (
                 <VStack gap={2}>
-                  <Button variant="secondary" className="justify-start w-full py-3" href="/manage/events/new" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
+                  <Button variant="secondary" className="justify-start w-full py-3" href="/events/create" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/scanner" label="Check-in Scanner" icon={<ClipboardList className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/forms" label="Feedback Forms" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
                 </VStack>
               ) : role === "marketing_lead" ? (
                 <VStack gap={2}>
-                  <Button variant="secondary" className="justify-start w-full py-3" href="/communications/newsletters" label="Newsletters" icon={<Inbox className="w-4 h-4 text-muted-foreground" />} />
-                  <Button variant="secondary" className="justify-start w-full py-3" href="/communications/social" label="Social Media" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
+                  <Button variant="secondary" className="justify-start w-full py-3" href="/communications" label="Newsletters" icon={<Inbox className="w-4 h-4 text-muted-foreground" />} />
+                  <Button variant="secondary" className="justify-start w-full py-3" href="/communications" label="Social Media" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
                 </VStack>
               ) : (
                 <VStack gap={2}>
-                  <Button variant="secondary" className="justify-start w-full py-3" href="/manage/events/new" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
+                  <Button variant="secondary" className="justify-start w-full py-3" href="/events/create" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/forms" label="Form Builder" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/recruitment" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/settings" label="Settings" icon={<Settings className="w-4 h-4 text-muted-foreground" />} />

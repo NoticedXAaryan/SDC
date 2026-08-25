@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Globe, Mail, MapPin, Users, Code } from "lucide-react";
+import GradualBlur from "@/components/ui/GradualBlur";
 
 const QUICK_LINKS = [
-  { label: "About", href: "#about" },
-  { label: "Schedule", href: "#schedule" },
+  { label: "About", href: "/#about" },
+  { label: "Schedule", href: "/#schedule" },
   { label: "Register", href: "/register" },
   { label: "Login", href: "/login" },
 ] as const;
@@ -123,6 +124,16 @@ export function SiteFooter() {
           </div>
 
 
+          <GradualBlur
+            target="parent"
+            position="bottom"
+            height="8rem"
+            strength={3}
+            divCount={5}
+            curve="bezier"
+            exponential={true}
+            opacity={1}
+          />
         </div>
       </div>
     </footer>

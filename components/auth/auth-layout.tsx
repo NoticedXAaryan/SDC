@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, Code2, Sparkles, Users2 } from "lucide-react";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -6,79 +7,83 @@ interface AuthLayoutProps {
   subheading?: string;
 }
 
+const SIGNALS = [
+  { icon: Code2, label: "Build in public" },
+  { icon: Users2, label: "Find your people" },
+  { icon: Sparkles, label: "Ship what matters" },
+] as const;
+
 export function AuthLayout({
   children,
   heading = "Welcome to SDC",
   subheading = "Parul University's Student Developer Club",
 }: AuthLayoutProps) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      {/* Left panel — brand identity (Cosmic Space Theme) */}
-      <div className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-background p-10 text-foreground border-r border-border/50">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-20" />
-        
-        {/* Celestial Gradients */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] mix-blend-screen -translate-y-1/3 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[80px] mix-blend-screen translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+    <main className="relative min-h-screen overflow-hidden bg-[#02030a] text-white selection:bg-violet-500/30">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(109,40,217,0.18),transparent_30%),radial-gradient(circle_at_82%_75%,rgba(37,99,235,0.12),transparent_26%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(circle,rgba(255,255,255,0.5)_0.6px,transparent_0.7px)] [background-size:38px_38px]" />
 
-        {/* Orbital/Blackhole Motifs */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-primary/10 rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-primary/5 rounded-full border-dashed opacity-50 animate-[spin_100s_linear_infinite] pointer-events-none" />
-
-        {/* Logo */}
-        <div className="relative z-10">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground text-background font-bold text-lg transition-transform group-hover:scale-105 shadow-[0_0_15px_rgba(var(--foreground),0.2)]">
-              S
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base font-semibold tracking-tight leading-none text-foreground">
-                SDC
-              </span>
-              <span className="text-xs text-muted-foreground leading-tight mt-0.5">
-                Student Developer Club
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Centered branding text */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center max-w-md">
-          <h1 className="text-4xl font-bold tracking-tight leading-tight text-foreground">
-            {heading}
-          </h1>
-          <p className="mt-4 text-muted-foreground text-lg leading-relaxed font-light">
-            {subheading}
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground">
-          <span>© 2026 Student Developer Club</span>
-          <span>Parul University</span>
-        </div>
-      </div>
-
-      {/* Right panel — form content */}
-      <div className="flex flex-col">
-        {/* Mobile header */}
-        <div className="flex items-center justify-between p-4 lg:hidden">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background font-bold text-sm">
-              S
-            </div>
-            <span className="text-sm font-semibold tracking-tight">
-              SDC
+      <div className="relative mx-auto grid min-h-screen max-w-[1600px] lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="relative hidden min-h-screen overflow-hidden border-r border-white/[0.07] p-10 lg:flex lg:flex-col xl:p-14">
+          <Link href="/" className="relative z-20 inline-flex w-fit items-center gap-3 text-white">
+            <span className="relative h-10 w-10 rounded-full border border-violet-300/25 bg-black shadow-[0_0_24px_rgba(124,58,237,0.4)]">
+              <span className="absolute inset-[7px] rounded-full bg-black" />
+              <span className="absolute inset-[4px] -rotate-12 rounded-full border-t-2 border-violet-300/80" />
+            </span>
+            <span>
+              <span className="block text-sm font-black tracking-[0.2em]">SDC · PU</span>
+              <span className="mt-0.5 block text-[10px] uppercase tracking-[0.24em] text-slate-500">Builder portal</span>
             </span>
           </Link>
-        </div>
 
-        {/* Form area */}
-        <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
-          <div className="w-full max-w-[420px]">{children}</div>
-        </div>
+          <div className="pointer-events-none absolute left-1/2 top-[43%] h-[min(40vw,570px)] w-[min(40vw,570px)] -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute inset-0 rounded-full border border-violet-300/[0.08]" />
+            <div className="absolute inset-[13%] rounded-full border border-dashed border-blue-300/[0.09]" />
+            <div className="absolute inset-[27%] rounded-full bg-violet-500/15 blur-[36px]" />
+            <div className="absolute inset-[34%] rounded-full bg-black shadow-[0_0_34px_8px_rgba(124,58,237,0.42),0_0_100px_22px_rgba(37,99,235,0.16)]" />
+            <div className="absolute left-[14%] right-[14%] top-1/2 h-[13%] -translate-y-1/2 -rotate-[10deg] rounded-[100%] bg-gradient-to-r from-transparent via-blue-200/70 to-violet-200/90 blur-[2px]" />
+            <div className="absolute inset-[35%] rounded-full bg-black" />
+          </div>
+
+          <div className="relative z-10 my-auto max-w-lg pt-[32vh]">
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-violet-300">Enter the builder orbit</p>
+            <h1 className="mt-4 text-4xl font-black leading-[1.05] tracking-[-0.04em] xl:text-5xl">{heading}</h1>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-slate-400 xl:text-lg">{subheading}</p>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {SIGNALS.map(({ icon: Icon, label }) => (
+                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-300 backdrop-blur-sm">
+                  <Icon size={14} className="text-violet-300" aria-hidden="true" />
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between text-xs text-slate-600">
+            <span>© 2026 Student Developer Club</span>
+            <span>Parul University</span>
+          </div>
+        </section>
+
+        <section className="flex min-h-screen flex-col">
+          <header className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-black tracking-[0.16em] text-white lg:hidden">
+              <span className="h-7 w-7 rounded-full border border-violet-300/30 bg-black shadow-[0_0_16px_rgba(124,58,237,0.45)]" />
+              SDC · PU
+            </Link>
+            <Link href="/" className="ml-auto inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-white">
+              <ArrowLeft size={15} aria-hidden="true" />
+              Back to home
+            </Link>
+          </header>
+
+          <div className="flex flex-1 items-center justify-center px-4 pb-10 sm:px-8 lg:px-12">
+            <div className="w-full max-w-[470px] rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-9">
+              {children}
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

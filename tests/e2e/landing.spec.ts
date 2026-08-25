@@ -5,13 +5,18 @@ test.describe('Landing Page', () => {
     // Navigate to the landing page
     await page.goto('/');
 
-    // Wait for the footer to be visible (using semantic tag or specific component if possible)
-    // We assume the footer has a specific role or tag, standard in Astryx-first/Shadcn UI is often <footer>
-    const footer = page.locator('footer');
+    // The server-rendered shell is replaced once the viewer state hydrates on
+    // narrow viewports, so wait for that handoff before holding a locator.
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(250);
+
+    // Select the semantic page footer explicitly. Using the role keeps this
+    // stable even when visual-effect wrappers are present in desktop Chromium.
+    const footer = page.getByRole('contentinfo').first();
     
     // Ensure the footer is in the viewport and fully loaded
-    await footer.scrollIntoViewIfNeeded();
     await footer.waitFor({ state: 'visible' });
+    await footer.scrollIntoViewIfNeeded();
     
     // Allow any animations to settle
     await page.waitForTimeout(1000);

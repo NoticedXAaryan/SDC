@@ -11,39 +11,40 @@ export const dynamic = "force-dynamic";
  * Checks actual connectivity to critical dependencies (DB, Redis).
  */
 export async function GET() {
-  let dbStatus = "unknown";
-  let redisStatus = "unknown";
+  let databaseReady = false;
+  let redisReady = false;
   
   try {
     await db.execute(sql`SELECT 1`);
-    dbStatus = "connected";
-  } catch (error: any) {
-    dbStatus = `fail: ${error.message}`;
+    databaseReady = true;
+  } catch (error: unknown) {
+    console.error("Readiness database check failed", error);
   }
 
   try {
     const redis = getRedisClient();
-    if ((redis as any).isMock) {
-      redisStatus = "mock (build)";
+    if ("isMock" in redis && redis.isMock) {
+      redisReady = process.env.SKIP_REDIS === "1";
     } else {
       await redis.ping();
-      redisStatus = "connected";
+      redisReady = true;
     }
-  } catch (error: any) {
-    redisStatus = `degraded: ${error.message}`;
+  } catch (error: unknown) {
+    console.error("Readiness Redis check failed", error);
   }
 
-  const isDbConfigured = !!process.env.DATABASE_URL;
-  const isAuthConfigured = !!process.env.BETTER_AUTH_SECRET && !!process.env.BETTER_AUTH_URL;
+  const authReady = Boolean(
+    process.env.BETTER_AUTH_SECRET && process.env.BETTER_AUTH_URL,
+  );
   
-  const isReady = dbStatus === "connected" && isAuthConfigured;
+  const isReady = databaseReady && redisReady && authReady;
 
   return NextResponse.json({
     status: isReady ? "ready" : "not_ready",
     checks: {
-      database: dbStatus,
-      auth: isAuthConfigured ? "configured" : "missing_secrets",
-      redis: redisStatus,
+      database: databaseReady ? "ready" : "unavailable",
+      auth: authReady ? "ready" : "unavailable",
+      redis: redisReady ? "ready" : "unavailable",
     },
     timestamp: new Date().toISOString()
   }, {

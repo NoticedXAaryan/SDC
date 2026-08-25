@@ -50,7 +50,7 @@ if (newStatus === "approved") {
     type: "project_published",
     title: "New Tech Project Published!",
     message: `Check out the newly published project: ${updated.title}`,
-    link: updated.liveUrl || updated.githubUrl || `/projects/${updated.id}`
+    link: updated.liveUrl || updated.githubUrl || "/internal-projects"
   }));
 
   // Batch insert notifications

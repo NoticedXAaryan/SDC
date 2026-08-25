@@ -15,8 +15,8 @@ export interface SiteHeaderProps {
 
 const NAV_LINKS = [
   { label: "About", href: "#about" },
-  { label: "Highlights", href: "#highlights" },
-  { label: "Schedule", href: "#schedule" },
+  { label: "Programs", href: "#highlights" },
+  { label: "Events", href: "/events" },
   { label: "FAQ", href: "#faq" },
 ] as const;
 
@@ -52,13 +52,13 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
           borderRadius: isScrolled ? 999 : 0,
           // Glass, not a black slab: transparent at rest, lightly frosted once condensed.
           backgroundColor: isScrolled
-            ? "rgba(255, 255, 255, 0.98)"
-            : "rgba(255, 255, 255, 0)",
+            ? "rgba(3, 5, 12, 0.86)"
+            : "rgba(2, 3, 8, 0.18)",
           borderColor: isScrolled
-            ? "rgba(0, 0, 0, 0.08)"
-            : "rgba(0, 0, 0, 0)",
+            ? "rgba(255, 255, 255, 0.12)"
+            : "rgba(255, 255, 255, 0)",
           boxShadow: isScrolled
-            ? "0 10px 30px -10px rgba(0, 0, 0, 0.15)"
+            ? "0 18px 60px -24px rgba(76, 29, 149, 0.55)"
             : "0 0 0 0 rgba(0, 0, 0, 0)",
         }}
         transition={{ type: "spring", stiffness: 380, damping: 32 }}
@@ -74,16 +74,13 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
           )}
         >
           {/* Logo */}
-          <Link href="/" className="flex shrink-0 items-center gap-2">
-            <img
-              src="/logo.jpg"
-              alt="SDC Parul University"
-              className={cn(
-                "w-auto object-contain transition-all duration-300",
-                isScrolled ? "h-8" : "h-10 tablet:h-12"
-              )}
-            />
-            <span className="sr-only">SDC PU</span>
+          <Link href="/" className="flex shrink-0 items-center gap-3 text-white">
+            <span className="relative flex h-9 w-9 items-center justify-center" aria-hidden="true">
+              <span className="absolute inset-1 rounded-full border border-violet-300/40" />
+              <span className="absolute h-2.5 w-7 -rotate-12 rounded-full bg-gradient-to-r from-blue-400 via-white to-violet-400 blur-[1px]" />
+              <span className="relative h-3.5 w-3.5 rounded-full bg-black shadow-[0_0_12px_rgba(139,92,246,.8)]" />
+            </span>
+            <span className="text-sm font-semibold tracking-[0.16em]">SDC · PU</span>
           </Link>
 
           {/* Desktop nav */}
@@ -100,7 +97,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
                 href={link.href}
                 className={cn(
                   "group relative py-1.5 font-bold transition-colors",
-                  isScrolled ? "text-ink hover:text-primary text-[14px]" : "text-surface/90 hover:text-surface text-sm"
+                  isScrolled ? "text-white/75 hover:text-white text-[14px]" : "text-white/75 hover:text-white text-sm"
                 )}
               >
                 {link.label}
@@ -149,7 +146,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
                   href="/login"
                   className={cn(
                     "font-bold transition-colors",
-                    isScrolled ? "text-ink hover:text-primary text-[14px]" : "text-surface/90 hover:text-surface text-sm"
+                    isScrolled ? "text-white/75 hover:text-white text-[14px]" : "text-white/75 hover:text-white text-sm"
                   )}
                 >
                   Login
@@ -158,7 +155,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
                   href="/register"
                   className={cn(
                     "inline-flex items-center justify-center rounded-pill font-bold transition-colors",
-                    isScrolled ? "bg-primary text-surface hover:bg-primary-strong px-5 py-2 text-[13px]" : "bg-surface text-primary hover:bg-surface-alt px-6 py-2.5 text-sm"
+                    isScrolled ? "bg-white text-slate-950 hover:bg-violet-100 px-5 py-2 text-[13px]" : "bg-white text-slate-950 hover:bg-violet-100 px-6 py-2.5 text-sm"
                   )}
                 >
                   Register
@@ -174,7 +171,7 @@ export function SiteHeader({ viewer }: SiteHeaderProps) {
             aria-haspopup="dialog"
             className={cn(
               "desktop:hidden flex min-h-touch min-w-touch items-center justify-center rounded-pill transition-colors",
-              isScrolled ? "text-ink-muted hover:text-ink" : "text-surface/80 hover:text-surface"
+              isScrolled ? "text-white/75 hover:text-white" : "text-white/75 hover:text-white"
             )}
             data-mobile-nav-trigger
           >

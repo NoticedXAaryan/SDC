@@ -21,8 +21,7 @@ export function ForgotPasswordForm() {
     setSuccess(false);
     
     try {
-      // @ts-ignore
-      const result = await authClient.forgetPassword({
+      const result = await authClient.requestPasswordReset({
         email,
         redirectTo: "/reset-password",
       });
@@ -41,19 +40,19 @@ export function ForgotPasswordForm() {
 
   if (success) {
     return (
-      <div className="space-y-6 text-center">
+      <div className="space-y-6 text-center text-white">
         <div className="flex justify-center">
-          <div className="rounded-full bg-primary/10 p-3">
-            <CheckCircle2 className="h-6 w-6 text-primary" />
+          <div className="rounded-full border border-cyan-300/20 bg-cyan-400/10 p-3">
+            <CheckCircle2 className="h-6 w-6 text-cyan-300" />
           </div>
         </div>
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
-          <p className="text-sm text-muted-foreground">
-            We have sent a password reset link to <span className="font-medium text-foreground">{email}</span>.
+          <p className="text-sm text-slate-400">
+            If an account exists for <span className="font-medium text-white">{email}</span>, a reset link is on its way.
           </p>
         </div>
-        <Button variant="outline" className="w-full" asChild>
+        <Button variant="outline" className="w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" asChild>
           <Link href="/login">Return to login</Link>
         </Button>
       </div>
@@ -64,8 +63,9 @@ export function ForgotPasswordForm() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Forgot password?</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Account recovery</p>
+        <h2 className="text-3xl font-black tracking-[-0.03em] text-white">Reset your access</h2>
+        <p className="text-sm text-slate-400">
           Enter your email address and we will send you a link to reset your password.
         </p>
       </div>
@@ -73,7 +73,7 @@ export function ForgotPasswordForm() {
       {/* Form */}
       <form onSubmit={handleReset} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="reset-email">Email</Label>
+          <Label htmlFor="reset-email" className="text-slate-300">Email</Label>
           <Input 
             id="reset-email" 
             type="email" 
@@ -81,19 +81,19 @@ export function ForgotPasswordForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="h-11"
+            className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-600 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20"
             autoComplete="email"
           />
         </div>
 
         {error && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-lg flex items-center gap-2 text-sm">
+          <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-200">
             <AlertCircle className="w-4 h-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <Button type="submit" className="w-full h-11" disabled={loading}>
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -106,11 +106,11 @@ export function ForgotPasswordForm() {
       </form>
 
       {/* Footer */}
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="text-center text-sm text-slate-500">
         Remember your password?{" "}
         <Link 
           href="/login" 
-          className="font-medium text-foreground hover:underline underline-offset-4"
+          className="font-bold text-white transition-colors hover:text-violet-200"
         >
           Sign in
         </Link>

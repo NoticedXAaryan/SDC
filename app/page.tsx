@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { MessageCircle, ArrowRight } from "lucide-react";
 
 // Assuming we bypass auth for now, or use the existing one if we can
@@ -14,7 +13,6 @@ import { FESTIVAL_FAQS } from "@/lib/landing/content";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { AboutSection } from "@/components/landing/AboutSection";
-import { LandingHighlights } from "@/components/landing/LandingHighlights";
 import { HighlightsSection } from "@/components/landing/HighlightsSection";
 import { AudienceSection } from "@/components/landing/AudienceSection";
 import { ScheduleSection } from "@/components/landing/ScheduleSection";
@@ -44,7 +42,6 @@ export default async function Page() {
 
         <MotionProvider>
           <AboutSection />
-          <LandingHighlights />
           <HighlightsSection />
           <AudienceSection />
           <ScheduleSection schedule={schedule} />

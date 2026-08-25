@@ -1,309 +1,177 @@
 "use client";
 
-import React, { useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { CalendarDays, MapPin, ArrowRight } from "lucide-react";
-import { motion, useMotionValue, useSpring, useMotionTemplate } from "motion/react";
+import { ArrowRight, CalendarDays, MapPin, Orbit } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+
+import GradualBlur from "@/components/ui/GradualBlur";
 import type { Viewer } from "@/lib/landing/auth-routing";
-import { FESTIVAL_STATISTICS } from "@/lib/landing/content";
-import { Meteors } from "@/components/ui/meteors";
 
 interface HeroSectionProps {
   viewer: Viewer;
 }
 
-const TRACK_FILTERS = [
-  { label: "Web Dev", href: "#highlights" },
-  { label: "App Dev", href: "#highlights" },
-  { label: "AI/ML", href: "#highlights" },
-  { label: "UI/UX", href: "#highlights" },
-  { label: "Open Source", href: "#highlights" },
-] as const;
-
-
-
-const container = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.09, delayChildren: 0.05 },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 18 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 300, damping: 26 },
-  },
-};
+const TRACKS = ["Web", "Mobile", "AI / ML", "Design", "Open source"] as const;
 
 export function HeroSection({ viewer }: HeroSectionProps) {
-  const cta = viewer.authenticated
-    ? { href: viewer.dashboardPath ?? "/dashboard/user", label: "Go to Dashboard" }
-    : { href: "/register", label: "Register Now" };
-
-  const sectionRef = useRef<HTMLElement>(null);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const smoothX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const smoothY = useSpring(mouseY, { stiffness: 50, damping: 20 });
-  const spotlightX = useMotionTemplate`calc(${smoothX}px - 600px)`;
-  const spotlightY = useMotionTemplate`calc(${smoothY}px - 600px)`;
-
-  function handleMouseMove(e: React.MouseEvent<HTMLElement>) {
-    if (!sectionRef.current) return;
-    const { left, top } = sectionRef.current.getBoundingClientRect();
-    mouseX.set(e.clientX - left);
-    mouseY.set(e.clientY - top);
-  }
+  const reduceMotion = useReducedMotion();
+  const primaryAction = viewer.authenticated
+    ? { href: viewer.dashboardPath ?? "/dashboard", label: "Open dashboard" }
+    : { href: "/register", label: "Join the club" };
 
   return (
     <section
-      ref={sectionRef}
-      onMouseMove={handleMouseMove}
       id="hero"
       aria-labelledby="hero-title"
-      className="relative overflow-hidden bg-primary min-h-screen"
+      className="relative isolate min-h-[94svh] overflow-hidden bg-[#020308] text-white"
     >
-      {/* Reactive Spotlight */}
-      <motion.div
-        className="pointer-events-none absolute left-0 top-0 z-0 h-[1200px] w-[1200px] rounded-full"
-        style={{ 
-          x: spotlightX,
-          y: spotlightY,
-          background: "radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%)",
-          willChange: "transform",
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-70"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 18% 22%, rgba(139,92,246,.16), transparent 26%), radial-gradient(circle at 76% 52%, rgba(37,99,235,.13), transparent 31%), radial-gradient(rgba(255,255,255,.42) .6px, transparent .7px)",
+          backgroundSize: "auto, auto, 42px 42px",
         }}
       />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-violet-500/[0.07] to-transparent"
+      />
 
-      <Meteors number={20} />
-
-      <div className="site-container relative z-10 pt-24 tablet:pt-32 desktop:pt-28 pb-14">
-        <motion.div variants={container} initial="hidden" animate="visible" className="flex flex-col-reverse desktop:flex-row desktop:items-start desktop:justify-between gap-12 desktop:gap-8">
-          
-          {/* Left Column: Main content */}
-          <div className="flex-1 max-w-4xl">
-            {/* ── Knockout headline ── */}
-          <motion.h1
-            variants={item}
-            id="hero-title"
-            className="font-black uppercase leading-[0.84] tracking-[-0.03em] text-4xl tablet:text-5xl desktop:text-6xl"
-          >
-            {/* Accessible label, since the visible glyphs are image-filled */}
-            <span className="sr-only">Student Developer Club PU</span>
-
-            <span aria-hidden="true" className="flex flex-wrap items-center gap-x-4">
-              <span className="inline-block rounded-2xl bg-[#005ce6] px-[0.15em] py-[0.05em] text-[clamp(2.5rem,10vw,8rem)] leading-[0.84] text-surface mix-blend-normal shadow-sm">
-                STUDENT
-              </span>
-              <span
-                className="text-[clamp(3.25rem,15vw,11rem)] text-white"
-              >
-                DEVELOPER
-              </span>
-            </span>
-
-            <span aria-hidden="true" className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span
-                className="text-[clamp(3.25rem,15vw,11rem)] text-white"
-              >
-                Club
-              </span>
-              <span className="text-[clamp(2rem,7vw,5rem)] font-black tracking-tight text-accent-strong">
-                PU
-              </span>
-            </span>
-          </motion.h1>
-
-          <motion.div
-            variants={item}
-            aria-hidden="true"
-            className="brand-rule mt-8 w-24 text-accent/50"
-          />
-
-          {/* Content moved to full-width bottom panel */}
-        </div>
-
-        {/* Right Column: Rocket Graphic */}
-        <motion.div 
-          variants={item} 
-          className="hidden desktop:flex flex-col items-end pt-12"
-        >
-          {/* Animated Premium SVG Rocket */}
-            <motion.svg
-              initial={{ y: 0, x: 0, rotate: 12, scale: 1, opacity: 1 }}
-              animate={{ 
-                y: [0, -20, 0, -20, -1000, 1000, 0], 
-                x: [0, 10, 0, 10, 500, -500, 0],
-                scale: [1, 1, 1, 1, 0.4, 0.4, 1],
-                rotate: [12, 15, 12, 15, 45, 45, 12],
-                opacity: [1, 1, 1, 1, 0, 0, 1]
-              }}
-              transition={{ 
-                duration: 12, 
-                repeat: Infinity, 
-                times: [0, 0.2, 0.4, 0.6, 0.75, 0.76, 1],
-                ease: "easeInOut" 
-              }}
-              viewBox="0 0 256 320"
-              className="w-48 h-48 tablet:w-72 tablet:h-72 desktop:w-96 desktop:h-96 mr-4 mt-8 drop-shadow-2xl"
-              style={{ willChange: "transform", overflow: "visible" }}
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <defs>
-                <linearGradient id="rocketBody" x1="128" y1="16" x2="128" y2="196" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#FFFFFF" />
-                  <stop offset="100%" stopColor="#E0E0E0" />
-                </linearGradient>
-                <linearGradient id="rocketNose" x1="128" y1="16" x2="128" y2="106" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#EF4444" />
-                  <stop offset="100%" stopColor="#991B1B" />
-                </linearGradient>
-                <linearGradient id="flame" x1="128" y1="146" x2="128" y2="256" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#FDE047" />
-                  <stop offset="50%" stopColor="#F97316" />
-                  <stop offset="100%" stopColor="#EF4444" />
-                </linearGradient>
-              </defs>
-              {/* Left Fin */}
-              <path d="M78 186L28 226V256L98 226V186Z" fill="#EF4444" opacity="0.9"/>
-              <path d="M78 186L60 215V230L90 215V186Z" fill="#7F1D1D" opacity="0.5"/>
-              {/* Right Fin */}
-              <path d="M178 186L228 226V256L158 226V186Z" fill="#EF4444" opacity="0.9"/>
-              <path d="M178 186L196 215V230L166 215V186Z" fill="#7F1D1D" opacity="0.5"/>
-              {/* Animated Flames */}
-              <motion.g
-                animate={{
-                  scaleY: [1, 0.9, 1, 0.9, 1.2, 1.2, 1],
-                  scaleX: [1, 0.95, 1, 0.95, 1.1, 1.1, 1],
-                  opacity: [0.8, 1, 0.8, 1, 1, 1, 0.8]
-                }}
-                transition={{
-                  duration: 12,
-                  repeat: Infinity,
-                  times: [0, 0.2, 0.4, 0.6, 0.75, 0.76, 1],
-                  ease: "easeInOut"
-                }}
-                style={{ transformOrigin: "128px 196px" }}
-              >
-                {/* Flame Outer */}
-                <path d="M128 256C128 256 88 206 88 146C88 86 128 56 128 56C128 56 168 86 168 146C168 206 128 256 128 256Z" fill="url(#flame)"/>
-                {/* Flame Inner */}
-                <path d="M128 236C128 236 108 196 108 156C108 116 128 96 128 96C128 96 148 116 148 156C148 196 128 236 128 236Z" fill="#FEF08A"/>
-              </motion.g>
-              {/* Main Body */}
-              <path d="M128 16C68 86 78 196 78 196H178C178 196 188 86 128 16Z" fill="url(#rocketBody)"/>
-              {/* Body Highlight */}
-              <path d="M128 16C80 86 85 196 85 196H128V16Z" fill="#FFFFFF" opacity="0.6"/>
-              {/* Nose Cone */}
-              <path d="M128 16C105.5 40 91.5 70 85 106H171C164.5 70 150.5 40 128 16Z" fill="url(#rocketNose)"/>
-              {/* Nose Highlight */}
-              <path d="M128 16C110 40 98 70 94 106H128V16Z" fill="#FCA5A5" opacity="0.6"/>
-              {/* Window Outer */}
-              <circle cx="128" cy="126" r="24" fill="#9CA3AF"/>
-              {/* Window Inner */}
-              <circle cx="128" cy="126" r="18" fill="#1E3A8A"/>
-              {/* Window reflection */}
-              <path d="M136 114A18 18 0 0 0 114 136A18 18 0 0 1 136 114Z" fill="#93C5FD" opacity="0.8"/>
-            </motion.svg>
-          </motion.div>
-
-        </motion.div>
-
-        {/* BOTTOM SECTION: Content & Actions Panel */}
-        <motion.div variants={item} initial="hidden" animate="visible" className="mt-12 desktop:mt-20 w-full flex flex-col gap-10">
-          
-          {/* Subtitle & Tracks Row */}
-          <div className="flex flex-col desktop:flex-row desktop:items-center justify-between gap-8 border-b border-surface/20 pb-8">
-            <div className="max-w-2xl">
-              <p className="text-2xl font-bold text-surface tracking-tight leading-snug">
-                Where students become developers, designers, and leaders.
-              </p>
-              <p className="mt-4 text-lg leading-relaxed text-surface/80">
-                Workshops, hackathons, open-source events, and a vibrant community of tech enthusiasts.
-              </p>
-            </div>
-            
-            {/* Track filter rail */}
-            <ul aria-label="Programme tracks" className="flex flex-wrap desktop:justify-end gap-3 max-w-xl">
-              {TRACK_FILTERS.map((track) => (
-                <li key={track.label}>
-                  <a
-                    href={track.href}
-                    className="inline-flex items-center rounded-full border border-surface/20 bg-primary-strong/30 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-surface transition-colors hover:bg-surface hover:text-primary shadow-sm"
-                  >
-                    {track.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Actions & Meta Row */}
-          <div className="flex flex-col desktop:flex-row desktop:items-center justify-between gap-8 rounded-[2rem] bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl p-6 tablet:p-8">
-            <div className="flex flex-col gap-5 text-base font-medium text-surface">
-              <span className="inline-flex items-center gap-4">
-                <div className="p-2.5 rounded-full bg-accent/20 text-accent"><CalendarDays size={20} /></div>
-                Weekly Workshops & Events
-              </span>
-              <span className="inline-flex items-center gap-4">
-                <div className="p-2.5 rounded-full bg-accent/20 text-accent"><MapPin size={20} /></div>
-                Parul University Campus
-              </span>
-            </div>
-
-            <div className="flex flex-col w-full desktop:w-auto gap-4">
-              <Link
-                href={cta.href}
-                className="group w-full inline-flex items-center justify-center gap-3 rounded-full bg-surface px-8 py-4 text-lg font-extrabold text-primary transition-colors hover:bg-surface-alt shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-              >
-                {cta.label}
-                <ArrowRight aria-hidden="true" size={20} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-              <div className="flex flex-col tablet:flex-row w-full gap-4">
-                <a
-                  href="#schedule"
-                  className="flex-1 inline-flex items-center justify-center rounded-full border border-surface/30 bg-white/5 backdrop-blur-md px-6 py-4 text-base font-bold text-surface transition-colors hover:bg-white/10 hover:border-surface shadow-sm whitespace-nowrap"
-                >
-                  Explore Schedule
-                </a>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-
-      {/* ── Stats strip ── */}
-      <div className="site-container relative z-10 pb-16 pt-10 tablet:pb-20">
+      <div className="site-container relative z-10 grid min-h-[94svh] items-center gap-12 pb-24 pt-32 desktop:grid-cols-[1.05fr_.95fr] desktop:pb-28 desktop:pt-28">
         <motion.div
-          variants={item}
-          initial="hidden"
-          animate="visible"
-          className="rounded-3xl border border-surface-alt bg-surface p-7 shadow-sm"
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-3xl"
         >
-          <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted desktop:text-left">
-            Our Community Impact
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-200/80 backdrop-blur-md">
+            <Orbit size={14} aria-hidden="true" />
+            Parul University · Student builder community
+          </div>
+
+          <h1
+            id="hero-title"
+            className="max-w-4xl text-[clamp(3.8rem,9vw,8.4rem)] font-semibold leading-[0.88] tracking-[-0.065em]"
+          >
+            Build beyond
+            <span className="block bg-gradient-to-r from-white via-violet-200 to-blue-300 bg-clip-text text-transparent">
+              the event horizon.
+            </span>
+          </h1>
+
+          <p className="mt-8 max-w-2xl text-base leading-7 text-slate-300 tablet:text-lg tablet:leading-8">
+            Learn in public, ship ambitious projects, and find the people who
+            make your ideas feel inevitable. SDC is where curious students grow
+            into builders and leaders.
           </p>
-          <dl className="mt-6 grid grid-cols-2 gap-7 desktop:grid-cols-4">
-            {FESTIVAL_STATISTICS.map((statistic) => (
-              <div key={statistic.label} className="text-center desktop:text-left">
-                <dd className="text-3xl font-black leading-none tracking-tighter text-ink tablet:text-4xl">
-                  {statistic.value}
-                </dd>
-                <dt className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
-                  {statistic.label}
-                </dt>
-              </div>
+
+          <div className="mt-9 flex flex-col gap-3 tablet:flex-row tablet:items-center">
+            <Link
+              href={primaryAction.href}
+              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-violet-100"
+            >
+              {primaryAction.label}
+              <ArrowRight
+                size={16}
+                aria-hidden="true"
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </Link>
+            <Link
+              href="/events"
+              className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.035] px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:border-violet-300/40 hover:bg-white/[0.07]"
+            >
+              Explore events
+            </Link>
+          </div>
+
+          <div className="mt-10 flex flex-wrap gap-2" aria-label="Learning tracks">
+            {TRACKS.map((track) => (
+              <span
+                key={track}
+                className="rounded-full border border-white/[0.08] px-3 py-1.5 text-xs text-slate-400"
+              >
+                {track}
+              </span>
             ))}
-          </dl>
+          </div>
         </motion.div>
+
+        <div className="relative mx-auto flex w-full max-w-[620px] items-center justify-center desktop:justify-end">
+          <div
+            aria-label="Abstract black hole with a violet and blue accretion disk"
+            role="img"
+            className="relative aspect-square w-full"
+          >
+            <motion.div
+              aria-hidden="true"
+              className="absolute inset-[5%] rounded-full border border-violet-300/[0.08]"
+              animate={reduceMotion ? undefined : { rotate: 360 }}
+              transition={{ duration: 42, repeat: Infinity, ease: "linear" }}
+            >
+              <span className="absolute left-[15%] top-[11%] h-1.5 w-1.5 rounded-full bg-blue-200 shadow-[0_0_18px_5px_rgba(147,197,253,.45)]" />
+              <span className="absolute bottom-[20%] right-[7%] h-1 w-1 rounded-full bg-violet-200 shadow-[0_0_16px_4px_rgba(196,181,253,.5)]" />
+            </motion.div>
+            <motion.div
+              aria-hidden="true"
+              className="absolute inset-[14%] rounded-full border border-dashed border-blue-200/[0.1]"
+              animate={reduceMotion ? undefined : { rotate: -360 }}
+              transition={{ duration: 31, repeat: Infinity, ease: "linear" }}
+            />
+
+            <div
+              aria-hidden="true"
+              className="absolute inset-[16%] rounded-full bg-violet-500/15 blur-[72px]"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 top-1/2 h-[17%] w-[91%] -translate-x-1/2 -translate-y-1/2 -rotate-[10deg] rounded-[50%] blur-[7px]"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent 2%, rgba(37,99,235,.2) 15%, rgba(125,211,252,.95) 36%, #fff 49%, rgba(196,181,253,.95) 58%, rgba(124,58,237,.38) 78%, transparent 98%)",
+                boxShadow:
+                  "0 0 36px rgba(99,102,241,.55), 0 0 100px rgba(76,29,149,.38)",
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 top-1/2 h-[8%] w-[86%] -translate-x-1/2 -translate-y-1/2 -rotate-[10deg] rounded-[50%] bg-white/80 blur-[3px]"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 top-1/2 aspect-square w-[38%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black shadow-[0_0_0_3px_rgba(255,255,255,.18),0_0_30px_8px_rgba(139,92,246,.32),inset_0_0_45px_rgba(0,0,0,1)]"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute left-1/2 top-1/2 aspect-square w-[46%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-100/20 blur-[1px]"
+            />
+
+            <div className="absolute bottom-[4%] left-1/2 flex -translate-x-1/2 items-center gap-5 whitespace-nowrap rounded-full border border-white/10 bg-black/40 px-5 py-3 text-xs text-slate-300 backdrop-blur-xl">
+              <span className="inline-flex items-center gap-2">
+                <CalendarDays size={14} className="text-violet-300" aria-hidden="true" />
+                Weekly sessions
+              </span>
+              <span className="h-4 w-px bg-white/10" aria-hidden="true" />
+              <span className="inline-flex items-center gap-2">
+                <MapPin size={14} className="text-blue-300" aria-hidden="true" />
+                PU campus
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <GradualBlur
+        target="parent"
+        position="bottom"
+        height="7rem"
+        strength={2.2}
+        divCount={6}
+        curve="ease-out"
+        opacity={0.72}
+      />
     </section>
   );
 }

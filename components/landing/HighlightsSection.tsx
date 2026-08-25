@@ -8,20 +8,21 @@ export function HighlightsSection() {
     <section
       id="highlights"
       aria-labelledby="highlights-title"
-      className="bg-canvas section-padding relative z-20"
+      className="relative z-20 overflow-hidden bg-[#03040a] section-padding"
     >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(99,102,241,0.15),transparent_34%)]" />
       <div className="site-container relative z-10">
         <header className="max-w-3xl mx-auto text-center">
-          <p className="mb-3 font-black uppercase tracking-widest text-secondary drop-shadow-sm">
-            Festival experiences
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.24em] text-violet-300">
+            Explore the stack
           </p>
-          <h2 id="highlights-title" className="font-black text-4xl tablet:text-5xl text-ink drop-shadow-sm">
-            Festival Highlights
+          <h2 id="highlights-title" className="text-4xl font-black tracking-tight text-white tablet:text-5xl">
+            Programs with real gravity
           </h2>
-          <div aria-hidden="true" className="brand-rule mx-auto mt-8 w-24 border-primary border-t-4" />
-          <p className="mt-8 text-xl text-ink-muted font-medium max-w-2xl mx-auto drop-shadow-sm">
-            Learn, compete, showcase your work, and meet the people building
-            tomorrow&apos;s enterprises.
+          <div aria-hidden="true" className="mx-auto mt-8 h-px w-24 bg-gradient-to-r from-transparent via-violet-400 to-transparent" />
+          <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-400">
+            Learn modern tools, ship useful projects, and grow alongside people
+            who care about the craft.
           </p>
         </header>
 
