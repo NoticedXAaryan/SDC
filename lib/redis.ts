@@ -38,13 +38,18 @@ export function getRedisClient(): Redis {
     return _sharedClient as any;
   }
 
-  // If a previous connection attempt already failed, return the mock
-  // so we don't keep retrying and blocking every request.
+  // Development stays usable without Redis. Production must remain unhealthy
+  // instead of silently disabling queues, rate limits, and idempotency.
   if (_connectionFailed) {
-    if (!_sharedClient || !_sharedClient.isMock) {
-      _sharedClient = createMockClient();
+    if (process.env.NODE_ENV === "production") {
+      if (_sharedClient && !_sharedClient.isMock) return _sharedClient;
+      _connectionFailed = false;
+    } else {
+      if (!_sharedClient || !_sharedClient.isMock) {
+        _sharedClient = createMockClient();
+      }
+      return _sharedClient as any;
     }
-    return _sharedClient as any;
   }
 
   if (_sharedClient) return _sharedClient;
@@ -88,9 +93,12 @@ export function getRedisClient(): Redis {
 
     _sharedClient = client;
     return _sharedClient;
-  } catch {
-    // If Redis instantiation itself throws, fall back to mock
-    logger.warn("Redis client creation failed — using mock");
+  } catch (error) {
+    if (process.env.NODE_ENV === "production") {
+      logger.error({ error }, "Redis client creation failed");
+      throw error;
+    }
+    logger.warn("Redis client creation failed — using development mock");
     _connectionFailed = true;
     _sharedClient = createMockClient();
     return _sharedClient as any;
@@ -103,4 +111,3 @@ export const getWorkerConfig = () => ({
   removeOnComplete: { age: 3600, count: 100 },
   removeOnFail: { age: 86400, count: 1000 },
 });
-

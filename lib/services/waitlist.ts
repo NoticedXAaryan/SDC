@@ -5,15 +5,13 @@ export class WaitlistService implements IWaitlistService {
   constructor(private registrationRepo: IRegistrationRepository) {}
 
   async add(eventId: string, userId: string): Promise<{ position: number }> {
-    // In a real app, position might be calculated. Here we just create waitlist status.
     await this.registrationRepo.create({
       eventId,
       userId,
       status: "waitlist",
       passCode: "WAITLIST"
     });
-    // Waitlist position is tricky without a separate count query, return dummy for now
-    return { position: 1 };
+    return { position: await this.registrationRepo.countWaitlisted(eventId) };
   }
 
   async promote(eventId: string): Promise<any | null> {

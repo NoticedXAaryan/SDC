@@ -68,6 +68,7 @@ Fill in the required variables in `.env.local`:
 - `BETTER_AUTH_URL`: e.g., `http://localhost:3000`.
 - `PASS_SECRET`: Secure string for QR generation.
 - `REDIS_URL`: Your Redis connection string.
+- `REDIS_PASSWORD`: Required by the bundled Docker Redis service; keep it in sync with `REDIS_URL`.
 - `ADMIN_EMAIL`: Email address that will be auto-promoted to `owner`.
 
 ### 4. Database Setup
@@ -97,8 +98,19 @@ npm run worker
 
 *Alternatively, use Docker Compose to spin everything up:*
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
+
+### Production deployment
+
+1. Copy `.env.example` to `.env` and replace every placeholder secret. Docker Compose reads `.env`; local npm commands may continue to use `.env.local`.
+2. Point `DATABASE_URL` at a persistent PostgreSQL database and set the public URL variables before building. Next.js compiles `NEXT_PUBLIC_*` values into the browser bundle.
+3. Run `docker compose config --quiet` to validate the resolved deployment, then deploy the Compose stack. The `migrator` must finish before the app and worker start.
+4. Back up an existing database before the first migration. The migration script deliberately refuses to erase a schema that has no Drizzle migration history.
+
+Uploads default to the shared Docker volume (`STORAGE_DRIVER=local`), which is suitable for a single VPS. For stateless or multi-instance hosting, set `STORAGE_DRIVER=s3` and configure the `S3_*` variables for Amazon S3, Cloudflare R2, MinIO, or another S3-compatible provider.
+
+The web container exposes `/api/health` for liveness and `/api/ready` for database/Redis readiness. The worker exposes its own health endpoint on port 8080 inside the Compose network.
 
 ---
 

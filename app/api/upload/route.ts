@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
-import fs from "fs/promises";
-import path from "path";
 import crypto from "crypto";
 import { logAuditEvent } from "@/lib/services/audit";
+import { getStorageService } from "@/lib/services/storage";
 
 import { fileTypeFromBuffer } from "file-type";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
@@ -36,23 +35,12 @@ if (!type || !ALLOWED_MIME_TYPES.includes(type.mime)) {
   return NextResponse.json({ error: "Invalid file type. Allowed: JPG, PNG, WEBP, PDF" }, { status: 400 });
 }
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(process.cwd(), "public", "uploads");
-try {
-  await fs.access(uploadDir);
-} catch {
-  await fs.mkdir(uploadDir, { recursive: true });
-}
-
 // Generate unique filename to prevent collisions
 const fileExtension = `.${type.ext}`;
 const baseName = "upload"; // Or sanitize file.name heavily, but best to just use a clean name
 const uniqueId = crypto.randomBytes(8).toString("hex");
 const newFileName = `${baseName}-${uniqueId}${fileExtension}`;
-const filePath = path.join(uploadDir, newFileName);
-
-await fs.writeFile(filePath, buffer);
-const fileUrl = `/uploads/${newFileName}`;
+const fileUrl = await getStorageService().uploadFile(buffer, newFileName, type.mime);
 
 await logAuditEvent({
   actorId: session.user.id,

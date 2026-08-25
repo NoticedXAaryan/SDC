@@ -23,12 +23,14 @@ async function main() {
     const hasMigrationsTable = migrationTableCheck.rows[0].drizzle_migrations !== null || migrationTableCheck.rows[0].public_migrations !== null;
     
     if (!hasMigrationsTable) {
-      const typeCheck = await pool.query(`SELECT 1 FROM pg_type WHERE typname = 'application_status';`);
+      const typeCheck = await pool.query(
+        `SELECT 1 FROM pg_type WHERE typname = 'application_status';`,
+      );
+
       if (typeCheck.rows.length > 0) {
-        console.log("Detected dirty database without migration history. Resetting schema...");
-        await pool.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
-        await pool.query(`GRANT ALL ON SCHEMA public TO postgres;`);
-        await pool.query(`GRANT ALL ON SCHEMA public TO public;`);
+        throw new Error(
+          "Database schema exists without Drizzle migration history. Refusing to delete data automatically. Back up the database and baseline its migration history before deploying.",
+        );
       }
     }
     // This will run migrations on the database, skipping the ones already applied

@@ -88,7 +88,7 @@ export default function SettingsPage() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<"profile"|"security"|"club">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
 
   if (isPending) {
     return (
@@ -105,7 +105,6 @@ export default function SettingsPage() {
   const user = session.user;
   const initials = user.name?.substring(0, 2).toUpperCase() || "US";
   const currentUsername = (user as any).username;
-  const isAdmin = user.role === "admin" || user.role === "owner";
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -164,14 +163,6 @@ export default function SettingsPage() {
         >
           Security
         </button>
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab("club")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "club" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          >
-            Club Settings
-          </button>
-        )}
       </div>
 
       {activeTab === "profile" && (
@@ -308,34 +299,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeTab === "club" && isAdmin && (
-        <div className="space-y-8">
-          <Card padding={6}>
-            <VStack gap={6}>
-              <VStack gap={1}>
-                <Text weight="bold" className="text-xl">Club Settings</Text>
-                <Text type="supporting" className="text-sm">Manage global settings for the club. These changes affect all users.</Text>
-              </VStack>
-              
-              <div className="space-y-6 pt-4">
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Club Name" value="Student Developer Club" isDisabled />
-                </div>
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Custom Domain" value="" placeholder="e.g. members.sdc.org" />
-                </div>
-                <div className="grid gap-2 max-w-md">
-                  <TextInput label="Global API Key (Resend, etc)" value="" type="password" placeholder="sk_test_..." />
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-border">
-                <Button label="Save Changes" variant="primary" />
-              </div>
-            </VStack>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

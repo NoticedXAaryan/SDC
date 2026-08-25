@@ -16,7 +16,7 @@ import { db } from "@/lib/db";
 import { certificates, certTemplates, user, events, auditLogs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PdfmeRenderer } from "@/lib/services/PdfmeRenderer";
-import { LocalMockStorageService } from "@/lib/services/storage";
+import { getStorageService } from "@/lib/services/storage";
 import { Mailer } from "@/lib/services/mailer";
 import crypto from "crypto";
 import { logger } from "@/lib/logger";
@@ -102,7 +102,7 @@ export const certificateWorker = new Worker(
     const finalPdfBuffer = await renderer.render(template, [inputs]);
 
     // ── Upload PDF ───────────────────────────────────────────────────────
-    const storage = new LocalMockStorageService();
+    const storage = getStorageService();
     const pdfUrl = await storage.uploadFile(
       finalPdfBuffer,
       `certs/${verifyCode}.pdf`,

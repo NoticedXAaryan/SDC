@@ -10,6 +10,7 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { useToast } from "@/components/astryx/toast-provider";
 import { AlertTriangle, Download, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/astryx/page-header";
+import { signOut } from "@/lib/auth-client";
 
 export default function CompliancePage() {
   const [loadingExport, setLoadingExport] = useState(false);
@@ -42,19 +43,21 @@ export default function CompliancePage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you absolutely sure you want to delete your account? This action cannot be undone and will erase all your data immediately.")) {
+    if (!window.confirm("Are you absolutely sure? This permanently disables sign-in, anonymizes your profile, and removes your private applications, registrations, and certificates.")) {
       return;
     }
     
     setLoadingDelete(true);
     try {
-      const res = await fetch("/api/users/me", {
+      const res = await fetch("/api/compliance/delete", {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete account");
       
       success("Account deleted successfully.");
-      router.push("/");
+      await signOut().catch(() => undefined);
+      router.replace("/");
+      router.refresh();
     } catch (err: any) {
       error(err.message);
       setLoadingDelete(false);
@@ -65,7 +68,7 @@ export default function CompliancePage() {
     <div className="space-y-8 max-w-4xl mx-auto">
       <PageHeader 
         title="Privacy & Compliance" 
-        description="Manage your personal data in accordance with GDPR regulations."
+        description="Export your account data or permanently anonymize your account."
       />
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -77,7 +80,7 @@ export default function CompliancePage() {
                 <Text weight="bold" className="text-xl">Export My Data</Text>
               </HStack>
               <Text type="supporting" className="text-sm">
-                Download a complete copy of all your personal data, applications, and logs stored on our servers.
+                Download your profile, applications, registrations, certificates, and inventory activity.
               </Text>
             </VStack>
             
@@ -104,12 +107,12 @@ export default function CompliancePage() {
                 <Text weight="bold" className="text-xl">Delete Account</Text>
               </HStack>
               <Text type="supporting" className="text-sm">
-                Permanently delete your account and all associated data. This action is irreversible.
+                Permanently disable sign-in, anonymize your profile, and remove private participation records.
               </Text>
             </VStack>
             
             <Text className="text-sm text-muted-foreground border-t border-border pt-4">
-              Once deleted, your profile, applications, and settings will be removed from our active database within 30 days.
+              Operational audit records may be retained against an anonymous user so the club's financial and security history remains intact.
             </Text>
             
             <div className="mt-2">

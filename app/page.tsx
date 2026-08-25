@@ -1,14 +1,9 @@
 import { MessageCircle, ArrowRight } from "lucide-react";
 
-// Assuming we bypass auth for now, or use the existing one if we can
-// Since we didn't copy lib/auth, we might need to mock or remove it.
-// Let's remove auth requirements for the landing page to ensure it works,
-// or we can just import from the local auth if it exists.
-// The Club project has better-auth. Let's see what it exports.
-// For now, let's just make viewer null.
-
 import { loadPublishedSchedule } from "@/lib/landing/schedule-loader";
 import { FESTIVAL_FAQS } from "@/lib/landing/content";
+import { viewerFromSession } from "@/lib/landing/auth-routing";
+import { getCurrentUser } from "@/lib/dal/auth";
 
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -23,15 +18,16 @@ import { SiteFooter } from "@/components/landing/SiteFooter";
 import { MotionProvider } from "@/components/landing/MotionProvider";
 
 export default async function Page() {
-  const scheduleResult = await Promise.allSettled([
+  const [scheduleResult, sessionResult] = await Promise.allSettled([
     loadPublishedSchedule(),
+    getCurrentUser(),
   ]);
 
-  const viewer = { authenticated: false, role: null, dashboardPath: null };
+  const viewer = viewerFromSession(sessionResult.status === "fulfilled" ? sessionResult.value : null);
 
   const schedule =
-    scheduleResult[0].status === "fulfilled"
-      ? scheduleResult[0].value
+    scheduleResult.status === "fulfilled"
+      ? scheduleResult.value
       : { state: "unavailable" as const, events: [] as [], message: "Event data is temporarily unavailable." };
 
   return (

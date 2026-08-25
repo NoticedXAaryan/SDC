@@ -1,9 +1,6 @@
-export type UserRole = "Attendee" | "Volunteer" | "Faculty" | "Admin" | "Lead";
+export type UserRole = string;
 
-export type DashboardPath =
-  | "/dashboard/admin"
-  | "/dashboard/volunteer"
-  | "/dashboard/user";
+export type DashboardPath = "/dashboard";
 
 export interface Viewer {
   authenticated: boolean;
@@ -17,26 +14,14 @@ export interface ViewerSession {
   user: { role?: unknown; image?: string | null; name?: string } | null;
 }
 
-const USER_ROLES = new Set<UserRole>([
-  "Attendee",
-  "Volunteer",
-  "Faculty",
-  "Admin",
-  "Lead",
-]);
-
 export function normalizeUserRole(role: unknown): UserRole {
-  return typeof role === "string" && USER_ROLES.has(role as UserRole)
-    ? (role as UserRole)
-    : "Attendee";
+  return typeof role === "string" && role.length > 0 ? role : "user";
 }
 
 export function resolveDashboardPath(
   role: UserRole | string | null | undefined,
 ): DashboardPath {
-  if (role === "Admin" || role === "Lead") return "/dashboard/admin";
-  if (role === "Volunteer" || role === "Faculty") return "/dashboard/volunteer";
-  return "/dashboard/user";
+  return "/dashboard";
 }
 
 export function viewerFromSession(

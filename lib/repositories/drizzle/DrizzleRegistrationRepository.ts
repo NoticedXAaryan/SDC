@@ -25,6 +25,16 @@ export class DrizzleRegistrationRepository implements IRegistrationRepository {
     return confirmedCountResult[0].count;
   }
 
+  async countWaitlisted(eventId: string): Promise<number> {
+    const [result] = await db.select({ count: count() })
+      .from(registrations)
+      .where(and(
+        eq(registrations.eventId, eventId),
+        eq(registrations.status, "waitlist")
+      ));
+    return result.count;
+  }
+
   async create(registration: any): Promise<any> {
     const [inserted] = await db.insert(registrations).values({
       id: crypto.randomUUID(),

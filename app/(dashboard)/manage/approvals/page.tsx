@@ -1,19 +1,15 @@
-import { requireSession } from "@/lib/dal/auth";
+import { requireAdmin } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { events, procurementRequests, user } from "@/lib/db/schema";
-import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ApprovalActions } from "./approval-actions";
+import { ProcurementActions } from "../../finance/procurement/procurement-actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export default async function ApprovalsPage() {
-  const session = await requireSession();
-  if (session.user.role !== "admin") {
-    redirect("/events");
-  }
+  await requireAdmin();
 
   const drafts = await db.select().from(events)
     .where(eq(events.status, "draft"))
@@ -36,7 +32,7 @@ export default async function ApprovalsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Unified Approvals</h1>
         <p className="text-muted-foreground">
-          Review and approve events, procurement requests, and role changes.
+          Review and approve events and procurement requests.
         </p>
       </div>
 
@@ -47,9 +43,6 @@ export default async function ApprovalsPage() {
           </TabsTrigger>
           <TabsTrigger value="procurement">
             Procurement {pendingProcurements.length > 0 && <Badge variant="secondary" className="ml-2">{pendingProcurements.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="roles">
-            Role Changes
           </TabsTrigger>
         </TabsList>
 
@@ -133,9 +126,8 @@ export default async function ApprovalsPage() {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex justify-end space-x-3 border-t pt-4">
-                   <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">Reject</Button>
-                   <Button>Approve Request</Button>
+                <CardFooter className="flex justify-end border-t pt-4">
+                  <ProcurementActions reqId={req.id} status="approval" />
                 </CardFooter>
               </Card>
             ))}
@@ -143,11 +135,6 @@ export default async function ApprovalsPage() {
         )}
       </TabsContent>
 
-      <TabsContent value="roles" className="space-y-6">
-        <div className="text-center p-12 border rounded-lg bg-muted/20">
-          <p className="text-muted-foreground">No pending role change requests.</p>
-        </div>
-      </TabsContent>
       </Tabs>
     </div>
   );

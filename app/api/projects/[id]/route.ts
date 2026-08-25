@@ -4,14 +4,12 @@ import { db } from "@/lib/db";
 import { projects, projectImages } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
+import { getStorageService } from "@/lib/services/storage";
 import { z } from "zod";
 
 const patchSchema = z.object({
   status: z.enum(["approved", "rejected", "pending"]),
 });
-
-import { LocalMockStorageService } from "@/lib/services/storage";
-const storage = new LocalMockStorageService();
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     
@@ -57,6 +55,7 @@ export const DELETE = withApiHandler(async (req: NextRequest, { params }: { para
   }
 
   // Delete orphaned images from disk
+  const storage = getStorageService();
   for (const img of images) {
     await storage.deleteFile(img.url);
   }

@@ -13,7 +13,7 @@ interface CtaBandProps {
  */
 export function CtaBand({ viewer }: CtaBandProps) {
   const cta = viewer.authenticated
-    ? { href: viewer.dashboardPath ?? "/dashboard/user", label: "Go to Dashboard" }
+    ? { href: viewer.dashboardPath ?? "/dashboard", label: "Go to Dashboard" }
     : { href: "/register", label: "Register Now" };
 
   return (

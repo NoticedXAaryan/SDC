@@ -13,6 +13,7 @@ import { RejectModal } from "@/components/reject-modal";
 const COLUMNS = [
   { id: "applied", label: "New Applications" },
   { id: "ai_graded", label: "AI Graded" },
+  { id: "needs_manual_review", label: "Manual Review" },
   { id: "interviewing", label: "Interview" },
   { id: "accepted", label: "Accepted" },
   { id: "rejected", label: "Rejected" },
@@ -89,12 +90,11 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
                       {col.id === "applied" && (
                         <Button 
                           variant="ghost" 
-                          label="Simulate AI Grade" 
-                          onClick={() => handleStatusChange(app.id, "ai_graded")}
-                          isDisabled={loading === app.id}
+                          label="AI grading queued"
+                          isDisabled
                         />
                       )}
-                      {col.id === "ai_graded" && (
+                      {(col.id === "ai_graded" || col.id === "needs_manual_review") && (
                         <Button 
                           variant="primary" 
                           label="Invite to Interview" 
