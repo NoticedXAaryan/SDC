@@ -10,6 +10,7 @@
     "build": "node scripts/run-next-build.mjs",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit --incremental false",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "drizzle-kit push",

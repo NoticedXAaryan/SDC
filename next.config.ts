@@ -19,6 +19,13 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.159.148', 'localhost'],
+  // Type safety is enforced by `npm run typecheck` in CI before this build.
+  // Repeating the 1.5 GB type-analysis pass inside Dokploy can OOM a small VPS.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  productionBrowserSourceMaps: false,
+  enablePrerenderSourceMaps: false,
   // Server-side packages that should not be bundled.
   // clawpdf/@pdfme packages use Node.js builtins (module, fs) that break in browser bundles.
   serverExternalPackages: ['clawpdf', '@pdfme/converter', '@pdfme/ui', '@pdfme/common', 'ioredis', 'bullmq'],
@@ -32,6 +39,12 @@ const nextConfig: NextConfig = {
     },
   },
   experimental: {
+    // Bound build concurrency and avoid eagerly loading every route on a
+    // memory-constrained single-node deployment.
+    cpus: 1,
+    workerThreads: true,
+    preloadEntriesOnStart: false,
+    serverSourceMaps: false,
     optimizePackageImports: ["@astryxdesign/core"],
     serverActions: {
       bodySizeLimit: "2mb",

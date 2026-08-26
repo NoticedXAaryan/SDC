@@ -7,7 +7,9 @@ on:
 
 env:
   DATABASE_URL: "postgresql://test:test@localhost:5432/club_test"
-  NODE_ENV: test
+  BETTER_AUTH_SECRET: "ci-only-better-auth-secret-not-for-production"
+  BETTER_AUTH_URL: "http://localhost:3000"
+  PASS_SECRET: "ci-only-pass-secret-not-for-production"
 
 jobs:
   test:
@@ -37,6 +39,8 @@ jobs:
       - run: npm --version
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc --noEmit
+      # Type analysis peaks around 1.5 GB for this project. Keep it on the CI
+      # runner so the small production VPS only has to bundle validated code.
+      - run: npm run typecheck
       - run: npm run build
       - run: npm run test
