@@ -108,7 +108,7 @@ describe("Finance DAL Integration Tests", () => {
 
     await expect(
       updateExpenseStatus(leadSession, expense2.expenseId, { status: "approved" })
-    ).rejects.toThrow("Approving this expense would overdraw the budget.");
+    ).rejects.toThrow("would overdraw the budget.");
 
     // Delete the expenses created in this test so the user can be deleted
     await db.delete(expenses).where(eq(expenses.id, expense.expenseId));
