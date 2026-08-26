@@ -8,7 +8,8 @@
  */
 "use client";
 
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { Search, Sparkles } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export function AppTopNav() {
@@ -28,10 +29,20 @@ export function AppTopNav() {
     <header
       role="banner"
       aria-label="Application top bar"
-      className="w-full flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[var(--d-line)] sticky top-0 bg-[var(--d-panel)]/90 backdrop-blur-md z-20 min-h-[3rem]"
+      className="sticky top-0 z-20 flex min-h-16 w-full items-center justify-between gap-3 border-b border-[var(--d-line)] bg-[var(--d-panel)]/82 px-4 backdrop-blur-xl sm:px-6"
     >
+      <Link
+        href="/dashboard"
+        className="flex min-w-0 items-center gap-2 sm:hidden"
+        aria-label="Club Hub dashboard"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--d-inverse)] text-[var(--d-on-inverse)] shadow-sm">
+          <Sparkles aria-hidden="true" size={16} />
+        </span>
+        <span className="truncate text-sm font-semibold text-[var(--d-fg)]">Club Hub</span>
+      </Link>
       {/* ── Search trigger ─────────────────────────────────── */}
-      <div className="flex-1 max-w-xl">
+      <div className="hidden max-w-xl flex-1 sm:block">
         <button
           type="button"
           onClick={handleSearchClick}

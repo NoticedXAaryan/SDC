@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   const adminCtaLink = "/manage/approvals";
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto py-6">
+    <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 sm:py-2">
       <PageHeader 
         title={`Welcome, ${user.name}`}
         description={

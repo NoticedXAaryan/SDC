@@ -27,17 +27,17 @@ export default async function DashboardLayout({
       mobileNav={<AppMobileNav role={userRole} user={userProps} />}
       height="fill"
       variant="elevated"
-      contentPadding={0} // We pad internally
+      contentPadding={0}
     >
-      <div className="flex flex-col min-h-full w-full">
+      <div className="dashboard-canvas flex min-h-full w-full flex-col">
         <AppTopNav />
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1">
-          <div className="mb-4 sm:mb-6">
+        <main id="main-content" className="dashboard-content flex-1" tabIndex={-1}>
+          <div className="mb-4 hidden sm:block">
             <DynamicBreadcrumbs />
           </div>
           <CommandMenu />
           {children}
-        </div>
+        </main>
       </div>
     </AppShell>
   );

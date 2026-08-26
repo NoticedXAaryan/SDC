@@ -1,4 +1,12 @@
-@import "tailwindcss";
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -188,6 +196,10 @@
     line-height: 1.75;
   }
 
+  body > div[data-astryx-theme] {
+    min-height: 100dvh;
+  }
+
   :where(main, section, article, aside, header, footer, nav, div) {
     min-inline-size: 0;
   }
@@ -236,6 +248,46 @@
     outline: var(--focus-ring-width) solid var(--color-focus);
     outline-offset: var(--focus-ring-offset);
     border-radius: var(--radius-sm);
+  }
+}
+
+/* Dashboard chrome lives here so every authenticated route gets the same
+   resilient canvas without duplicating one-off page backgrounds. */
+@layer components {
+  .dashboard-canvas {
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
+    background:
+      radial-gradient(circle at 80% -10%, rgb(168 85 247 / 0.1), transparent 30rem),
+      radial-gradient(circle at 5% 110%, rgb(179 242 60 / 0.05), transparent 24rem),
+      var(--d-bg);
+    color: var(--d-fg);
+  }
+
+  .dashboard-canvas::before {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    opacity: 0.18;
+    background-image: radial-gradient(circle, currentColor 0.5px, transparent 0.6px);
+    background-size: 26px 26px;
+    color: var(--d-line);
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+
+  .dashboard-content {
+    width: min(100%, 90rem);
+    margin-inline: auto;
+    padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 48rem) {
+    .dashboard-content {
+      padding: 1.5rem clamp(1.5rem, 3vw, 3rem) 3rem;
+    }
   }
 }
 
