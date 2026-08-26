@@ -83,7 +83,7 @@ describe("Finance DAL Integration Tests", () => {
     });
 
     await expect(
-      updateExpenseStatus(adminSession, expense.expenseId, "approved")
+      updateExpenseStatus(adminSession, expense.expenseId, { status: "approved" })
     ).rejects.toThrow("You cannot approve your own expense.");
   });
 
@@ -98,7 +98,7 @@ describe("Finance DAL Integration Tests", () => {
       category: "equipment"
     });
 
-    await updateExpenseStatus(leadSession, expense.expenseId, "approved");
+    await updateExpenseStatus(leadSession, expense.expenseId, { status: "approved" });
 
     // Try to approve an expense of 200 created by admin
     const expense2 = await addExpense(adminSession, eventId, {
@@ -107,7 +107,7 @@ describe("Finance DAL Integration Tests", () => {
     });
 
     await expect(
-      updateExpenseStatus(leadSession, expense2.expenseId, "approved")
+      updateExpenseStatus(leadSession, expense2.expenseId, { status: "approved" })
     ).rejects.toThrow("Approving this expense would overdraw the budget.");
 
     // Delete the expenses created in this test so the user can be deleted

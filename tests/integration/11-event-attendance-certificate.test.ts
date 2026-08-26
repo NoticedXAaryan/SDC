@@ -41,13 +41,13 @@ const { mockAddBulk } = vi.hoisted(() => ({
   mockAddBulk: vi.fn().mockResolvedValue(undefined)
 }));
 vi.mock("@/lib/queues/certificates", () => ({
-  certificateQueue: {
+  getCertificateQueue: () => ({
     add: vi.fn().mockResolvedValue(undefined),
     addBulk: mockAddBulk,
-  },
+  }),
 }));
 vi.mock("@/lib/queues/email", () => ({
-  emailQueue: { add: vi.fn().mockResolvedValue(undefined) },
+  getEmailQueue: () => ({ add: vi.fn().mockResolvedValue(undefined) }),
 }));
 vi.mock("@/lib/services/notifications", () => ({
   NotificationService: { sendInAppNotification: vi.fn().mockResolvedValue(undefined) },
@@ -104,8 +104,8 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
       slug: SLUG_PREFIX,
       type: "workshop",
       description: "A test event for the full attendance→certificate workflow.",
-      startsAt: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-      endsAt: new Date(Date.now() + 3600000).toISOString(),
+      startsAt: new Date(Date.now() + 3600000).toISOString(),
+      endsAt: new Date(Date.now() + 7200000).toISOString(),
       capacity: 1, // Only 1 seat to test waitlist
       isPaid: false,
       price: 0,
@@ -131,13 +131,14 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
     const memberSession = getMockSession(memberId, "member");
     const result = await registerForEvent(memberSession, eventId, { answers: {} });
     expect(result.success).toBe(true);
+    if (!result.success) throw new Error("Expected registration to succeed");
 
     const reg = await db.query.registrations.findFirst({
       where: and(eq(registrations.eventId, eventId), eq(registrations.userId, memberId)),
     });
     expect(reg?.status).toBe("confirmed");
     expect(reg?.passCode).toBeDefined();
-    memberPassCode = reg!.passCode;
+    memberPassCode = result.passToken!;
   });
 
   it("2.4 second member registers → waitlisted (capacity=1 is full)", async () => {
@@ -153,9 +154,11 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
 
   it("2.5 duplicate registration is rejected", async () => {
     const memberSession = getMockSession(memberId, "member");
-    await expect(
-      registerForEvent(memberSession, eventId, { answers: {} })
-    ).rejects.toThrow(); // unique constraint violation or business error
+    const result = await registerForEvent(memberSession, eventId, { answers: {} });
+    expect(result).toMatchObject({
+      error: "Already registered for this event",
+      status: 400,
+    });
   });
 
   it("2.6 third member registers but does not check in (for certificate exclusion test)", async () => {

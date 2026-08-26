@@ -71,6 +71,13 @@ describe("Procurement DAL Integration Tests & Security Audit", () => {
   });
 
   it("should block self-approval of procurement (IDOR)", async () => {
+    await updateProcurementStatus(financeLeadSession, procurementId, {
+      status: "pending_quotes",
+    });
+    await updateProcurementStatus(financeLeadSession, procurementId, {
+      status: "approval",
+    });
+
     await expect(
       updateProcurementStatus(financeLeadSession, procurementId, {
         status: "approved",

@@ -64,7 +64,7 @@ describe("Workflow 3: Finance & Inventory", () => {
       type: "workshop",
       description: "Test event for finance and inventory integration tests.",
       status: "published",
-      createdBy: adminId,
+      createdBy: leadId,
       startsAt: new Date(),
       endsAt: new Date(Date.now() + 3600000),
       visibility: "public",

@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { forms, formFields, formResponses } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+const authState = vi.hoisted(() => ({ userId: "" }));
+
 vi.mock("next/headers", () => ({
   headers: () => new Map(),
   cookies: () => new Map()
@@ -17,15 +19,15 @@ vi.mock("next/headers", () => ({
 vi.mock("@/lib/auth", () => ({
   auth: {
     api: {
-      getSession: vi.fn().mockResolvedValue({ user: { id: "test-user-123", email: "test@college.edu.in", role: "admin", emailVerified: true } })
+      getSession: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, email: "test@college.edu.in", role: "admin", emailVerified: true } }))
     }
   }
 }));
 
 vi.mock("@/lib/dal/auth", () => ({
-  requireSession: vi.fn().mockResolvedValue({ user: { id: "test-user-123", email: "test@college.edu.in", role: "admin", emailVerified: true } }),
-  requireAdmin: vi.fn().mockResolvedValue({ user: { id: "test-user-123", role: "admin", emailVerified: true } }),
-  requireRole: vi.fn().mockResolvedValue({ user: { id: "test-user-123", role: "admin", emailVerified: true } }),
+  requireSession: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, email: "test@college.edu.in", role: "admin", emailVerified: true } })),
+  requireAdmin: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, role: "admin", emailVerified: true } })),
+  requireRole: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, role: "admin", emailVerified: true } })),
   checkEmergencyFreeze: vi.fn(),
   AuthorizationError: class AuthorizationError extends Error {}
 }));
@@ -37,6 +39,7 @@ describe("Forms DAL Integration Tests", () => {
   beforeAll(async () => {
     adminId = await createTestUser("admin");
     applicantId = await createTestUser("applicant");
+    authState.userId = applicantId;
   });
 
   afterAll(async () => {

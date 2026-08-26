@@ -32,10 +32,10 @@ import { AuthorizationError } from "@/lib/dal/auth";
 
 // Suppress queue side-effects during tests
 vi.mock("@/lib/queues/email", () => ({
-  emailQueue: { add: vi.fn().mockResolvedValue(undefined), addBulk: vi.fn() },
+  getEmailQueue: () => ({ add: vi.fn().mockResolvedValue(undefined), addBulk: vi.fn() }),
 }));
 vi.mock("@/lib/queues/grading", () => ({
-  gradingQueue: { add: vi.fn().mockResolvedValue(undefined) },
+  getGradingQueue: () => ({ add: vi.fn().mockResolvedValue(undefined) }),
 }));
 vi.mock("@/lib/services/notifications", () => ({
   NotificationService: { sendInAppNotification: vi.fn().mockResolvedValue(undefined) },
