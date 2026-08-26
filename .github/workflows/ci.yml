@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 env:
-  DATABASE_URL: "postgresql://test:test@localhost:5432/club_test"
+  DATABASE_URL: "postgresql://test:test@localhost:5432/club_test?sslmode=disable"
   BETTER_AUTH_SECRET: "ci-only-better-auth-secret-not-for-production"
   BETTER_AUTH_URL: "http://localhost:3000"
   PASS_SECRET: "ci-only-pass-secret-not-for-production"
