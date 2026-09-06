@@ -1,23 +1,33 @@
-import { expect, test, describe } from "vitest";
-import { checkEmergencyFreeze, SDC_ROLES } from "../lib/dal/auth";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { checkEmergencyFreeze, canTransition } from "@/lib/dal/auth";
 
-describe("Auth DAL", () => {
-  test("SDC_ROLES contains exactly 15 roles", () => {
-    expect(SDC_ROLES.length).toBe(15);
+const { readSettings } = vi.hoisted(() => ({ readSettings: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: vi.fn() } } }));
+vi.mock("@/lib/db", () => ({
+  db: { select: () => ({ from: () => ({ where: () => ({ limit: readSettings }) }) }) },
+}));
+
+describe("Club permissions", () => {
+  beforeEach(() => { readSettings.mockReset().mockResolvedValue([{ isFrozen: true }]); });
+
+  it.each(["owner", "admin", "faculty_coordinator"])("%s can act during an emergency freeze", async (role) => {
+    await expect(checkEmergencyFreeze(role)).resolves.toBeUndefined();
+    expect(readSettings).not.toHaveBeenCalled();
   });
-
-  test("Emergency freeze allows owner and admin", async () => {
-    // This should not throw
-    await expect(checkEmergencyFreeze("owner")).resolves.toBeUndefined();
-    await expect(checkEmergencyFreeze("admin")).resolves.toBeUndefined();
+  it.each(["member", "lead", "co_lead", "outsider"])("%s is blocked by an actual frozen setting", async (role) => {
+    await expect(checkEmergencyFreeze(role)).rejects.toThrow("Club Operations Frozen");
   });
-
-  test("Emergency freeze rejects member if clubSettings.isFrozen is true", async () => {
-    // Mocking db call would be ideal, but assuming this is integration test context
-    // We would need a DB connection and fixture setup.
-    // For now we just verify the constants.
-    expect(SDC_ROLES).toContain("member");
-    expect(SDC_ROLES).toContain("lead");
-    expect(SDC_ROLES).toContain("faculty_coordinator");
+  it("allows members when operations resume", async () => {
+    readSettings.mockResolvedValue([{ isFrozen: false }]);
+    await expect(checkEmergencyFreeze("member")).resolves.toBeUndefined();
+  });
+  it("members can submit expenses but cannot approve them", () => {
+    expect(canTransition("member", "expense", "draft", "pending")).toBe(true);
+    expect(canTransition("member", "expense", "pending", "approved")).toBe(false);
+  });
+  it("co-leads can prepare work but cannot grant final approvals", () => {
+    expect(canTransition("co_lead", "event", "draft", "pending")).toBe(true);
+    expect(canTransition("co_lead", "event", "draft", "published")).toBe(false);
+    expect(canTransition("co_lead", "application", "interviewing", "accepted")).toBe(false);
   });
 });

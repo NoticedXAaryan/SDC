@@ -1,179 +1,41 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import {
-  Calendar,
-  Briefcase,
-  Package,
-  Settings,
-  Users,
-  FileText,
-  QrCode,
-  CreditCard,
-  Inbox,
-  ShieldCheck,
-  Award,
-  MessageSquare,
-  Target,
-  CheckSquare,
-  LogOut,
-  AlertCircle,
-  Plus
-} from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Search } from "lucide-react";
+import { getNavigation } from "@/lib/config/nav";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "@/components/ui/command"
-import { useSession } from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
-
-export function CommandMenu() {
-  const [open, setOpen] = React.useState(false)
-  const router = useRouter()
-  const { data: session } = useSession()
-
-  React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((open) => !open)
+export function CommandMenu({ role = "outsider" }: { role?: string }) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setOpen(value => !value);
       }
     }
-    document.addEventListener("keydown", down)
-    return () => document.removeEventListener("keydown", down)
-  }, [])
-
-  const runCommand = React.useCallback((command: () => unknown) => {
-    setOpen(false)
-    command()
-  }, [])
-
-  const role = (session?.user?.role as string) || "member"
-  const isAdmin = ["admin", "faculty_coordinator", "owner"].includes(role)
-  const isLead = isAdmin || ["lead", "co_lead", "event_lead", "content_lead", "marketing_lead", "tech_lead", "finance_lead", "volunteer_lead", "vice_lead"].includes(role)
-
-  return (
-    <>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-
-        
-        <CommandGroup heading="Personal">
-          <CommandItem onSelect={() => runCommand(() => router.push("/passes/me"))}>
-            <QrCode />
-            <span>My QR pass</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/events/my-registrations"))}>
-            <CheckSquare />
-            <span>My registrations</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/forms/feedback"))}>
-            <MessageSquare />
-            <span>Submit feedback</span>
-          </CommandItem>
-        </CommandGroup>
-
-        <CommandSeparator />
-        
-        <CommandGroup heading="Navigate">
-          <CommandItem onSelect={() => runCommand(() => router.push("/dashboard"))}>
-            <Target />
-            <span>Dashboard</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/events"))}>
-            <Calendar />
-            <span>Events</span>
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push("/certificates"))}>
-            <Award />
-            <span>My Certificates</span>
-          </CommandItem>
-          {isLead && (
-            <>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/communications"))}>
-                <MessageSquare />
-                <span>Communications</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/scanner"))}>
-                <QrCode />
-                <span>Scanner</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/finance"))}>
-                <CreditCard />
-                <span>Finance</span>
-              </CommandItem>
-            </>
-          )}
-          {isAdmin && (
-            <>
-              <CommandItem onSelect={() => runCommand(() => router.push("/admin/members"))}>
-                <Users />
-                <span>Members</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/admin/settings"))}>
-                <Settings />
-                <span>Settings</span>
-              </CommandItem>
-            </>
-          )}
-        </CommandGroup>
-
-        {isLead && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Create">
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/events/new"))}>
-                <Plus />
-                <span>Create event</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/communications/new"))}>
-                <Plus />
-                <span>Compose announcement</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/forms/new"))}>
-                <Plus />
-                <span>Create form</span>
-              </CommandItem>
-              {isAdmin && (
-                <>
-                  <CommandItem onSelect={() => runCommand(() => router.push("/admin/certificates/templates/new"))}>
-                    <Plus />
-                    <span>Create certificate template</span>
-                  </CommandItem>
-                  <CommandItem onSelect={() => runCommand(() => router.push("/admin/members/new"))}>
-                    <Plus />
-                    <span>Add member</span>
-                  </CommandItem>
-                </>
-              )}
-            </CommandGroup>
-            
-            <CommandSeparator />
-            <CommandGroup heading="Current work">
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/queue"))}>
-                <Inbox />
-                <span>Pending approvals</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => router.push("/manage/events/reviews"))}>
-                <AlertCircle />
-                <span>Registrations awaiting review</span>
-              </CommandItem>
-            </CommandGroup>
-          </>
-        )}
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+  return <>
+    <button type="button" className="club-search" onClick={() => setOpen(true)} aria-label="Find a page" aria-keyshortcuts="Control+k Meta+k">
+      <Search size={17} aria-hidden="true" /><span>Find a page</span><kbd aria-hidden="true">Ctrl K</kbd>
+    </button>
+    <CommandDialog open={open} onOpenChange={setOpen}>
+      <DialogTitle className="sr-only">Find a page</DialogTitle>
+      <DialogDescription className="sr-only">Search the pages available to your account. Use the arrow keys to choose a result.</DialogDescription>
+      <CommandInput placeholder="Search pages…" aria-label="Search pages" />
+      <CommandList>
+        <CommandEmpty>No matching pages. Try “events” or “profile”.</CommandEmpty>
+        {getNavigation(role).map(group => <CommandGroup key={group.label} heading={group.label}>
+          {group.items.map(item => <CommandItem key={item.href} value={item.label + " " + group.label} onSelect={() => { setOpen(false); router.push(item.href); }}>
+            <ArrowRight size={16} aria-hidden="true" /><span>{item.label}</span>
+          </CommandItem>)}
+        </CommandGroup>)}
       </CommandList>
     </CommandDialog>
-    </>
-  )
+  </>;
 }

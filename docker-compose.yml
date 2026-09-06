@@ -17,8 +17,7 @@ services:
   migrator:
     build:
       context: .
-      target: builder
-    command: ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
+      target: migrator-runner
     env_file: [.env]
     depends_on:
       redis:

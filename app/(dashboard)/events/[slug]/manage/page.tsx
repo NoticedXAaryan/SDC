@@ -15,6 +15,7 @@ import { EventCertificatesTab } from "./components/event-certificates-tab";
 import { EventSessionsTab } from "./components/event-sessions-tab";
 import { EventSettingsTab } from "./components/event-settings-tab";
 import { EventManageTabsNav } from "./components/event-manage-tabs-nav";
+import { canManageEvent, isEventManagementRole } from "@/lib/dal/event-access";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function EventManagePage({
   const { tab = "overview" } = await searchParams;
   const session = await requireSession();
   
-  if (!["owner", "admin", "lead", "co_lead", "event_lead"].includes(session.user.role as string)) {
+  if (!isEventManagementRole(session.user.role as string)) {
     redirect(`/events/${slug}`);
   }
 
@@ -38,6 +39,10 @@ export default async function EventManagePage({
   
   if (!event) {
     notFound();
+  }
+
+  if (!(await canManageEvent(session, event))) {
+    redirect(`/events/${slug}`);
   }
 
   return (
@@ -59,7 +64,12 @@ export default async function EventManagePage({
         {tab === "scanner" && <EventScannerTab event={event} />}
         {tab === "communications" && <EventCommunicationsTab event={event} />}
         {tab === "certificates" && <EventCertificatesTab event={event} />}
-        {tab === "settings" && <EventSettingsTab event={event} />}
+        {tab === "settings" && (
+          <EventSettingsTab
+            event={event}
+            canCancel={["owner", "admin"].includes(session.user.role as string)}
+          />
+        )}
       </div>
     </div>
   );

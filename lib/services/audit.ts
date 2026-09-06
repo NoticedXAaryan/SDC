@@ -30,6 +30,7 @@ export type AuditAction =
 
   // ── Registration / Attendance ─────────────────────────────────────────
   | "registration_create"
+  | "guest_register"
   | "registration_cancel"
   | "check_in"
   | "guest_register"
@@ -57,6 +58,8 @@ export type AuditAction =
 
   // ── Inventory ─────────────────────────────────────────────────────────
   | "inventory_create"
+  | "inventory_update"
+  | "inventory_delete"
   | "inventory_checkout"
   | "inventory_checkin"
 
@@ -73,8 +76,19 @@ export type AuditAction =
   | "communication_sent"
   | "whatsapp_template_generate"
 
+  // ── Forms ────────────────────────────────────────────────────────────
+  | "form_created"
+  | "form_updated"
+  | "form_deleted"
+
+  // ── Content ──────────────────────────────────────────────────────────
+  | "content_created"
+  | "content_imported"
+  | "content_status_changed"
+
   // ── Data Operations ───────────────────────────────────────────────────
   | "file_upload"
+  | "data_import"
   | "data_export"
   | "data_delete"
 
@@ -82,7 +96,8 @@ export type AuditAction =
   | "procurement_create"
   | "procurement_approve"
   | "procurement_reject"
-  | "procurement_complete";
+  | "procurement_complete"
+  | "vendor_rated";
 
 export type AuditEntity =
   | "user"
@@ -96,9 +111,12 @@ export type AuditEntity =
   | "income"
   | "file"
   | "application"
+  | "content"
+  | "form"
   | "interview"
   | "communication"
   | "procurement"
+  | "vendor"
   | "certificateTemplates"
   | "eventSessions"
   | "clubSettings";

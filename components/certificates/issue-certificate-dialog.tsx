@@ -73,7 +73,7 @@ export function IssueCertificateDialog({ templateId, templateName, events }: Iss
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/certificates/issue", {
+      const res = await fetch(`/api/events/${selectedEventId}/certificates/issue-all`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ eventId: selectedEventId, templateId }),

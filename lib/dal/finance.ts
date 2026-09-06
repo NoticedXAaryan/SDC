@@ -30,8 +30,8 @@ import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 import type { SDCRole } from "@/lib/dal/auth";
 
-const FINANCE_READ_ROLES: SDCRole[] = [
-  "finance_lead", "lead", "vice_lead", "admin", "owner"
+export const FINANCE_READ_ROLES: SDCRole[] = [
+  "finance_lead", "lead", "vice_lead", "admin", "owner", "faculty_coordinator"
 ];
 
 export interface FinanceSummary {

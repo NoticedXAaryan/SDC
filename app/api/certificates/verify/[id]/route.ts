@@ -16,8 +16,17 @@ export const GET = withApiHandler(async (
 ) => {
   const { id } = await params;
 
-  const [cert] = await db.query.certificates.findMany({
-    where: eq(certificates.id, id),
+  const cert = await db.query.certificates.findFirst({
+    columns: {
+      verifyId: true,
+      data: true,
+      pdfUrl: true,
+      status: true,
+      revokedReason: true,
+      issuedAt: true,
+      eventId: true,
+    },
+    where: eq(certificates.verifyId, id),
   });
 
   if (!cert) {
@@ -29,7 +38,7 @@ export const GET = withApiHandler(async (
       valid: false, 
       error: "Certificate has been revoked",
       revokedReason: cert.revokedReason
-    }, { status: 400 });
+    });
   }
 
   return NextResponse.json({

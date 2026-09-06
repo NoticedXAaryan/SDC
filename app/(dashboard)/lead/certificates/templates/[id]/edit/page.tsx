@@ -5,13 +5,14 @@ import { eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { CertificateDesigner } from "@/components/certificates/designer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { canDesignCertificates } from "@/lib/domain/certificate";
 
 export default async function TemplateDesignerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await requireSession();
   
   const userRole = session.user.role || "member";
-  if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
+  if (!canDesignCertificates(userRole as string)) {
     redirect("/");
   }
 
@@ -20,6 +21,10 @@ export default async function TemplateDesignerPage({ params }: { params: Promise
 
   if (!template) {
     notFound();
+  }
+
+  if (!["owner", "admin", "lead"].includes(userRole as string) && template.createdBy !== session.user.id) {
+    redirect("/lead/certificates");
   }
 
   // Convert DB row format back to what pdfme expects

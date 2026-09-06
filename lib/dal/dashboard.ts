@@ -1,33 +1,45 @@
 import { requireSession, isManagementRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { user, events, registrations, applications, insights, certificates, auditLogs, budgets, expenses, inventory } from "@/lib/db/schema";
-import { eq, sql, and, desc, gte, lte, or, inArray } from "drizzle-orm";
+import { eq, sql, and, desc, gte, lte, or, inArray, isNull, isNotNull } from "drizzle-orm";
 
-export async function getStudentDashboardData(userId: string) {
-  const [upcomingEvents, myRegistrations, myApplicationRows, myCertificates] = await Promise.all([
+export async function getStudentDashboardData(userId: string, role = "outsider") {
+  const now = new Date();
+  const isClubMember = ["member", "alumni"].includes(role) || isManagementRole(role);
+  const [upcomingEvents, myRegistrations, myApplicationRows, myCertificates, attendance] = await Promise.all([
     db.select({
       id: events.id, title: events.title, slug: events.slug,
       startsAt: events.startsAt, type: events.type, location: events.location, coverImage: events.coverImage,
-    }).from(events).where(and(gte(events.startsAt, new Date()), eq(events.status, "published"))).orderBy(events.startsAt).limit(3),
+    }).from(events).where(and(
+      gte(events.startsAt, now), eq(events.status, "published"), isNull(events.deletedAt),
+      inArray(events.visibility, isClubMember ? ["public", "members_only"] : ["public"]),
+      isClubMember ? undefined : or(eq(events.isInternal, false), isNull(events.isInternal)),
+    )).orderBy(events.startsAt).limit(3),
 
     db.select({
       eventId: registrations.eventId, status: registrations.status,
-      eventTitle: events.title, eventStartsAt: events.startsAt, eventSlug: events.slug,
+      eventTitle: events.title, eventStartsAt: events.startsAt, eventSlug: events.slug, eventLocation: events.location,
     }).from(registrations).innerJoin(events, eq(registrations.eventId, events.id))
-    .where(and(eq(registrations.userId, userId), eq(registrations.status, "confirmed"))).orderBy(desc(events.startsAt)).limit(5),
+    .where(and(eq(registrations.userId, userId), inArray(registrations.status, ["confirmed", "waitlist", "checked_in"]),
+      gte(events.endsAt, now), eq(events.status, "published"), isNull(events.deletedAt),
+    )).orderBy(events.startsAt).limit(5),
 
     db.select({
-      id: applications.id, status: applications.status, applicationCycle: applications.applicationCycle, aiScore: applications.aiScore,
+      id: applications.id, status: applications.status, applicationCycle: applications.applicationCycle,
     }).from(applications).where(eq(applications.userId, userId)).orderBy(desc(applications.createdAt)).limit(1),
 
     db.select({
       id: certificates.id, verifyId: certificates.verifyId, issuedAt: certificates.issuedAt, data: certificates.data,
-    }).from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt)).limit(3)
+    }).from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, "valid"))).orderBy(desc(certificates.issuedAt)).limit(3),
+
+    db.select({ count: sql<number>`count(*)::int` }).from(registrations)
+      .where(and(eq(registrations.userId, userId), isNotNull(registrations.checkedInAt),
+        inArray(registrations.status, ["confirmed", "checked_in"]))),
   ]);
 
   const myApplication = myApplicationRows[0] || null;
 
-  return { upcomingEvents, myRegistrations, myApplication, myCertificates };
+  return { upcomingEvents, myRegistrations, myApplication, myCertificates, attendedCount: Number(attendance[0]?.count ?? 0) };
 }
 
 

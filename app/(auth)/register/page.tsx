@@ -2,6 +2,7 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { RegisterForm } from "@/components/auth/register-form";
 import { Metadata } from "next";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
+import { hasGoogleSignIn } from "@/lib/auth-policy";
 
 export const metadata: Metadata = {
   title: "Register | Student Developer Club",
@@ -20,7 +21,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       heading="Join the Club"
       subheading="Create your account to connect with other developers and access exclusive resources."
     >
-      <RegisterForm callbackUrl={callbackUrl} />
+      <RegisterForm callbackUrl={callbackUrl} googleEnabled={hasGoogleSignIn(process.env)} />
     </AuthLayout>
   );
 }

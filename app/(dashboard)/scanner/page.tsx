@@ -8,10 +8,11 @@ import { Selector } from "@astryxdesign/core/Selector";
 import { Button } from "@astryxdesign/core/Button";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
+import { EVENT_SCANNER_ROLES } from "@/lib/dal/event-access";
 
 export default async function ScannerPage({ searchParams }: { searchParams: Promise<{ eventId?: string }> }) {
   // Only organizers can scan
-  await requireRole(["lead", "co_lead", "admin", "owner"]);
+  await requireRole([...EVENT_SCANNER_ROLES]);
   
   const resolvedParams = await searchParams;
   const selectedEventId = resolvedParams.eventId;

@@ -8,7 +8,6 @@ import {
   type RegistrationFormField,
 } from "@/components/events/register-button";
 import { generateSignedPass } from "@/lib/passes/qr";
-import { IssueCertificatesButton } from "@/components/events/issue-certificates-button";
 import { AdminEventControls } from "@/components/events/admin-event-controls";
 import { EventSessionsList } from "@/components/events/event-sessions";
 import { CancelRegistrationButton } from "@/components/events/cancel-registration-button";
@@ -19,7 +18,7 @@ import { Calendar, Clock, MapPin, CheckCircle2, Ticket } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const MANAGEMENT_ROLES = ["owner", "admin", "lead", "co_lead"];
+const MANAGEMENT_ROLES = ["owner", "admin", "lead", "co_lead", "event_lead"];
 const SESSION_MANAGEMENT_ROLES = [...MANAGEMENT_ROLES, "event_lead"];
 
 function isRegistrationFormField(value: unknown): value is RegistrationFormField {
@@ -65,10 +64,6 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
     notFound();
   }
 
-  const template = canManageEvent
-    ? await db.query.certTemplates.findFirst()
-    : null;
-  
   // Get registered count dynamically
   const [countResult] = await db.select({ count: sql<number>`count(*)` })
     .from(registrations)
@@ -102,7 +97,7 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
       userId: session.user.id,
       eventId: event.id,
       passCode: registration.passCode
-    });
+    }, event.endsAt);
   }
 
   return (
@@ -237,7 +232,12 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ s
                 <VStack gap={4} className="pt-6 border-t border-border mt-2">
                   <Heading level={3} className="text-lg font-semibold text-foreground">Admin Controls</Heading>
                   <VStack gap={2}>
-                    {template && <IssueCertificatesButton eventId={event.id} templateId={template.id} />}
+                    <Button
+                      href={`/events/${event.slug}/manage?tab=certificates`}
+                      variant="secondary"
+                      className="w-full"
+                      label="Manage event workflow"
+                    />
                     <AdminEventControls eventId={event.id} currentStatus={event.status || "draft"} />
                   </VStack>
                 </VStack>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import crypto from "crypto";
 import { logAuditEvent } from "@/lib/services/audit";
 import { getStorageService } from "@/lib/services/storage";
@@ -15,7 +15,12 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "applicatio
 export const POST = withApiHandler(async (req: NextRequest) => {
     
     
-const session = await requireRole(["member", "lead", "co_lead", "finance_lead", "admin", "owner"]);
+const session = await requireSession();
+const role = session.user.role as string;
+if (["applicant", "outsider"].includes(role)) {
+  throw new AuthorizationError("Active club membership is required to upload files");
+}
+await checkEmergencyFreeze(role);
 
 const formData = await req.formData();
 const file = formData.get("file") as File | null;

@@ -1,61 +1,34 @@
-import crypto from "crypto";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import { IPassValidator } from "../interfaces/IPassValidator";
 
-// Ensure this secret is set in your .env.local
-const PASS_SECRET = process.env.PASS_SECRET!;
-
-if (!PASS_SECRET) {
-  throw new Error("PASS_SECRET is not defined in environment variables");
-}
-
-import jwt from "jsonwebtoken";
-import { getRedisClient } from "../redis";
+const PASS_SECRET = process.env.PASS_SECRET;
+if (!PASS_SECRET) throw new Error("PASS_SECRET is not defined in environment variables");
 
 export interface PassPayload {
   userId: string;
   eventId: string;
   passCode: string;
-  iat?: number; 
+  iat?: number;
 }
-
-export function generateSignedPass(payload: PassPayload): string {
-  const token = jwt.sign({ 
-    eventId: payload.eventId, 
-    userId: payload.userId, 
-    passCode: payload.passCode,
-    jti: crypto.randomUUID() 
-  }, PASS_SECRET, { expiresIn: "30s" });
-  return token;
+/** A saved pass lasts through the event. Cancellation/reissue is enforced in the database. */
+export function generateSignedPass(payload: PassPayload, eventEndsAt?: Date | string | null): string {
+  const expiresAt = eventEndsAt
+    ? Math.floor(new Date(eventEndsAt).getTime() / 1000) + 24 * 60 * 60
+    : Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+  if (!Number.isFinite(expiresAt)) throw new Error("Invalid event end date");
+  return jwt.sign({ eventId: payload.eventId, userId: payload.userId, passCode: payload.passCode, exp: expiresAt }, PASS_SECRET!, { algorithm: "HS256" });
 }
-
 export class HMACPassValidator implements IPassValidator {
-  constructor(private secret: string = PASS_SECRET) {}
-
-  async validate(payload: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
+  constructor(private secret: string = PASS_SECRET!) {}
+  async validate(token: string): Promise<{ valid: boolean; eventId?: string; userId?: string; passCode?: string; iat?: number }> {
     try {
-      const decoded = jwt.verify(payload, this.secret) as any;
-      
-      try {
-        const redis = getRedisClient();
-        const used = await redis.get(`qr:jti:${decoded.jti}`);
-        if (used) {
-          return { valid: false }; // QR already used
-        }
-        // Set short TTL matching token expiration
-        await redis.setex(`qr:jti:${decoded.jti}`, 60, "1");
-      } catch (redisErr) {
-        console.warn("Redis unavailable for QR replay protection");
+      const decoded = jwt.verify(token, this.secret, { algorithms: ["HS256"] }) as JwtPayload;
+      if (typeof decoded.eventId !== "string" || typeof decoded.userId !== "string" || typeof decoded.passCode !== "string" || typeof decoded.exp !== "number") {
+        return { valid: false };
       }
-
-      return {
-        valid: true,
-        userId: decoded.userId,
-        eventId: decoded.eventId,
-        passCode: decoded.passCode,
-        iat: decoded.iat
-      };
-    } catch (err) {
-      return { valid: false };
-    }
+      // Validation is read-only. Only the atomic registration update consumes
+      // admission; a failed scan or retry must not invalidate a legitimate pass.
+      return { valid: true, eventId: decoded.eventId, userId: decoded.userId, passCode: decoded.passCode, iat: decoded.iat };
+    } catch { return { valid: false }; }
   }
 }

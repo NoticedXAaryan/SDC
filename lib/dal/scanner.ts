@@ -45,16 +45,30 @@ export async function checkInScannerDb(session: AuthSession, eventId: string, to
   }
 
   if (registration.status === "checked_in") {
-    throw new ValidationError("Already checked in");
+    return { registrationId: registration.id, payload, alreadyCheckedIn: true };
   }
 
-  await db.update(registrations).set({
+  const [updated] = await db.update(registrations).set({
     status: "checked_in",
     checkedInAt: new Date(),
     attendanceMethod: "qr",
-  }).where(eq(registrations.id, registration.id));
+  }).where(and(
+    eq(registrations.id, registration.id),
+    eq(registrations.status, "confirmed"),
+  )).returning({ id: registrations.id });
 
-  return { registrationId: registration.id, payload };
+  if (!updated) {
+    const [latest] = await db.select({ status: registrations.status })
+      .from(registrations)
+      .where(eq(registrations.id, registration.id))
+      .limit(1);
+    if (latest?.status === "checked_in") {
+      return { registrationId: registration.id, payload, alreadyCheckedIn: true };
+    }
+    throw new ValidationError("Registration is no longer eligible for check-in");
+  }
+
+  return { registrationId: registration.id, payload, alreadyCheckedIn: false };
 }
 
 export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[]) {
@@ -66,8 +80,14 @@ export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[
   const validator = new HMACPassValidator();
 
   const validCheckIns = [];
+  const seenTokens = new Set<string>();
   for (const checkIn of checkIns) {
     try {
+      if (seenTokens.has(checkIn.token)) {
+        results.push({ id: checkIn.id, success: false, error: "Duplicate check-in in batch" });
+        continue;
+      }
+      seenTokens.add(checkIn.token);
       const payload = await validator.validate(checkIn.token);
       
       if (!payload.valid || payload.eventId !== checkIn.eventId) {
@@ -87,10 +107,10 @@ export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[
   }
 
   let checkedInCount = 0;
-  const idsToUpdate = [];
+  const idsToUpdate: string[] = [];
 
   if (validCheckIns.length > 0) {
-    const userIds = validCheckIns.map(c => c.payload.userId);
+    const userIds = [...new Set(validCheckIns.map(c => c.payload.userId))];
     const eventIds = [...new Set(validCheckIns.map(c => c.payload.eventId))];
     
     const userRegs = await db.select().from(registrations).where(
@@ -100,7 +120,7 @@ export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[
       )
     );
 
-    const regMap = new Map();
+    const regMap = new Map<string, typeof userRegs[number]>();
     for (const r of userRegs) {
       regMap.set(`${r.eventId}-${r.userId}-${r.passCode}`, r);
     }
@@ -114,17 +134,38 @@ export async function batchCheckInScannerDb(session: AuthSession, checkIns: any[
       } else if (reg.status !== "confirmed") {
         results.push({ id: checkIn.id, success: false, error: "Invalid status" });
       } else {
-        idsToUpdate.push(reg.id);
-        results.push({ id: checkIn.id, success: true });
-        checkedInCount++;
+        if (!idsToUpdate.includes(reg.id)) {
+          idsToUpdate.push(reg.id);
+          results.push({ id: checkIn.id, success: true });
+          checkedInCount++;
+        } else {
+          results.push({ id: checkIn.id, success: false, error: "Duplicate registration in batch" });
+        }
       }
     }
 
     if (idsToUpdate.length > 0) {
-      await db.update(registrations).set({
+      const updated = await db.update(registrations).set({
         status: "checked_in",
-        checkedInAt: new Date()
-      }).where(inArray(registrations.id, idsToUpdate));
+        checkedInAt: new Date(),
+        attendanceMethod: "qr",
+      }).where(and(
+        inArray(registrations.id, idsToUpdate),
+        eq(registrations.status, "confirmed"),
+      )).returning({ id: registrations.id });
+
+      const updatedIds = new Set(updated.map((row) => row.id));
+      checkedInCount = updated.length;
+      for (const result of results) {
+        if (result.success) {
+          const candidate = validCheckIns.find((item) => item.id === result.id);
+          const reg = candidate && regMap.get(`${candidate.eventId}-${candidate.payload.userId}-${candidate.payload.passCode}`);
+          if (!reg || !updatedIds.has(reg.id)) {
+            result.success = false;
+            result.error = "Registration was already processed or became ineligible";
+          }
+        }
+      }
     }
   }
 

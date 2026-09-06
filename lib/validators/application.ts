@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const httpUrlSchema = z.string().url().refine((value) => {
+  const protocol = new URL(value).protocol;
+  return protocol === "http:" || protocol === "https:";
+}, "URL must use HTTP or HTTPS");
+
 // ─── Application Submission ────────────────────────────────────────────────
 
 export const submitApplicationSchema = z.object({
@@ -53,8 +58,10 @@ export const applicationStatusSchema = z.object({
     "rejected",
   ]),
   reason: z.string().max(1000).optional(),
+  reasonCode: z.string().max(50).optional().nullable(),
+  reasonNote: z.string().max(2000).optional().nullable(),
   /** For interviewing state: link to the meeting */
-  meetingLink: z.string().url().optional().nullable(),
+  meetingLink: httpUrlSchema.optional().nullable(),
   scheduledAt: z.string().datetime().optional().nullable(),
   interviewerId: z.string().optional().nullable(),
 });
@@ -76,7 +83,7 @@ export type ApplicationReviewInput = z.infer<typeof applicationReviewSchema>;
 export const scheduleInterviewSchema = z.object({
   applicationId: z.string().min(1),
   scheduledAt: z.string().datetime("Invalid datetime"),
-  meetingLink: z.string().url("Must be a valid URL").optional().nullable(),
+  meetingLink: httpUrlSchema.optional().nullable(),
   interviewerId: z.string().min(1, "Interviewer is required"),
 });
 

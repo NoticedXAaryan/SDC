@@ -2,18 +2,16 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 import { logger } from "@/lib/logger";
+import { getSecurePostgresConnection } from "@/lib/db/connection-config";
+import { assertTestDatabase } from "./test-database-policy";
 
-if (process.env.NODE_ENV === "test" && !process.env.DATABASE_URL?.includes("test")) {
-  throw new Error("Test environment must use a database URL containing 'test' to prevent modifying production or development data.");
-}
+if (process.env.NODE_ENV === "test") assertTestDatabase(process.env.DATABASE_URL);
 
+const secureConnection = getSecurePostgresConnection(process.env.DATABASE_URL!);
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL!,
+  ...secureConnection,
   connectionTimeoutMillis: 30000, // Increased to 30s for Neon cold starts
   max: 10,
-  ssl: process.env.DATABASE_URL?.includes('sslmode=')
-    ? undefined // Let the connection string control SSL
-    : { rejectUnauthorized: false }, // Suppress pg v9 deprecation warning
 });
 
 pool.on("error", (err) => {

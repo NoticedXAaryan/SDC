@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 export const createInventoryItemSchema = z.object({
-  name: z.string().min(1, "Item name is required"),
+  name: z.string().trim().min(1, "Item name is required").max(120),
   qtyTotal: z.number().int().min(1, "Quantity must be at least 1"),
 });
+
+export const updateInventoryItemSchema = createInventoryItemSchema;
 
 export type CreateInventoryItemInput = z.infer<typeof createInventoryItemSchema>;
 

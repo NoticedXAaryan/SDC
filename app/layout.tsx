@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import "@fontsource-variable/inter/wght.css";
 import { Providers } from "@/components/providers";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import "./club.css";
 
 export const metadata: Metadata = {
   title: {
@@ -26,10 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} font-sans antialiased`}
-      >
+    <html lang="en" data-theme="dark" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

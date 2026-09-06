@@ -93,7 +93,7 @@ export async function proxy(request: NextRequest) {
         const clonedRequest = request.clone();
         const body = await clonedRequest.json();
         
-        if (process.env.NODE_ENV === 'production') {
+        if (process.env.NODE_ENV === 'production' && (process.env.TURNSTILE_SECRET_KEY || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY)) {
           const turnstileValid = await validateTurnstile(body.turnstileToken);
           if (!turnstileValid) {
             return NextResponse.json({ error: "Invalid or missing captcha token" }, { status: 400 });
@@ -142,7 +142,7 @@ export async function proxy(request: NextRequest) {
 
       if (!sessionCookie?.value) {
         const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set("callbackUrl", pathname);
+        loginUrl.searchParams.set("callbackUrl", pathname + request.nextUrl.search);
         return NextResponse.redirect(loginUrl);
       }
     }
@@ -154,10 +154,13 @@ export async function proxy(request: NextRequest) {
 
     return response;
   } catch (error) {
-    // Proxy errors should never crash the request — return a clean 500
-    // instead of letting the error propagate to a bad gateway.
+    // Authentication/proxy failures must fail closed. Falling through with
+    // NextResponse.next() would turn an infrastructure error into an auth bypass.
     console.error("Proxy error:", error);
-    return NextResponse.next();
+    return NextResponse.json(
+      { error: "Request could not be validated" },
+      { status: 500 },
+    );
   }
 }
 

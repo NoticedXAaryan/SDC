@@ -77,8 +77,8 @@ export function EventSessionsList({
       setLocation("");
       
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Session could not be created");
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ export function EventSessionsList({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Event Sessions</h3>
-        {canManage && (
+        {canManage ? (
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger>
-              <Button size="sm" variant="outline">Add Session</Button>
+            <DialogTrigger render={<Button size="sm" variant="outline" />}>
+              Add session
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleSubmit}>
@@ -127,12 +127,12 @@ export function EventSessionsList({
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                  <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save Session"}</Button>
+                  <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Save session"}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-        )}
+        ) : null}
       </div>
 
       {sessions.length === 0 ? (
@@ -145,13 +145,13 @@ export function EventSessionsList({
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-semibold">{s.title}</h4>
-                    {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}
+                    {s.description ? <p className="text-sm text-muted-foreground mt-1">{s.description}</p> : null}
                   </div>
                   <div className="text-right text-sm">
                     <div className="font-medium text-blue-600 dark:text-blue-400">
                       {new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    {s.location && <div className="text-muted-foreground mt-1">📍 {s.location}</div>}
+                    {s.location ? <div className="text-muted-foreground mt-1">Location: {s.location}</div> : null}
                   </div>
                 </div>
               </CardContent>

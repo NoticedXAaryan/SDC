@@ -47,7 +47,7 @@ export function ForgotPasswordForm() {
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
+          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
           <p className="text-sm text-slate-400">
             If an account exists for <span className="font-medium text-white">{email}</span>, a reset link is on its way.
           </p>
@@ -64,7 +64,7 @@ export function ForgotPasswordForm() {
       {/* Header */}
       <div className="space-y-2">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Account recovery</p>
-        <h2 className="text-3xl font-black tracking-[-0.03em] text-white">Reset your access</h2>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">Reset your password</h1>
         <p className="text-sm text-slate-400">
           Enter your email address and we will send you a link to reset your password.
         </p>

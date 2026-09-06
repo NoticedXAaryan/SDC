@@ -6,9 +6,31 @@ import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 import { canTransitionProcurement } from "@/lib/workflows/procurement";
 
+export const PROCUREMENT_READ_ROLES = [
+  "event_lead",
+  "lead",
+  "vice_lead",
+  "finance_lead",
+  "admin",
+  "owner",
+  "faculty_coordinator",
+] as const;
+
+export const PROCUREMENT_REQUESTER_ROLES = [
+  "event_lead",
+  "lead",
+  "vice_lead",
+  "finance_lead",
+  "admin",
+  "owner",
+] as const;
+
+export const PROCUREMENT_APPROVER_ROLES = ["finance_lead", "admin", "owner", "faculty_coordinator"] as const;
+export const VENDOR_MANAGER_ROLES = ["finance_lead", "admin", "owner"] as const;
+
 export async function getProcurementRequests(sessionAuth: AuthSession) {
   const role = sessionAuth.user.role as string;
-  if (!["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"].includes(role)) {
+  if (!(PROCUREMENT_READ_ROLES as readonly string[]).includes(role)) {
     throw new AuthorizationError("Unauthorized");
   }
 
@@ -30,7 +52,7 @@ export async function getProcurementRequests(sessionAuth: AuthSession) {
 
 export async function createProcurementRequest(sessionAuth: AuthSession, data: any) {
   const role = sessionAuth.user.role as string;
-  if (!["event_lead", "lead", "vice_lead", "finance_lead", "admin", "owner"].includes(role)) {
+  if (!(PROCUREMENT_REQUESTER_ROLES as readonly string[]).includes(role)) {
     throw new AuthorizationError("Unauthorized");
   }
 
@@ -68,20 +90,34 @@ export async function createProcurementRequest(sessionAuth: AuthSession, data: a
 
 export async function updateProcurementStatus(sessionAuth: AuthSession, id: string, data: any) {
   const role = sessionAuth.user.role as string;
-  if (!["finance_lead", "lead", "vice_lead", "admin", "owner"].includes(role)) {
-    throw new AuthorizationError("Unauthorized");
-  }
-
   const [existing] = await db.select().from(procurementRequests).where(eq(procurementRequests.id, id)).limit(1);
   if (!existing) throw new ValidationError("Not found");
+
+  const isRequester = existing.requestedBy === sessionAuth.user.id;
+  const isApprover = (PROCUREMENT_APPROVER_ROLES as readonly string[]).includes(role);
+  const canProgressOwnRequest = isRequester && (PROCUREMENT_REQUESTER_ROLES as readonly string[]).includes(role);
+  const requesterTransitions = ["pending_quotes", "approval", "completed"];
+  if (!isApprover && !(canProgressOwnRequest && requesterTransitions.includes(data.status))) {
+    throw new AuthorizationError("You cannot perform this procurement action.");
+  }
 
   const currentStatus = existing.status ?? "draft";
   if (!canTransitionProcurement(currentStatus, data.status)) {
     throw new ValidationError(`Cannot transition procurement from '${existing.status}' to '${data.status}'.`);
   }
 
-  if (data.status === "approved" && existing.requestedBy === sessionAuth.user.id) {
+  if (data.status === "approved" && isRequester) {
     throw new AuthorizationError("You cannot approve your own procurement request.");
+  }
+
+  if (["approved", "rejected"].includes(data.status) && !isApprover) {
+    throw new AuthorizationError("Only a procurement approver can review this request.");
+  }
+
+  const selectedVendorId = data.selectedVendorId || existing.selectedVendorId;
+  const quotesUrl = data.quotesUrl || existing.quotesUrl;
+  if (data.status === "approval" && (!selectedVendorId || !quotesUrl)) {
+    throw new ValidationError("Select a vendor and attach a quote before submitting for approval.");
   }
 
   if (data.status === "rejected" && !data.reason) {
@@ -91,8 +127,8 @@ export async function updateProcurementStatus(sessionAuth: AuthSession, id: stri
   await db.transaction(async (tx) => {
     await tx.update(procurementRequests).set({
       status: data.status,
-      selectedVendorId: data.selectedVendorId || existing.selectedVendorId,
-      quotesUrl: data.quotesUrl || existing.quotesUrl,
+      selectedVendorId,
+      quotesUrl,
       updatedAt: new Date(),
     }).where(eq(procurementRequests.id, id));
 

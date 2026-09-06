@@ -16,6 +16,8 @@ const updateTaskSchema = z.object({
   id: z.string(),
   status: z.enum(["todo", "in_progress", "done", "blocked"]).optional(),
   assigneeId: z.string().optional().nullable(),
+}).refine((value) => value.status !== undefined || value.assigneeId !== undefined, {
+  message: "Provide a status or assignee update",
 });
 
 export const GET = withApiHandler(async (req: NextRequest) => {

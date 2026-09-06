@@ -129,7 +129,7 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
 
   it("2.3 member registers → confirmed (first seat)", async () => {
     const memberSession = getMockSession(memberId, "member");
-    const result = await registerForEvent(memberSession, eventId, { answers: {} });
+    const result = await registerForEvent(memberSession, eventId, {});
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("Expected registration to succeed");
 
@@ -143,7 +143,7 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
 
   it("2.4 second member registers → waitlisted (capacity=1 is full)", async () => {
     const waitlistSession = getMockSession(waitlistMemberId, "member");
-    const result = await registerForEvent(waitlistSession, eventId, { answers: {} });
+    const result = await registerForEvent(waitlistSession, eventId, {});
     expect(result.success).toBe(true);
 
     const reg = await db.query.registrations.findFirst({
@@ -154,7 +154,7 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
 
   it("2.5 duplicate registration is rejected", async () => {
     const memberSession = getMockSession(memberId, "member");
-    const result = await registerForEvent(memberSession, eventId, { answers: {} });
+    const result = await registerForEvent(memberSession, eventId, {});
     expect(result).toMatchObject({
       error: "Already registered for this event",
       status: 400,
@@ -167,7 +167,7 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
     const waitlistSession = getMockSession(waitlistMemberId, "member");
     await deregisterEvent(waitlistSession, eventId);
 
-    const result = await registerForEvent(noCheckInSession, eventId, { answers: {} });
+    const result = await registerForEvent(noCheckInSession, eventId, {});
     expect(result.success).toBe(true);
   });
 
@@ -183,11 +183,11 @@ describe("Workflow 2: Event → Attendance → Certificate", () => {
     expect(reg?.checkedInAt).toBeDefined();
   });
 
-  it("2.8 duplicate scan (same passCode) is rejected", async () => {
+  it("2.8 duplicate scan reports existing attendance without checking in twice", async () => {
     const adminSession = getMockSession(adminId, "admin");
     await expect(
       ScannerService.checkInScanner(adminSession, eventId, memberPassCode)
-    ).rejects.toThrow(); // Already checked in
+    ).resolves.toMatchObject({ success: true, alreadyCheckedIn: true });
   });
 
   // ── Certificate Template Setup ────────────────────────────────────────────

@@ -33,7 +33,7 @@ const FIELD_TYPES = [
 
 function SortableFieldCard({ field, index, updateField, removeField }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id || index.toString() });
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -47,14 +47,14 @@ function SortableFieldCard({ field, index, updateField, removeField }: any) {
         <div className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab opacity-30 hover:opacity-100 p-2" {...attributes} {...listeners}>
           <GripVertical className="w-5 h-5" />
         </div>
-        
+
         <VStack gap={4} className="pl-6">
           <HStack gap={4} justify="between" align="start">
             <div className="flex-1">
-              <TextInput 
+              <TextInput
                 label={field.type === "section_break" ? "Section Title" : field.type === "image" ? "Image URL" : "Question / Label"}
-                value={field.label} 
-                onChange={v => updateField(index, "label", v)} 
+                value={field.label}
+                onChange={v => updateField(index, "label", v)}
                 placeholder={field.type === "image" ? "https://..." : "Enter text here"}
               />
             </div>
@@ -67,18 +67,18 @@ function SortableFieldCard({ field, index, updateField, removeField }: any) {
               />
             </div>
           </HStack>
-          
-          {field.type === "dropdown" && (
-            <TextInput 
+
+          {(field.type === "dropdown" || field.type === "checkbox") && (
+            <TextInput
               label="Options (comma separated)"
               value={field.options?.join(", ") || ""}
               onChange={v => updateField(index, "options", v.split(",").map((s:string) => s.trim()))}
               placeholder="Option 1, Option 2, Option 3"
             />
           )}
-          
+
           {field.type === "file" && (
-            <TextInput 
+            <TextInput
               label="Allowed Extensions (comma separated)"
               value={field.options?.join(", ") || ".pdf, .png, .jpg"}
               onChange={v => updateField(index, "options", v.split(",").map((s:string) => s.trim()))}
@@ -87,17 +87,17 @@ function SortableFieldCard({ field, index, updateField, removeField }: any) {
 
           {field.type !== "section_break" && field.type !== "image" && (
             <HStack gap={6} align="center" className="pt-4 border-t border-border mt-2">
-              <Switch 
+              <Switch
                 label="Required"
-                value={field.required} 
-                onChange={v => updateField(index, "required", v)} 
+                value={field.required}
+                onChange={v => updateField(index, "required", v)}
               />
               <div className="flex-1">
-                <TextInput 
+                <TextInput
                   label="Auto-fill Key (optional)"
-                  value={field.autoFillKey || ""} 
-                  onChange={v => updateField(index, "autoFillKey", v)} 
-                  placeholder="e.g. user.email" 
+                  value={field.autoFillKey || ""}
+                  onChange={v => updateField(index, "autoFillKey", v)}
+                  placeholder="e.g. user.email"
                   size="sm"
                 />
               </div>
@@ -105,11 +105,11 @@ function SortableFieldCard({ field, index, updateField, removeField }: any) {
           )}
         </VStack>
       </Card>
-      
-      <Button 
+
+      <Button
         label="Remove Question"
         isIconOnly
-        variant="destructive" 
+        variant="destructive"
         onClick={() => removeField(index)}
         icon={<Trash className="h-4 w-4" />}
         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -131,7 +131,7 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
     if (active.id !== over.id) {
       const oldIndex = form.fields.findIndex((f: any, i: number) => (f.id || i.toString()) === active.id);
       const newIndex = form.fields.findIndex((f: any, i: number) => (f.id || i.toString()) === over.id);
-      
+
       const newFields = arrayMove(form.fields, oldIndex, newIndex);
       // Update order property
       const orderedFields = newFields.map((f: any, idx: number) => ({ ...f, order: idx }));
@@ -162,7 +162,7 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
   const removeField = (index: number) => {
     setForm({ ...form, fields: form.fields.filter((_: any, i: number) => i !== index) });
   };
-  
+
   const updateSettings = (key: string, value: any) => {
     setForm({ ...form, settings: { ...form.settings, [key]: value } });
   };
@@ -219,16 +219,16 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
           <div className="space-y-6">
             <Card padding={6}>
               <VStack gap={4}>
-                <TextInput 
+                <TextInput
                   label="Form Title"
-                  value={form.title} 
-                  onChange={v => setForm({...form, title: v})} 
-                  className="text-lg font-bold" 
+                  value={form.title}
+                  onChange={v => setForm({...form, title: v})}
+                  className="text-lg font-bold"
                 />
-                <TextInput 
+                <TextInput
                   label="Description"
-                  value={form.description || ""} 
-                  onChange={v => setForm({...form, description: v})} 
+                  value={form.description || ""}
+                  onChange={v => setForm({...form, description: v})}
                 />
               </VStack>
             </Card>
@@ -236,20 +236,20 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={form.fields?.map((f:any, i:number) => f.id || i.toString()) || []} strategy={verticalListSortingStrategy}>
                 {form.fields?.map((field: any, index: number) => (
-                  <SortableFieldCard 
-                    key={field.id || index.toString()} 
-                    field={field} 
-                    index={index} 
-                    updateField={updateField} 
-                    removeField={removeField} 
+                  <SortableFieldCard
+                    key={field.id || index.toString()}
+                    field={field}
+                    index={index}
+                    updateField={updateField}
+                    removeField={removeField}
                   />
                 ))}
               </SortableContext>
             </DndContext>
-            
-            <Button 
-              variant="secondary" 
-              className="w-full border-dashed py-8 bg-transparent hover:bg-muted/50" 
+
+            <Button
+              variant="secondary"
+              className="w-full border-dashed py-8 bg-transparent hover:bg-muted/50"
               onClick={addField}
               icon={<Plus className="h-4 w-4" />}
               label="Add New Block"
@@ -261,9 +261,9 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
           <Card padding={6}>
             <VStack gap={6}>
               <Heading level={3}>Theme & Branding</Heading>
-              <TextInput 
+              <TextInput
                 label="Accent Color (Hex)"
-                value={form.settings?.theme?.accentColor || "#3b82f6"} 
+                value={form.settings?.theme?.accentColor || "#3b82f6"}
                 onChange={v => updateTheme("accentColor", v)}
                 placeholder="#3b82f6"
               />
@@ -273,22 +273,22 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
                 onChange={v => updateTheme("fontFamily", v)}
                 options={[{label: "Inter", value: "Inter"}, {label: "Roboto", value: "Roboto"}, {label: "Serif", value: "Georgia"}]}
               />
-              <TextInput 
+              <TextInput
                 label="Background Image URL"
-                value={form.settings?.theme?.backgroundImage || ""} 
+                value={form.settings?.theme?.backgroundImage || ""}
                 onChange={v => updateTheme("backgroundImage", v)}
                 placeholder="https://..."
               />
               <div className="border-t border-border pt-6 mt-2">
                 <Heading level={4} className="mb-4">Submission Flow</Heading>
-                <TextInput 
+                <TextInput
                   label="Custom Thank You Message"
-                  value={form.settings?.thankYouMessage || "Thank you for submitting!"} 
+                  value={form.settings?.thankYouMessage || "Thank you for submitting!"}
                   onChange={v => updateSettings("thankYouMessage", v)}
                 />
-                <TextInput 
+                <TextInput
                   label="Redirect URL on Success (optional)"
-                  value={form.settings?.redirectUrl || ""} 
+                  value={form.settings?.redirectUrl || ""}
                   onChange={v => updateSettings("redirectUrl", v)}
                   placeholder="https://example.com"
                 />
@@ -302,11 +302,11 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
             <VStack gap={6}>
               <Heading level={3}>Form Logic</Heading>
               <Text type="supporting">Branching logic allows you to hide or show fields based on previous answers.</Text>
-              
+
               <div className="space-y-6">
                 {form.fields?.map((field: any, index: number) => {
                   if (index === 0 || field.type === "section_break" || field.type === "image") return null;
-                  
+
                   const priorFields = form.fields.slice(0, index).filter((f:any) => f.type === "dropdown" || f.type === "short_text" || f.type === "checkbox");
                   if (priorFields.length === 0) return null;
 
@@ -314,15 +314,15 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
                     <div key={field.id || index} className="p-4 border border-border rounded-lg bg-muted/10 space-y-4">
                       <HStack justify="between" align="center">
                         <Text weight="medium">Field: {field.label || "Untitled"}</Text>
-                        <Button 
-                          variant="secondary" 
+                        <Button
+                          variant="secondary"
                           size="sm"
                           icon={<Plus className="w-3 h-3" />}
                           label="Add Rule"
                           onClick={() => addLogicRule(index)}
                         />
                       </HStack>
-                      
+
                       {field.visibilityRules?.showIf?.map((rule: any, ruleIdx: number) => (
                         <HStack gap={4} align="center" key={ruleIdx} className="bg-background p-3 rounded-md border border-border">
                           <Text className="text-sm">Show if</Text>
@@ -348,10 +348,10 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
                             onChange={v => updateLogicRule(index, ruleIdx, "value", v)}
                             placeholder="Value..."
                           />
-                          <Button 
+                          <Button
                             label="Remove Rule"
                             isIconOnly
-                            variant="ghost" 
+                            variant="ghost"
                             icon={<Trash className="w-4 h-4 text-red-500" />}
                             onClick={() => removeLogicRule(index, ruleIdx)}
                           />
@@ -360,7 +360,7 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
                     </div>
                   );
                 })}
-                
+
                 {(!form.fields || form.fields.length < 2) && (
                   <Text className="text-muted-foreground italic">Add more fields to create logic rules.</Text>
                 )}
@@ -416,38 +416,54 @@ export function AdvancedFormBuilder({ form, setForm }: { form: any, setForm: any
             <div className="border-t border-border pt-6">
               <VStack gap={4}>
                 <Heading level={4}>Settings</Heading>
-                
+
                 <HStack justify="between" align="center">
                   <Text>Allow External Users</Text>
-                  <Switch 
+                  <Switch
                     label="Allow External Users"
                     isLabelHidden
-                    value={form.settings?.allowExternal || false} 
-                    onChange={v => updateSettings("allowExternal", v)} 
+                    value={form.settings?.allowExternal ?? false}
+                    onChange={v => updateSettings("allowExternal", v)}
+                  />
+                </HStack>
+                <HStack justify="between" align="center">
+                  <Text>Require Sign-in</Text>
+                  <Switch
+                    label="Require Sign-in"
+                    isLabelHidden
+                    value={form.settings?.requireLogin ?? true}
+                    onChange={v => updateSettings("requireLogin", v)}
+                    isDisabled={!form.settings?.allowExternal}
                   />
                 </HStack>
                 <HStack justify="between" align="center">
                   <Text>College Domain Only</Text>
-                  <Switch 
+                  <Switch
                     label="College Domain Only"
                     isLabelHidden
-                    value={form.settings?.collegeDomainOnly || false} 
-                    onChange={v => updateSettings("collegeDomainOnly", v)} 
+                    value={form.settings?.collegeDomainOnly ?? true}
+                    onChange={v => updateSettings("collegeDomainOnly", v)}
+                    isDisabled={!form.settings?.allowExternal}
                   />
                 </HStack>
                 <HStack justify="between" align="center">
                   <Text>Allow Multiple Entries</Text>
-                  <Switch 
+                  <Switch
                     label="Allow Multiple Entries"
                     isLabelHidden
-                    value={form.settings?.allowMultiple || false} 
-                    onChange={v => updateSettings("allowMultiple", v)} 
+                    value={form.settings?.allowMultiple ?? false}
+                    onChange={v => updateSettings("allowMultiple", v)}
                   />
                 </HStack>
-                <TextInput 
+                <TextInput
                   label="Quota per User"
-                  value={form.settings?.quotaPerUser?.toString() || "1"} 
-                  onChange={v => updateSettings("quotaPerUser", parseInt(v) || 1)} 
+                  value={form.settings?.quotaPerUser?.toString() || "1"}
+                  onChange={v => updateSettings("quotaPerUser", parseInt(v) || 1)}
+                />
+                <TextInput
+                  label="Total Response Limit"
+                  value={form.settings?.quotaPerForm?.toString() || "1000"}
+                  onChange={v => updateSettings("quotaPerForm", parseInt(v) || 1000)}
                 />
               </VStack>
             </div>

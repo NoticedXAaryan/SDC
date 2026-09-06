@@ -1,22 +1,23 @@
 import { NextResponse } from "next/server";
-import { requireLead } from "@/lib/dal/auth";
+import { requireRole } from "@/lib/dal/auth";
 import { withApiHandler } from "@/lib/api-wrapper";
-import { updateApplicationStatus } from "@/lib/services/applications";
+import { RECRUITMENT_REVIEWER_ROLES, updateApplicationStatus } from "@/lib/services/applications";
 
 export const PATCH = withApiHandler(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  const session = await requireLead();
+  const session = await requireRole(RECRUITMENT_REVIEWER_ROLES);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const { status } = await req.json();
+  const body = await req.json();
+  const { status } = body;
 
   if (!status) {
     return NextResponse.json({ error: "Status is required" }, { status: 400 });
   }
 
-  const updatedApp = await updateApplicationStatus(session, id, { status });
+  const updatedApp = await updateApplicationStatus(session, id, body);
 
   return NextResponse.json({ success: true, data: updatedApp });
 });

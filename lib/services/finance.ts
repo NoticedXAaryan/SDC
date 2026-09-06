@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { budgets, expenses, incomes, events, auditLogs } from "@/lib/db/schema";
 import { eq, and, sum as drizzleSum } from "drizzle-orm";
 import crypto from "crypto";
+import { assertCanManageEvent } from "@/lib/dal/event-access";
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 import type { SDCRole } from "@/lib/dal/auth";
@@ -31,9 +32,9 @@ import {
 
 // ─── RBAC Constants ────────────────────────────────────────────────────────
 
-const BUDGET_ADMIN_ROLES: SDCRole[] = ["finance_lead", "admin", "owner"];
-const EXPENSE_SUBMITTER_ROLES: SDCRole[] = ["lead", "vice_lead", "co_lead", "event_lead", "finance_lead", "admin", "owner"];
-const EXPENSE_APPROVER_ROLES: SDCRole[] = ["finance_lead", "admin", "owner"];
+export const BUDGET_ADMIN_ROLES: SDCRole[] = ["finance_lead", "admin", "owner"];
+export const EXPENSE_SUBMITTER_ROLES: SDCRole[] = ["lead", "vice_lead", "co_lead", "event_lead", "finance_lead", "admin", "owner"];
+export const EXPENSE_APPROVER_ROLES: SDCRole[] = ["finance_lead", "admin", "owner"];
 
 // ─── Budget ────────────────────────────────────────────────────────────────
 
@@ -179,22 +180,11 @@ export async function addExpense(
   });
 
   // Domain guard for non-admins
-  const isAdmin = (["admin", "owner", "finance_lead"] as SDCRole[]).includes(role);
-  if (!isAdmin) {
+  const hasClubWideFinanceAccess = (["admin", "owner", "finance_lead"] as SDCRole[]).includes(role);
+  if (!hasClubWideFinanceAccess) {
     const event = await db.query.events.findFirst({ where: eq(events.id, eventId) });
     if (!event) throw new ValidationError("Event not found.");
-
-    const isCreator = event.createdBy === session.user.id;
-    const isDomainMatch =
-      (session.user as any).domain &&
-      event.domain &&
-      (session.user as any).domain === event.domain;
-
-    if (!isCreator && !isDomainMatch) {
-      throw new AuthorizationError(
-        "You can only submit expenses for events within your domain or events you created."
-      );
-    }
+    await assertCanManageEvent(session, event);
   }
 
   const expenseId = crypto.randomUUID();

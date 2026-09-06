@@ -5,8 +5,8 @@ import { z } from "zod";
 import { CommunicationService } from "@/lib/services/communications";
 
 const createCommSchema = z.object({
-  subject: z.string().min(1),
-  body: z.string().min(1),
+  subject: z.string().trim().min(1).max(200),
+  body: z.string().trim().min(1).max(10_000),
   targetAudience: z.enum(["all", "confirmed", "waitlist"]),
 });
 
@@ -34,4 +34,3 @@ export const GET = withApiHandler(async (req: NextRequest, { params }: { params:
   const comms = await CommunicationService.getEventCommunications(session, id);
   return NextResponse.json({ communications: comms });
 });
-

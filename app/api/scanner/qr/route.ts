@@ -6,8 +6,8 @@ export const GET = withApiHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   
-  if (!token) {
-    return new NextResponse("Missing token", { status: 400 });
+  if (!token || token.length > 2048) {
+    return new NextResponse("A valid token is required", { status: 400 });
   }
 
   try {
@@ -15,10 +15,10 @@ export const GET = withApiHandler(async (req: NextRequest) => {
     return new NextResponse(buffer as any, {
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "private, no-store"
       }
     });
   } catch (err) {
     return new NextResponse("Error generating QR", { status: 500 });
   }
-}, { requireAuth: false });
+});

@@ -10,14 +10,18 @@ const sessionSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   location: z.string().optional(),
+}).refine((data) => new Date(data.endTime) > new Date(data.startTime), {
+  message: "Session end time must be after its start time",
+  path: ["endTime"],
 });
 
 export const dynamic = "force-dynamic";
 
 export const GET = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  const sessionAuth = await requireSession();
   const { id } = await params;
   
-  const sessions = await getSessions(id);
+  const sessions = await getSessions(sessionAuth, id);
   return NextResponse.json(sessions);
 });
 
@@ -38,4 +42,3 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
   const newSession = await createSession(sessionAuth, id, parsed.data);
   return NextResponse.json(newSession, { status: 201 });
 });
-

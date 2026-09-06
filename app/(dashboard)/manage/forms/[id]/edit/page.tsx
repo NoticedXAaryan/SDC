@@ -22,26 +22,36 @@ export default function EditFormPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const [form, setForm] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { success, error, info } = useToast();
 
   useEffect(() => {
     fetch(`/api/forms/${id}`)
-      .then(r => r.json())
-      .then(d => { setForm(d); setLoading(false); })
-      .catch(() => error("Error loading form"));
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || "Error loading form");
+        setForm(data);
+      })
+      .catch((loadError) => error(loadError instanceof Error ? loadError.message : "Error loading form"))
+      .finally(() => setLoading(false));
   }, [id, error]);
 
   const saveForm = async () => {
-    const res = await fetch(`/api/forms/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    if (res.ok) {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/forms/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Failed to save form");
       success("Form saved");
       router.push("/manage/forms");
-    } else {
-      error("Failed to save");
+    } catch (saveError) {
+      error(saveError instanceof Error ? saveError.message : "Failed to save form");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -82,7 +92,7 @@ export default function EditFormPage({ params }: { params: Promise<{ id: string 
         title="Edit Form" 
         description="Design your custom form"
         primaryAction={
-          <Button onClick={saveForm} icon={<Save className="h-4 w-4" />} label="Save Form" variant="primary" />
+          <Button onClick={saveForm} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save Form"} variant="primary" isDisabled={saving} />
         }
       />
       <AdvancedFormBuilder form={form} setForm={setForm} />

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
 // Re-export AuthorizationError from its canonical source so existing imports keep working
@@ -47,7 +47,7 @@ export function withApiHandler(
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      if (session && !session.user.emailVerified) {
+      if (options.requireAuth !== false && session && !session.user.emailVerified) {
         return NextResponse.json({ error: "Verify email first", code: "EMAIL_NOT_VERIFIED" }, { status: 403 });
       }
 
@@ -55,7 +55,7 @@ export function withApiHandler(
 
       // 1. Strict Rate Limiting (applied to ALL requests now)
       if (options.requireRateLimit !== false) {
-        const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+        const clientIp = getClientIp(req);
         const rl = await checkRateLimit(req, options.rateLimitPrefix || path);
         if (!rl.success) {
           logger.warn({ ip: clientIp, path }, "Rate limit exceeded");
@@ -77,14 +77,15 @@ export function withApiHandler(
         method: req.method,
         path: path,
         userId: session?.user?.id || "anonymous",
-        ip: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "127.0.0.1"
+        ip: getClientIp(req),
       }, "API Request");
 
       // 3. Execute actual handler
       return await handler(req, ctx);
     } catch (error: any) {
       if (error instanceof AuthorizationError || error?.name === "AuthorizationError") {
-        return NextResponse.json({ error: error.message }, { status: 403 });
+        const status = error.message === "Unauthorized" ? 401 : 403;
+        return NextResponse.json({ error: error.message }, { status });
       }
 
       if (error instanceof NotFoundError || error?.name === "NotFoundError") {
@@ -93,7 +94,7 @@ export function withApiHandler(
 
       if (error instanceof ValidationError || error?.name === "ZodError" || error?.name === "ValidationError") {
         return NextResponse.json(
-          { error: "Validation failed", details: error.errors || error.message },
+          { error: error.name === "ZodError" ? "Please check the form fields." : error.message, details: error.issues || error.errors || error.message },
           { status: 400 }
         );
       }

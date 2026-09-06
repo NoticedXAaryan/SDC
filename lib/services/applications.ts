@@ -12,8 +12,8 @@
  */
 import { db } from "@/lib/db";
 import { applications, user, interviews, applicationReviews, auditLogs, notifications } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { getEmailQueue } from "@/lib/queues/email";
+import { eq, and, sql } from "drizzle-orm";
+import { createTransactionalEmailJob, getEmailQueue } from "@/lib/queues/email";
 import { getGradingQueue } from "@/lib/queues/grading";
 import { NotificationService } from "@/lib/services/notifications";
 import { logAuditEvent } from "@/lib/services/audit";
@@ -21,6 +21,7 @@ import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
 import { ADMIN_ROLES, MANAGEMENT_ROLES } from "@/lib/dal/auth";
 import type { SDCRole } from "@/lib/dal/auth";
+import { escapeHtml, toSafeHttpUrl } from "@/lib/email/html";
 import {
   submitApplicationSchema,
   applicationStatusSchema,
@@ -37,12 +38,12 @@ import crypto from "crypto";
 // ─── RBAC Constants ────────────────────────────────────────────────────────
 
 /** Roles that may view the recruitment queue */
-const RECRUITMENT_REVIEWER_ROLES: SDCRole[] = [
+export const RECRUITMENT_REVIEWER_ROLES: SDCRole[] = [
   "lead", "vice_lead", "co_lead", "admin", "owner"
 ];
 
 /** Roles that may accept (final approval) an application */
-const ACCEPTANCE_ROLES: SDCRole[] = ["lead", "vice_lead", "admin", "owner"];
+export const ACCEPTANCE_ROLES: SDCRole[] = ["lead", "vice_lead", "admin", "owner"];
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,7 @@ export async function submitApplication(
   let applicationId = crypto.randomUUID() as any;
 
   await db.transaction(async (tx) => {
+    await tx.execute(sql`select id from ${user} where id = ${userId} for update`);
     // Check for existing application — upsert pattern
     const existing = await tx.query.applications.findFirst({
       where: and(
@@ -103,7 +105,7 @@ export async function submitApplication(
 
     if (existing) {
       // Cannot re-submit a terminal application
-      if (["accepted", "rejected"].includes(existing.status ?? "")) {
+      if (["ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"].includes(existing.status ?? "") || (data.isDraft && existing.status !== "draft")) {
         throw new ValidationError(
           `Cannot modify a ${existing.status} application.`
         );
@@ -143,11 +145,18 @@ export async function submitApplication(
       .update(`grade:${applicationId}`)
       .digest("hex");
 
-    await getGradingQueue().add(
-      "grade-application",
-      { applicationId, answers: data.answers },
-      { jobId, attempts: 3 }
-    );
+    try {
+      await getGradingQueue().add(
+        "grade-application",
+        { applicationId, answers: data.answers },
+        { jobId, attempts: 3 }
+      );
+    } catch (error) {
+      console.error("[ApplicationService] Grading queue unavailable; routing to manual review", error);
+      await db.update(applications)
+        .set({ status: "needs_manual_review", updatedAt: new Date() })
+        .where(eq(applications.id, applicationId));
+    }
   }
 
   return { success: true, applicationId };
@@ -182,6 +191,9 @@ export async function updateApplicationStatus(
     throw new AuthorizationError(
       "Only leads and admins may accept applications."
     );
+  }
+  if (data.status === "rejected" && !data.reasonCode) {
+    throw new ValidationError("Choose a rejection reason before closing an application.");
   }
 
   // Fetch application
@@ -219,6 +231,17 @@ export async function updateApplicationStatus(
         .where(eq(user.id, existing.userId));
     }
 
+    if (["accepted", "rejected"].includes(data.status)) {
+      await tx.insert(applicationReviews).values({
+        id: crypto.randomUUID(),
+        applicationId,
+        reviewerId: session.user.id,
+        action: data.status === "accepted" ? "approved" : "rejected",
+        reasonCode: data.reasonCode ?? null,
+        reasonNote: data.reasonNote ?? data.reason ?? null,
+      });
+    }
+
     // Write audit log within the same transaction for causality guarantee
     await tx.insert(auditLogs).values({
       id: crypto.randomUUID(),
@@ -231,7 +254,8 @@ export async function updateApplicationStatus(
         applicationId,
         previousStatus,
         newStatus: data.status,
-        reason: data.reason ?? null,
+        reasonCode: data.reasonCode ?? null,
+        reason: data.reasonNote ?? data.reason ?? null,
         actorId: session.user.id,
       }),
       timestamp: new Date(),
@@ -279,6 +303,13 @@ export async function scheduleInterview(
     throw new ValidationError(
       `Cannot schedule interview for application in '${application.status}' state.`
     );
+  }
+
+  const existingInterview = await db.query.interviews.findFirst({
+    where: eq(interviews.applicantId, data.applicationId),
+  });
+  if (existingInterview) {
+    return { success: true, interviewId: existingInterview.id };
   }
 
   // Verify the interviewer exists
@@ -332,18 +363,25 @@ export async function scheduleInterview(
     .update(`interview-invite:${interviewId}`)
     .digest("hex");
 
-  await getEmailQueue().add(
-    "send-email",
-    {
-      to: application.user?.email,
-      subject: "Interview Scheduled — Student Developer Club",
-      html: `<p>Hi ${application.user?.name},</p>
-             <p>Your interview has been scheduled for <strong>${new Date(data.scheduledAt).toLocaleString()}</strong>.</p>
-             ${data.meetingLink ? `<p>Meeting link: <a href="${data.meetingLink}">${data.meetingLink}</a></p>` : ""}
-             <p>Best of luck!</p>`,
-    },
-    { jobId, attempts: 3 }
-  );
+  try {
+    if (!application.user?.email) throw new Error("Applicant email is unavailable");
+    const safeApplicantName = escapeHtml(application.user.name || "there");
+    const safeMeetingLink = toSafeHttpUrl(data.meetingLink);
+    await getEmailQueue().add(
+      "send-email",
+      createTransactionalEmailJob({
+          to: application.user.email,
+          subject: "Interview Scheduled — Student Developer Club",
+          html: `<p>Hi ${safeApplicantName},</p>
+                 <p>Your interview has been scheduled for <strong>${escapeHtml(new Date(data.scheduledAt).toLocaleString())}</strong>.</p>
+                 ${safeMeetingLink ? `<p>Meeting link: <a href="${escapeHtml(safeMeetingLink)}">${escapeHtml(safeMeetingLink)}</a></p>` : ""}
+                 <p>Best of luck!</p>`,
+      }),
+      { jobId, attempts: 3 }
+    );
+  } catch (error) {
+    console.error("[ApplicationService] Interview email could not be queued", error);
+  }
 
   return { success: true, interviewId };
 }
@@ -462,19 +500,21 @@ async function _dispatchStatusSideEffects(
         ? "Welcome to SDC! Your Application Was Accepted"
         : "SDC Application Status Update";
 
+    const safeApplicantName = escapeHtml(application.user.name || "there");
+    const feedback = data.reasonNote ?? data.reason;
     const emailHtml =
       data.status === "accepted"
-        ? `<p>Hi ${application.user.name},</p>
+        ? `<p>Hi ${safeApplicantName},</p>
            <p>🎉 Congratulations! You've been accepted into the Student Developer Club!</p>
            <p>Log in to your account to complete your profile and get started.</p>`
-        : `<p>Hi ${application.user.name},</p>
+        : `<p>Hi ${safeApplicantName},</p>
            <p>Thank you for applying to the Student Developer Club. Unfortunately, we're unable to move forward with your application at this time.</p>
-           ${data.reason ? `<p>Feedback: ${data.reason}</p>` : ""}
+           ${feedback ? `<p>Feedback: ${escapeHtml(feedback)}</p>` : ""}
            <p>We encourage you to apply again in our next recruitment cycle.</p>`;
 
     await getEmailQueue().add(
       "send-email",
-      { to: application.user.email, subject: emailSubject, html: emailHtml },
+      createTransactionalEmailJob({ to: application.user.email, subject: emailSubject, html: emailHtml }),
       { jobId, attempts: 3 }
     );
   }

@@ -1,22 +1,26 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { getSecurePostgresConnection } from "@/lib/db/connection-config";
 import * as schema from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import "dotenv/config";
 
 async function main() {
   const email = process.argv[2] || process.env.ADMIN_EMAIL;
+  const databaseUrl = process.env.DATABASE_URL;
   
   if (!email) {
     console.error("❌ Please provide an email address as an argument or set ADMIN_EMAIL in .env");
     process.exit(1);
   }
+  if (!databaseUrl) {
+    console.error("❌ DATABASE_URL is required.");
+    process.exit(1);
+  }
 
   console.log(`Attempting to upgrade user ${email} to owner...`);
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
+  const pool = new Pool(getSecurePostgresConnection(databaseUrl));
 
   const db = drizzle(pool, { schema });
 

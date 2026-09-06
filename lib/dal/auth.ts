@@ -14,6 +14,8 @@ export class AuthorizationError extends Error {
  * Used for comparison and display throughout the app.
  */
 export const SDC_ROLES = [
+  "user",
+  "outsider",
   "applicant",
   "alumni", 
   "member", 
@@ -99,6 +101,13 @@ export async function getCurrentUser(): Promise<AuthSession | null> {
   return session ? (session as unknown as AuthSession) : null;
 }
 
+/** Page guard: expired cookies must return to sign-in, not an error screen. */
+export async function requirePageSession(callbackUrl = "/dashboard"): Promise<AuthSession> {
+  const session = await getCurrentUser();
+  if (!session) redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  return session;
+}
+
 /**
  * Requires the user to have one of the specified roles.
  * Throws AuthorizationError if the user's role is not in the allowed list.
@@ -161,9 +170,16 @@ export function canTransition(
     return false;
   }
 
-  // Domain leads can generally transition things (they are in MANAGEMENT_ROLES but not ADMIN_ROLES)
-  // For specific sub-rules (like finance_lead vs event_lead), we could expand this logic.
-  // Currently, the primary requirement is blocking co_leads from final approval.
+  if (entityType === "expense" && toStatus === "pending" && ["draft", "rejected"].includes(fromStatus)) return true;
+  if (!isManagementRole(role)) return false;
+  const approvers: Record<typeof entityType, string[]> = {
+    event: ["lead", "event_lead"],
+    expense: ["lead", "vice_lead", "finance_lead", "faculty_coordinator"],
+    resourceRequest: ["lead", "finance_lead", "tech_lead"],
+    contentItem: ["lead", "content_lead"],
+    application: ["lead", "vice_lead"],
+  };
+  if ([...executedStatuses, "accepted", "rejected"].includes(toStatus)) return approvers[entityType].includes(role);
   return true;
 }
 

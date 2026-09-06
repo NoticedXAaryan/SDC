@@ -1,7 +1,7 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { interviews, applications, user } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { Card } from "@astryxdesign/core/Card";
 import { Text } from "@astryxdesign/core/Text";
@@ -15,7 +15,7 @@ export default async function InterviewsPage() {
   const session = await requireSession();
   
   const userRole = session.user.role || "member";
-  if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
+  if (!["owner", "admin", "lead", "vice_lead", "co_lead"].includes(userRole as string)) {
     redirect("/");
   }
 
@@ -36,7 +36,11 @@ export default async function InterviewsPage() {
   })
   .from(applications)
   .innerJoin(user, eq(applications.userId, user.id))
-  .where(eq(applications.status, "interviewing"));
+  .leftJoin(interviews, eq(interviews.applicantId, applications.id))
+  .where(and(
+    eq(applications.status, "interviewing"),
+    isNull(interviews.id),
+  ));
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

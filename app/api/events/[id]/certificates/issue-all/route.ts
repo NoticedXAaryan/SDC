@@ -10,8 +10,8 @@ export const POST = withApiHandler(async (req: NextRequest, { params }: { params
     
     
   const { id } = await params;
-  
-  const result = await CertificateService.issueCertificatesForEvent(session, id);
+  const body = await req.json().catch(() => ({}));
+  const result = await CertificateService.issueCertificatesForEvent(session, id, body.templateId);
   
   if (result.count === 0) {
     return NextResponse.json({ message: result.message }, { status: 200 });

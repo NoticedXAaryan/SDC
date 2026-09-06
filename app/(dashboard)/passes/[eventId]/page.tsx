@@ -28,7 +28,7 @@ export default async function PassPage({ params }: { params: Promise<{ eventId: 
     )
     .limit(1);
 
-  if (!registration || registration.status !== "confirmed") {
+  if (!registration || !["confirmed", "checked_in"].includes(registration.status || "") || event.status === "cancelled" || event.deletedAt) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Card className="w-full max-w-md text-center">
@@ -45,7 +45,7 @@ export default async function PassPage({ params }: { params: Promise<{ eventId: 
     userId: session.user.id,
     eventId: event.id,
     passCode: registration.passCode,
-  });
+  }, event.endsAt);
 
   return (
     <div className="flex items-center justify-center py-10">

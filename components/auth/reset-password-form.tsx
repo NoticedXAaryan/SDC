@@ -29,8 +29,8 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       setError("This reset link is incomplete or has expired. Request a new one.");
       return;
     }
-    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-      setError("Use at least 8 characters with one letter and one number.");
+    if (password.length < 8) {
+      setError("Use at least 8 characters.");
       return;
     }
     if (password !== confirmPassword) {
@@ -60,7 +60,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           <CheckCircle2 className="h-7 w-7 text-cyan-300" aria-hidden="true" />
         </div>
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Password updated</h2>
+          <h1 className="text-3xl font-semibold tracking-tight">Password updated</h1>
           <p className="mt-2 text-sm text-slate-400">Your new password is ready. Sign in to continue your journey.</p>
         </div>
         <Button asChild className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100">
@@ -74,7 +74,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     <div className="space-y-7">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Secure reset</p>
-        <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-white">Choose a new password</h2>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">Choose a new password</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">Make it memorable, unique, and at least eight characters long.</p>
       </div>
 
@@ -100,7 +100,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         </Button>
       </form>
 
-      {!token && <p className="text-center text-sm text-slate-500"><Link href="/forgot-password" className="font-bold text-white hover:text-violet-200">Request a new reset link</Link></p>}
+      {(!token || error) && <p className="text-center text-sm text-slate-400"><Link href="/forgot-password" className="font-bold text-white hover:text-violet-200">Request a new reset link</Link></p>}
     </div>
   );
 }

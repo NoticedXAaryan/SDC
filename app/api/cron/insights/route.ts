@@ -5,9 +5,16 @@ import { generateInsightsAction } from "@/lib/actions/insights";
 export const dynamic = "force-dynamic";
 
 export const GET = withApiHandler(async (req: NextRequest) => {
-  // In a real scenario, protect this endpoint via a secret header or allow only local cron triggers
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "Cron endpoint is not configured" },
+      { status: 503 },
+    );
+  }
+
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

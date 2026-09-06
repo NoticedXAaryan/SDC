@@ -5,15 +5,27 @@ import { Settings, Save, Trash2, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-export function EventSettingsTab({ event }: { event: any }) {
+export function EventSettingsTab({ event, canCancel }: { event: any; canCancel: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: event.title || "",
     description: event.description || "",
     location: event.location || "",
-    capacity: event.capacity || 50,
+    capacity: event.capacity ?? 50,
     type: event.type || "workshop",
     visibility: event.visibility || "public",
   });
@@ -27,29 +39,33 @@ export function EventSettingsTab({ event }: { event: any }) {
         body: JSON.stringify(formData),
       });
       
-      if (!res.ok) throw new Error("Failed to update event");
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Failed to update event");
       toast.success("Event updated successfully");
       router.refresh();
     } catch (error) {
-      toast.error("Failed to update event settings");
+      toast.error(error instanceof Error ? error.message : "Failed to update event settings");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
-    
+  const handleCancel = async () => {
+    setCancelling(true);
     try {
       const res = await fetch(`/api/events/${event.id}`, {
         method: "DELETE",
       });
-      
-      if (!res.ok) throw new Error("Failed to delete event");
-      toast.success("Event deleted successfully");
+
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Failed to cancel event");
+      toast.success("Event cancelled");
+      setCancelDialogOpen(false);
       router.push("/events");
     } catch (error) {
-      toast.error("Failed to delete event");
+      toast.error(error instanceof Error ? error.message : "Failed to cancel event");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -144,20 +160,50 @@ export function EventSettingsTab({ event }: { event: any }) {
         </VStack>
       </Card>
       
-      <div className="rounded-xl border border-red-500/20 bg-card p-6">
-        <HStack justify="between" align="center">
-          <VStack gap={1}>
-            <HStack align="center" gap={2}>
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <Heading level={5} className="text-red-500">Danger Zone</Heading>
-            </HStack>
-            <Text type="supporting" className="text-sm">
-              Permanently delete this event and all associated data.
-            </Text>
-          </VStack>
-          <Button variant="destructive" icon={<Trash2 className="w-4 h-4" />} label="Delete Event" onClick={handleDelete} />
-        </HStack>
-      </div>
+      {canCancel && event.status !== "cancelled" && (
+        <div className="rounded-xl border border-red-500/20 bg-card p-6">
+          <HStack justify="between" align="center" className="gap-4">
+            <VStack gap={1}>
+              <HStack align="center" gap={2}>
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <Heading level={5} className="text-red-500">Cancel event</Heading>
+              </HStack>
+              <Text type="supporting" className="text-sm">
+                Remove this event from active operations while preserving its registrations, attendance, and audit history.
+              </Text>
+            </VStack>
+            <Button
+              variant="destructive"
+              icon={<Trash2 className="w-4 h-4" />}
+              label="Cancel Event"
+              onClick={() => setCancelDialogOpen(true)}
+            />
+          </HStack>
+        </div>
+      )}
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel {event.title}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The event will no longer be active, but its registrations, attendance, certificates, and audit history will be retained.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelling}>Keep event</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancelling}
+              onClick={(clickEvent) => {
+                clickEvent.preventDefault();
+                void handleCancel();
+              }}
+            >
+              {cancelling ? "Cancelling…" : "Cancel event"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -58,7 +58,7 @@ describe("Auth DAL Integration Tests", () => {
     
     // For now, let's test canTransition
     expect(canTransition("admin", "expense", "draft", "approved")).toBe(true);
-    expect(canTransition("member", "expense", "draft", "approved")).toBe(true); // wait, why does it return true for member?
+    expect(canTransition("member", "expense", "draft", "approved")).toBe(false);
   });
 
   it("should block co_leads from executing actions", () => {

@@ -16,7 +16,7 @@
    ================================================================ */
 
 @theme static {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
   --font-mono: ui-monospace, "Fira Code", "Cascadia Code", monospace;
 
@@ -301,9 +301,11 @@
     --section-padding:  var(--spacing-section-tablet);
   }
 
-  h1 { font-size: 3rem; }
-  h2 { font-size: 2.5rem; }
-  h3 { font-size: 1.75rem; }
+  @layer base {
+    h1 { font-size: 3rem; }
+    h2 { font-size: 2.5rem; }
+    h3 { font-size: 1.75rem; }
+  }
 }
 
 @media (min-width: 64rem) {
@@ -311,8 +313,10 @@
     --section-padding: var(--spacing-section-desktop);
   }
 
-  h1 { font-size: var(--text-h1); line-height: 1.05; }
-  h2 { font-size: var(--text-h2); line-height: 1.15; }
+  @layer base {
+    h1 { font-size: var(--text-h1); line-height: 1.05; }
+    h2 { font-size: var(--text-h2); line-height: 1.15; }
+  }
 }
 
 /* Mobile: 44×44 px touch targets */

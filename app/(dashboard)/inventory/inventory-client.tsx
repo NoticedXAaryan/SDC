@@ -7,7 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function InventoryItemCard({ item, isLead }: { item: any; isLead: boolean }) {
+interface InventoryItem {
+  id: string;
+  name: string;
+  qtyAvailable: number;
+  qtyTotal: number;
+}
+
+export function InventoryItemCard({ item, canMoveStock }: { item: InventoryItem; canMoveStock: boolean }) {
   const [qtyAvailable, setQtyAvailable] = useState(item.qtyAvailable);
   const [qty, setQty] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,14 +31,14 @@ export function InventoryItemCard({ item, isLead }: { item: any; isLead: boolean
         body: JSON.stringify({ itemId: item.id, action, qty: num }),
       });
       
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data.error || data.details || "Failed to update inventory");
       
       setQtyAvailable(data.qtyAvailable);
       setQty("");
       toast.success(`Successfully ${action === "check_in" ? "checked in" : "checked out"} ${num} items`);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Inventory could not be updated");
     } finally {
       setLoading(false);
     }
@@ -51,11 +58,17 @@ export function InventoryItemCard({ item, isLead }: { item: any; isLead: boolean
         </div>
       </div>
       
-      {isLead && (
+      {canMoveStock && (
         <div className="flex gap-2 items-center mt-auto pt-4 border-t">
+          <label htmlFor={`inventory-qty-${item.id}`} className="sr-only">Quantity for {item.name}</label>
           <Input 
+            id={`inventory-qty-${item.id}`}
+            name="quantity"
             type="number" 
             min="1" 
+            max={item.qtyTotal}
+            inputMode="numeric"
+            autoComplete="off"
             placeholder="Qty" 
             value={qty} 
             onChange={e => setQty(e.target.value)}

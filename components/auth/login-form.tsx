@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 
 interface LoginFormProps {
   callbackUrl?: string;
+  googleEnabled?: boolean;
 }
 
 function GoogleIcon() {
@@ -25,7 +26,7 @@ function GoogleIcon() {
   );
 }
 
-export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
+export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +61,10 @@ export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
     setError("");
     try {
       const result = await signIn.social({ provider: "google", callbackURL: callbackUrl });
-      if (result?.error) setError(result.error.message || "Google sign-in could not be started.");
+      if (result?.error) {
+        setError(result.error.message || "Google sign-in could not be started.");
+        setSocialLoading(false);
+      }
     } catch {
       setError("Google sign-in could not be started. Please try again.");
       setSocialLoading(false);
@@ -74,26 +78,29 @@ export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
   return (
     <div className="space-y-7">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Member access</p>
-        <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-white">Sign in to your orbit</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-400">Your events, projects, passes, and team tools are waiting.</p>
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Student Developer Club</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">Welcome back</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-400">Sign in to see your events, open your passes, and keep up with the club.</p>
       </div>
 
+      {googleEnabled && <>
       <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleLogin} disabled={loading || socialLoading}>
         {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GoogleIcon />}
         Continue with Google
       </Button>
 
-      <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
+      <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
         <span className="h-px flex-1 bg-white/10" />
         or use email
         <span className="h-px flex-1 bg-white/10" />
       </div>
 
+      </>}
+
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="login-email" className="text-slate-300">Email</Label>
-          <Input id="login-email" type="email" placeholder="name@paruluniversity.ac.in" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-600 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+          <Input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
         </div>
 
         <div className="space-y-2">
@@ -103,7 +110,7 @@ export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
           </div>
           <div className="relative">
             <Input id="login-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
-            <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400" aria-label={showPassword ? "Hide password" : "Show password"}>
+            <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400" aria-label={showPassword ? "Hide password" : "Show password"}>
               {showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
             </button>
           </div>
@@ -121,7 +128,7 @@ export function LoginForm({ callbackUrl = "/dashboard" }: LoginFormProps) {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-slate-400">
         New to SDC?{" "}
         <Link href={registerHref} className="font-bold text-white transition-colors hover:text-violet-200">Create an account</Link>
       </p>

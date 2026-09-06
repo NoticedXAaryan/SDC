@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 /**
  * Certificate template visual designer.
@@ -84,15 +85,14 @@ export function CertificateDesigner({
         }),
       });
 
-      if (res.ok) {
-        alert("Template saved successfully");
-        router.refresh();
-      } else {
-        alert("Failed to save template");
-      }
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Failed to save template");
+
+      toast.success("Template saved");
+      router.refresh();
     } catch (err) {
       console.error(err);
-      alert("An error occurred while saving.");
+      toast.error(err instanceof Error ? err.message : "The template could not be saved");
     } finally {
       setIsSaving(false);
     }
@@ -101,6 +101,18 @@ export function CertificateDesigner({
   const handleBackgroundUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !designerInstance.current) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Choose a PDF file for the certificate background");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Certificate backgrounds must be 10 MB or smaller");
+      e.target.value = "";
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -134,11 +146,14 @@ export function CertificateDesigner({
         </div>
         <div className="flex gap-2">
           <div className="relative">
-            <input 
-              type="file" 
-              accept="application/pdf,image/png,image/jpeg" 
+            <input
+              id="certificate-background"
+              type="file"
+              accept="application/pdf"
               onChange={handleBackgroundUpload}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              aria-label="Upload certificate background PDF"
+              disabled={!isLoaded}
             />
             <Button variant="outline" disabled={!isLoaded}>Upload Background</Button>
           </div>

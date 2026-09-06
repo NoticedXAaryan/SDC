@@ -4,8 +4,9 @@ import { logger } from "@/lib/logger";
 import { getWorkerConfig } from "@/lib/redis";
 import { db } from "@/lib/db";
 import { communications, registrations, user } from "@/lib/db/schema";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { logAuditEvent } from "@/lib/services/audit";
+import { escapeHtml, escapeHtmlWithLineBreaks, toSafeHttpUrl } from "@/lib/email/html";
 
 /**
  * Email worker — processes all email job types from the shared email-queue.
@@ -20,6 +21,10 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
   const { type, payload } = job.data;
 
   switch (type) {
+    case "send_email":
+      await Mailer.sendEmail(payload);
+      break;
+
     case "event_registration":
       await Mailer.sendEventQRPass(payload.email, payload.eventTitle, payload.qrCodeDataUrl);
       break;
@@ -29,9 +34,15 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         const { commId, eventId, subject, body, targetAudience } = payload;
         
         // Find users to broadcast to
-        const conditions = targetAudience !== "all" 
-          ? and(eq(registrations.eventId, eventId), eq(registrations.status, targetAudience))
-          : eq(registrations.eventId, eventId);
+        const eligibleStatuses = targetAudience === "all"
+          ? ["confirmed", "checked_in", "waitlist"] as const
+          : targetAudience === "confirmed"
+            ? ["confirmed", "checked_in"] as const
+            : ["waitlist"] as const;
+        const conditions = and(
+          eq(registrations.eventId, eventId),
+          inArray(registrations.status, [...eligibleStatuses]),
+        );
 
         const audience = await db.select({ email: user.email })
           .from(registrations)
@@ -47,7 +58,7 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
               subject,
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                  <p>${body.replace(/\n/g, "<br>")}</p>
+                  <p>${escapeHtmlWithLineBreaks(body)}</p>
                   <p style="font-size: 12px; color: #666; margin-top: 30px;">This is an automated announcement from SDC.</p>
                 </div>
               `,
@@ -59,8 +70,13 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         }
 
         // Update communication status
+        const status = successCount === audience.length
+          ? "sent"
+          : successCount === 0
+            ? "failed"
+            : "partial";
         await db.update(communications)
-          .set({ status: "sent", sentCount: successCount })
+          .set({ status, sentCount: successCount })
           .where(eq(communications.id, commId));
       }
       break;
@@ -71,16 +87,7 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         const audience = await db.select({ email: user.email })
           .from(user)
           .where(ne(user.role, "outsider"));
-        const escapedBody = String(body).replace(
-          /[&<>"']/g,
-          (character) => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;",
-          })[character] ?? character,
-        );
+        const escapedBody = escapeHtmlWithLineBreaks(body);
         let successCount = 0;
 
         for (const recipient of audience) {
@@ -88,7 +95,7 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
             await Mailer.sendEmail({
               to: recipient.email,
               subject,
-              html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><p>${escapedBody.replace(/\n/g, "<br>")}</p><p style="font-size: 12px; color: #666; margin-top: 30px;">This is an automated announcement from SDC.</p></div>`,
+              html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><p>${escapedBody}</p><p style="font-size: 12px; color: #666; margin-top: 30px;">This is an automated announcement from SDC.</p></div>`,
             });
             successCount++;
           } catch (error) {
@@ -117,9 +124,9 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333;">Event Reminder</h2>
-            <p>Hi ${payload.name},</p>
-            <p>This is a friendly reminder that <strong>${payload.eventTitle}</strong> is happening tomorrow!</p>
-            ${payload.location ? `<p><strong>Location:</strong> ${payload.location}</p>` : ""}
+            <p>Hi ${escapeHtml(payload.name || "there")},</p>
+            <p>This is a friendly reminder that <strong>${escapeHtml(payload.eventTitle)}</strong> is happening tomorrow!</p>
+            ${payload.location ? `<p><strong>Location:</strong> ${escapeHtml(payload.location)}</p>` : ""}
             ${payload.startsAt ? `<p><strong>Time:</strong> ${new Date(payload.startsAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>` : ""}
             <p style="font-size: 12px; color: #666; margin-top: 30px;">See you there! — SDC Team</p>
           </div>
@@ -127,7 +134,8 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
       });
       break;
 
-    case "report_delivery":
+    case "report_delivery": {
+      const reportUrl = toSafeHttpUrl(payload.reportUrl);
       await Mailer.sendEmail({
         to: payload.email,
         subject: payload.subject || "Your SDC Report is Ready",
@@ -135,11 +143,12 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333;">Weekly Report</h2>
             <p>Your weekly SDC engagement report is ready.</p>
-            ${payload.reportUrl ? `<a href="${payload.reportUrl}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">View Report</a>` : ""}
+            ${reportUrl ? `<a href="${escapeHtml(reportUrl)}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">View Report</a>` : ""}
           </div>
         `,
       });
       break;
+    }
 
     case "content_reminder":
       await Mailer.sendEmail({
@@ -148,8 +157,8 @@ export const emailWorker = new Worker("email-queue", async (job: Job) => {
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #333;">Content Publishing Reminder</h2>
-            <p>Hi ${payload.name},</p>
-            <p>Your content <strong>"${payload.contentTitle}"</strong> is scheduled for publication tomorrow on <strong>${payload.platform || "the platform"}</strong>.</p>
+            <p>Hi ${escapeHtml(payload.name || "there")},</p>
+            <p>Your content <strong>"${escapeHtml(payload.contentTitle)}"</strong> is scheduled for publication tomorrow on <strong>${escapeHtml(payload.platform || "the platform")}</strong>.</p>
             <p>Please make sure everything is ready to go!</p>
             <p style="font-size: 12px; color: #666; margin-top: 30px;">— SDC Content Team</p>
           </div>
@@ -174,6 +183,3 @@ emailWorker.on('completed', job => {
 emailWorker.on('failed', (job, err) => {
   logger.error({ jobId: job?.id, type: job?.data?.type, err }, "Email job failed");
 });
-
-
-

@@ -11,10 +11,12 @@ import { useToast } from "@/components/astryx/toast-provider";
 import { AlertTriangle, Download, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/astryx/page-header";
 import { signOut } from "@/lib/auth-client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function CompliancePage() {
   const [loadingExport, setLoadingExport] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const router = useRouter();
   const { success, error } = useToast();
 
@@ -35,31 +37,29 @@ export default function CompliancePage() {
       document.body.removeChild(a);
       
       success("Data exported successfully!");
-    } catch (err: any) {
-      error(err.message);
+    } catch (caughtError) {
+      error(caughtError instanceof Error ? caughtError.message : "Your data could not be exported");
     } finally {
       setLoadingExport(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you absolutely sure? This permanently disables sign-in, anonymizes your profile, and removes your private applications, registrations, and certificates.")) {
-      return;
-    }
-    
     setLoadingDelete(true);
     try {
       const res = await fetch("/api/compliance/delete", {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete account");
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Account could not be deleted");
       
+      setConfirmDelete(false);
       success("Account deleted successfully.");
       await signOut().catch(() => undefined);
       router.replace("/");
       router.refresh();
-    } catch (err: any) {
-      error(err.message);
+    } catch (caughtError) {
+      error(caughtError instanceof Error ? caughtError.message : "Account could not be deleted");
       setLoadingDelete(false);
     }
   };
@@ -93,7 +93,7 @@ export default function CompliancePage() {
                 variant="ghost" 
                 onClick={handleExportData} 
                 isDisabled={loadingExport}
-                label={loadingExport ? "Preparing Export..." : "Request Data Export"}
+                label={loadingExport ? "Preparing Export…" : "Request Data Export"}
               />
             </div>
           </VStack>
@@ -118,15 +118,36 @@ export default function CompliancePage() {
             <div className="mt-2">
               <Button 
                 variant="destructive" 
-                onClick={handleDeleteAccount} 
+                onClick={() => setConfirmDelete(true)}
                 isDisabled={loadingDelete}
-                label={loadingDelete ? "Deleting..." : "Delete Account"}
+                label={loadingDelete ? "Deleting…" : "Delete Account"}
                 icon={<Trash2 className="w-4 h-4" />}
               />
             </div>
           </VStack>
         </Card>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sign-in will be disabled, your profile will be anonymized, and private applications, registrations, form responses, certificates, achievements, and stored proof files will be removed. Operational audit history may remain attached to an anonymous user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loadingDelete}>Keep Account</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={loadingDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={(event) => { event.preventDefault(); void handleDeleteAccount(); }}
+            >
+              {loadingDelete ? "Deleting…" : "Delete Account Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,0 +1,42 @@
+name: sdc-recovery
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sdc
+      POSTGRES_PASSWORD: sdc_local_only
+      POSTGRES_DB: sdc_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - test_postgres:/var/lib/postgresql/data
+      - ./scripts/dev-databases.sql:/docker-entrypoint-initdb.d/databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdc -d sdc_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    volumes:
+      - test_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit:v1.30
+    ports:
+      - "127.0.0.1:58025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  test_postgres:
+  test_redis:

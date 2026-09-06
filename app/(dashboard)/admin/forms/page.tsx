@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/dal/auth";
+import { requireAdmin } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { forms, formFields } from "@/lib/db/schema";
 import FormBuilderClient from "./components/form-builder-client";
@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/astryx/page-header";
 export const dynamic = "force-dynamic";
 
 export default async function FormsAdminPage() {
-  await requireRole(["admin", "owner", "tech_lead", "lead"]);
+  await requireAdmin();
 
   // Fetch all forms with their fields
   const allForms = await db.select().from(forms).orderBy(desc(forms.createdAt));

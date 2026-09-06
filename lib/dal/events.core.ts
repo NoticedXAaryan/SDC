@@ -9,6 +9,9 @@ import { createDefaultEventTasks } from "@/lib/services/tasks";
 import crypto from "crypto";
 import { and, desc, eq, gte, ilike, isNull, sql } from "drizzle-orm";
 import { getRedisClient } from "@/lib/redis";
+import { assertEventConfiguration, canTransitionEventStatus, PAID_EVENTS_UNAVAILABLE_MESSAGE, type EventStatus } from "@/lib/domain/event";
+import { assertCanManageEvent } from "@/lib/dal/event-access";
+import { escapeHtml, toSafeHttpUrl } from "@/lib/email/html";
 
 export async function getEvents(session: AuthSession, filters: {
   page?: number;
@@ -104,7 +107,7 @@ export async function getEvents(session: AuthSession, filters: {
 
 export async function createEvent(session: AuthSession, data: any) {
   const role = session.user.role as string;
-  const allowedRoles = ["lead", "co_lead", "admin", "owner"];
+  const allowedRoles = ["lead", "co_lead", "event_lead", "admin", "owner"];
   
   if (!allowedRoles.includes(role)) {
     throw new AuthorizationError("You do not have permission to create events.");
@@ -133,6 +136,10 @@ export async function createEvent(session: AuthSession, data: any) {
   const eventId = crypto.randomUUID();
   const isDraft = ["lead", "co_lead", "vice_lead", "volunteer_lead"].includes(role);
 
+  if (data.isPaid && !isDraft) {
+    throw new ValidationError(PAID_EVENTS_UNAVAILABLE_MESSAGE);
+  }
+
   await db.insert(events).values({
     id: eventId,
     title: data.title,
@@ -155,11 +162,20 @@ export async function createEvent(session: AuthSession, data: any) {
       approvalStatus: isDraft ? "pending" : "approved",
       attendanceEstimates: data.attendanceEstimates || null,
     },
+    forms: data.forms || [],
+    certificateTemplateId: data.certificateTemplateId || null,
     createdBy: session.user.id,
   });
 
   // Trigger default tasks generation
-  await createDefaultEventTasks(eventId, data.type || "workshop", data.isInternal || false);
+  await createDefaultEventTasks({
+    eventId,
+    eventSlug: slug,
+    type: data.type || "workshop",
+    isInternal: data.isInternal || false,
+    startsAt: new Date(data.startsAt),
+    endsAt: new Date(data.endsAt),
+  });
 
   await logAuditEvent({
     actorId: session.user.id,
@@ -218,25 +234,31 @@ export async function updateEvent(session: AuthSession, id: string, data: any) {
     return null;
   }
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const userDomain = await getUserDomain(session.user.id, role);
-    const isCreator = event.createdBy === session.user.id;
-    
-    // A lead can edit if they created it OR if it belongs to their domain.
-    // co_leads can ONLY edit if they created it.
-    if (role === "co_lead" && !isCreator) {
-      throw new AuthorizationError("You can only edit events you created");
-    } else if (role === "lead" && !isCreator && event.domain !== userDomain) {
-      throw new AuthorizationError("You can only edit events within your domain");
-    }
+  await assertCanManageEvent(session, event);
 
-    if (data.domain !== undefined && data.domain !== userDomain) {
-      throw new AuthorizationError("You cannot move an event to a domain you do not belong to");
-    }
+  const isAdmin = ["admin", "owner"].includes(role);
+  if (!isAdmin && data.domain !== undefined && data.domain !== event.domain) {
+    throw new AuthorizationError("Only administrators can move an event to another domain");
   }
 
   const updateData: Record<string, any> = {};
+
+  const effectiveConfiguration = {
+    startsAt: data.startsAt ?? event.startsAt,
+    endsAt: data.endsAt ?? event.endsAt,
+    registrationDeadline: data.registrationDeadline ?? event.registrationDeadline,
+    isPaid: data.isPaid ?? event.isPaid,
+    price: data.isPaid === false ? 0 : (data.price ?? event.price),
+  };
+
+  try {
+    assertEventConfiguration(effectiveConfiguration);
+  } catch (error) {
+    throw new ValidationError(error instanceof Error ? error.message : "Invalid event configuration");
+  }
+  if (effectiveConfiguration.isPaid && (event.status === "published" || data.status === "published")) {
+    throw new ValidationError(PAID_EVENTS_UNAVAILABLE_MESSAGE);
+  }
   
   if (data.title !== undefined) updateData.title = data.title;
   if (data.type !== undefined) updateData.type = data.type;
@@ -246,14 +268,18 @@ export async function updateEvent(session: AuthSession, id: string, data: any) {
   if (data.capacity !== undefined) updateData.capacity = data.capacity;
   if (data.startsAt !== undefined) updateData.startsAt = new Date(data.startsAt);
   if (data.endsAt !== undefined) updateData.endsAt = new Date(data.endsAt);
+  if (data.registrationDeadline !== undefined) updateData.registrationDeadline = new Date(data.registrationDeadline);
   if (data.isPaid !== undefined) updateData.isPaid = data.isPaid;
-  if (data.price !== undefined) updateData.price = String(data.price);
+  if (data.price !== undefined || data.isPaid === false) updateData.price = String(effectiveConfiguration.price);
   if (data.visibility !== undefined) updateData.visibility = data.visibility;
   if (data.coverImage !== undefined) updateData.coverImage = data.coverImage;
+  if (data.forms !== undefined) updateData.forms = data.forms;
+  if (data.certificateTemplateId !== undefined) updateData.certificateTemplateId = data.certificateTemplateId;
   
   if (data.status !== undefined) {
-    if (!canTransition(role as any, "event", event.status || "draft", data.status)) {
-      throw new AuthorizationError("Your role cannot transition the event to this status");
+    const fromStatus = (event.status || "draft") as EventStatus;
+    if (!canTransition(role as any, "event", fromStatus, data.status) || !canTransitionEventStatus(fromStatus, data.status)) {
+      throw new AuthorizationError(`Event cannot transition from ${fromStatus} to ${data.status}`);
     }
     updateData.status = data.status;
   }
@@ -281,12 +307,18 @@ export async function updateEvent(session: AuthSession, id: string, data: any) {
 
     if (attendees.length > 0) {
       const { Mailer } = await import("@/lib/services/mailer");
+      const safeEventTitle = escapeHtml(updateData.title || event.title);
+      const eventUrl = toSafeHttpUrl(
+        `/events/${encodeURIComponent(event.slug)}`,
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      );
+      if (!eventUrl) throw new ValidationError("Application URL must use HTTP or HTTPS");
       const emailHtml = `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #333;">Event Update: ${updateData.title || event.title}</h2>
+              <h2 style="color: #333;">Event Update: ${safeEventTitle}</h2>
               <p>This is to notify you that there have been updates to an event you registered for.</p>
               <p>Please check the latest details on the event page.</p>
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/events/${event.slug}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">View Event Details</a>
+              <a href="${escapeHtml(eventUrl)}" style="display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 20px;">View Event Details</a>
             </div>
           `;
 
@@ -340,7 +372,27 @@ export async function approveEvent(session: AuthSession, id: string) {
     throw new AuthorizationError("You do not have permission to approve events.");
   }
   
-  await db.update(events).set({ status: "published" }).where(eq(events.id, id));
+  await checkEmergencyFreeze(role);
+
+  const [event] = await db.select().from(events).where(and(eq(events.id, id), isNull(events.deletedAt))).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+  if (event.status === "published") return { success: true, alreadyApproved: true };
+  if (event.status !== "draft") {
+    throw new ValidationError(`Only draft events can be approved (current status: ${event.status})`);
+  }
+
+  try {
+    assertEventConfiguration(event);
+  } catch (error) {
+    throw new ValidationError(error instanceof Error ? error.message : "Event is not ready for approval");
+  }
+  if (event.isPaid) throw new ValidationError(PAID_EVENTS_UNAVAILABLE_MESSAGE);
+
+  const [updated] = await db.update(events)
+    .set({ status: "published", updatedAt: new Date() })
+    .where(and(eq(events.id, id), eq(events.status, "draft")))
+    .returning({ id: events.id });
+  if (!updated) return { success: true, alreadyApproved: true };
   
   await logAuditEvent({
     actorId: session.user.id,

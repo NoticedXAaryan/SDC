@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession, isManagementRole, checkEmergencyFreeze } from "@/lib/dal/auth";
+import { requireSession, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { projects, projectMembers, projectImages } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { auditLogs, projects, projectMembers, projectImages } from "@/lib/db/schema";
+import { eq, desc, or } from "drizzle-orm";
+import { withApiHandler } from "@/lib/api-wrapper";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { PROJECT_REVIEW_ROLES } from "@/lib/domain/projects";
+import { createProjectSchema } from "@/lib/validators/projects";
 
 export const dynamic = "force-dynamic";
 
 export const GET = withApiHandler(async (req: NextRequest) => {
     const session = await requireSession();
-    const isManagement = isManagementRole(session.user.role as string);
-    const isAdmin = ["admin", "owner"].includes(session.user.role as string);
-    
-    // Tech Lead or Admin can view all, otherwise only approved
-    const isTechLead = (session.user.role as string) === "tech_lead" || (session.user.role as string) === "co_lead";
-    const canViewAll = isAdmin || isTechLead;
+    const canViewAll = (PROJECT_REVIEW_ROLES as readonly string[]).includes(session.user.role as string);
 
     let conditions = undefined;
     if (!canViewAll) {
-      conditions = eq(projects.status, "approved");
+      conditions = or(eq(projects.status, "approved"), eq(projects.submittedBy, session.user.id));
     }
 
     const data = await db.query.projects.findMany({
@@ -36,8 +33,7 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
 export const POST = withApiHandler(async (req: NextRequest) => {
 const session = await requireSession();
-    
-    
+await checkEmergencyFreeze(session.user.role as string);
 const reqBody = await req.json();
 
 const rl = await checkRateLimit(req, "submit_project");
@@ -45,11 +41,11 @@ if (!rl.success) {
   return NextResponse.json({ error: rl.error }, { status: 429 });
 }
 
-const { title, description, githubUrl, liveUrl, teamMembers, images } = reqBody;
-
-if (!title || !description) {
-  return NextResponse.json({ error: "Title and description are required" }, { status: 400 });
+const parsed = createProjectSchema.safeParse(reqBody);
+if (!parsed.success) {
+  return NextResponse.json({ error: "Invalid project submission", details: parsed.error.flatten() }, { status: 400 });
 }
+const { title, description, githubUrl, liveUrl, teamMembers, images } = parsed.data;
 
 const projectId = crypto.randomUUID();
 
@@ -61,16 +57,17 @@ await db.transaction(async (tx) => {
     githubUrl,
     liveUrl,
     status: "pending",
+    submittedBy: session.user.id,
   });
 
   if (teamMembers && Array.isArray(teamMembers) && teamMembers.length > 0) {
     await tx.insert(projectMembers).values(
-      teamMembers.map((m: any) => ({
+      teamMembers.map((member) => ({
         projectId,
-        name: m.name,
-        role: m.role,
-        githubUrl: m.githubUrl || m.github,
-        twitterUrl: m.twitterUrl || m.twitter
+        name: member.name,
+        role: member.role,
+        githubUrl: member.githubUrl || null,
+        twitterUrl: member.twitterUrl || null,
       }))
     );
   }
@@ -84,6 +81,16 @@ await db.transaction(async (tx) => {
       }))
     );
   }
+
+  await tx.insert(auditLogs).values({
+    id: crypto.randomUUID(),
+    actorId: session.user.id,
+    action: "project_submitted",
+    entity: "project",
+    entityId: projectId,
+    details: JSON.stringify({ title }),
+    timestamp: new Date(),
+  });
 });
 
 return NextResponse.json({ success: true, id: projectId }, { status: 201 });

@@ -1,9 +1,67 @@
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { Card, Heading, Text, HStack, VStack } from "@astryxdesign/core"
-import { ActivityTimeline } from "@/components/app/activity-timeline"
+import { ActivityTimeline, type ActivityItem } from "@/components/app/activity-timeline"
 import { Calendar, Users, Ticket, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
+import { db } from "@/lib/db";
+import { auditLogs, events, registrations, user } from "@/lib/db/schema";
 
-export function EventOverviewTab({ event }: { event: any }) {
+type EventRecord = typeof events.$inferSelect;
+
+function initials(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "SDC";
+}
+
+function activitySummary(action: string): string {
+  const summaries: Record<string, string> = {
+    event_create: "created this event",
+    event_update: "updated event details",
+    event_approve: "approved and published this event",
+    event_post_event_update: "updated the post-event report",
+    certificate_template_create: "prepared a certificate template",
+    certificate_issue: "issued an attendee certificate",
+  };
+  return summaries[action] ?? action.replaceAll("_", " ");
+}
+
+export async function EventOverviewTab({ event }: { event: EventRecord }) {
+  const [registrationRows, activityRows] = await Promise.all([
+    db.select({
+      registered: sql<number>`count(*) filter (where ${registrations.status} <> 'cancelled')`,
+      attendanceBase: sql<number>`count(*) filter (where ${registrations.status} in ('confirmed', 'checked_in'))`,
+      checkedIn: sql<number>`count(*) filter (where ${registrations.status} = 'checked_in')`,
+    }).from(registrations).where(eq(registrations.eventId, event.id)),
+    db.select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      details: auditLogs.details,
+      timestamp: auditLogs.timestamp,
+      actorName: user.name,
+      actorImage: user.image,
+    })
+      .from(auditLogs)
+      .leftJoin(user, eq(auditLogs.actorId, user.id))
+      .where(eq(auditLogs.entityId, event.id))
+      .orderBy(desc(auditLogs.timestamp))
+      .limit(6),
+  ]);
+
+  const registeredCount = Number(registrationRows[0]?.registered ?? 0);
+  const attendanceBase = Number(registrationRows[0]?.attendanceBase ?? 0);
+  const checkedInCount = Number(registrationRows[0]?.checkedIn ?? 0);
+  const attendanceRate = attendanceBase > 0 ? Math.round((checkedInCount / attendanceBase) * 100) : 0;
+  const activities: ActivityItem[] = activityRows.map((row) => {
+    const actorName = row.actorName ?? "System";
+    return {
+      id: row.id,
+      actor: { name: actorName, avatar: row.actorImage ?? undefined, initials: initials(actorName) },
+      action: row.action.replaceAll("_", " "),
+      summary: activitySummary(row.action),
+      timestamp: row.timestamp,
+      details: row.details && !row.details.trim().startsWith("{") ? row.details : undefined,
+    };
+  });
+
   return (
     <div className="grid gap-6 md:grid-cols-3">
       <div className="md:col-span-2 space-y-6">
@@ -13,7 +71,7 @@ export function EventOverviewTab({ event }: { event: any }) {
               <VStack gap={1}>
                 <Text type="supporting">Registrations</Text>
                 <HStack align="center" justify="between">
-                  <span className="text-3xl font-bold">0</span>
+                  <span className="text-3xl font-bold tabular-nums">{registeredCount}</span>
                   <Users className="w-5 h-5 text-muted-foreground" />
                 </HStack>
               </VStack>
@@ -28,12 +86,12 @@ export function EventOverviewTab({ event }: { event: any }) {
               <VStack gap={1}>
                 <Text type="supporting">Check-ins</Text>
                 <HStack align="center" justify="between">
-                  <span className="text-3xl font-bold">0</span>
+                  <span className="text-3xl font-bold tabular-nums">{checkedInCount}</span>
                   <Ticket className="w-5 h-5 text-muted-foreground" />
                 </HStack>
               </VStack>
               <Text type="supporting" className="text-xs">
-                0% attendance rate
+                {attendanceRate}% attendance rate
               </Text>
             </VStack>
           </Card>
@@ -57,21 +115,7 @@ export function EventOverviewTab({ event }: { event: any }) {
         <Card padding={6}>
           <VStack gap={4}>
             <Heading level={3} className="text-lg">Recent Activity</Heading>
-            <ActivityTimeline 
-              activities={[
-                {
-                  id: "1",
-                  actor: {
-                    name: "System",
-                    initials: "SYS",
-                  },
-                  action: "created",
-                  summary: "Event created",
-                  timestamp: new Date(),
-                  details: "You created this event"
-                }
-              ]}
-            />
+            <ActivityTimeline activities={activities} />
           </VStack>
         </Card>
       </div>

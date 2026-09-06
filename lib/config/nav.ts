@@ -1,30 +1,64 @@
 export interface NavItem {
   href: string;
   label: string;
-  roles?: string[]; // If undefined, available to all
+  roles?: string[];
 }
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+  secondary?: boolean;
+}
+const leadership = ["owner", "admin", "lead", "vice_lead", "co_lead"];
+const eventManagers = ["owner", "admin", "lead", "co_lead", "event_lead"];
 
 export const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/events", label: "Events" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/achievements", label: "Hall of Fame" },
-  { href: "/recruitment/apply", label: "Apply", roles: ["applicant", "outsider"] },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: "Home" },
+  { href: "/events", label: "Explore events" },
+  { href: "/certificates", label: "My certificates" },
+  { href: "/recruitment/apply", label: "Join the team", roles: ["user", "outsider", "applicant"] },
 ];
-
 export const managementNavItems: NavItem[] = [
-  { href: "/applications", label: "Applications", roles: ["vice_lead", "lead", "admin", "owner"] },
-  { href: "/scanner", label: "QR Scanner", roles: ["event_lead", "volunteer_lead", "co_lead", "lead", "admin", "owner"] },
-  { href: "/lead/certificates", label: "Certificates", roles: ["event_lead", "lead", "admin", "owner"] },
-  { href: "/lead/achievements", label: "Review Achievements", roles: ["event_lead", "lead", "admin", "owner"] },
-  { href: "/lead/content", label: "Content Calendar", roles: ["content_lead", "lead", "admin", "owner"] },
-  { href: "/recruitment/interviews", label: "Interviews", roles: ["vice_lead", "lead", "admin", "owner"] },
-  { href: "/inventory", label: "Inventory", roles: ["tech_lead", "co_lead", "finance_lead", "lead", "admin", "owner"] },
-  { href: "/finance/budget", label: "Finance & Budgets", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
-  { href: "/finance/procurement", label: "Procurement", roles: ["finance_lead", "lead", "admin", "owner", "faculty_coordinator"] },
-  { href: "/admin/audit", label: "Audit Logs", roles: ["admin", "owner", "faculty_coordinator"] },
-  { href: "/admin/members", label: "Members", roles: ["admin", "owner"] },
-  { href: "/manage/forms", label: "Form Builder", roles: ["lead", "admin", "owner"] },
-  { href: "/manage/approvals", label: "Unified Approvals", roles: ["admin", "owner"] },
+  { href: "/events/create", label: "Create event", roles: eventManagers },
+  { href: "/tasks", label: "Team tasks", roles: [...leadership, "event_lead", "tech_lead", "finance_lead", "marketing_lead", "content_lead", "volunteer_lead"] },
+  { href: "/applications", label: "Applications", roles: leadership },
+  { href: "/manage/forms", label: "Manage forms", roles: [...leadership, "content_lead", "event_lead"] },
+  { href: "/scanner", label: "Event check-in", roles: [...eventManagers, "volunteer_lead"] },
+  { href: "/lead/certificates", label: "Issue certificates", roles: [...eventManagers, "content_lead", "tech_lead"] },
+  { href: "/lead/achievements", label: "Review achievements", roles: ["owner", "admin", "lead", "event_lead"] },
+  { href: "/lead/content", label: "Content calendar", roles: ["owner", "admin", "lead", "content_lead"] },
+  { href: "/recruitment/interviews", label: "Interviews", roles: leadership },
+  { href: "/inventory", label: "Inventory", roles: ["owner", "admin", "lead", "co_lead", "finance_lead", "tech_lead"] },
+  { href: "/finance", label: "Finance", roles: ["owner", "admin", "lead", "vice_lead", "finance_lead", "faculty_coordinator"] },
+  { href: "/finance/procurement", label: "Procurement", roles: ["owner", "admin", "lead", "finance_lead", "faculty_coordinator"] },
+  { href: "/manage/recruitment", label: "Recruitment", roles: leadership },
+  { href: "/manage/approvals", label: "Approvals", roles: ["owner", "admin"] },
 ];
+const groups: NavGroup[] = [
+  { label: "Your club", items: navItems },
+  { label: "Community", secondary: true, items: [
+    { href: "/internal-projects", label: "Projects" },
+    { href: "/forms", label: "Forms" },
+    { href: "/achievements", label: "Achievements" },
+    { href: "/leaderboard", label: "Leaderboard" },
+  ] },
+  { label: "Manage", secondary: true, items: managementNavItems },
+  { label: "Administration", secondary: true, items: [
+    { href: "/admin/members", label: "Members", roles: ["owner", "admin"] },
+    { href: "/admin/audit", label: "Audit log", roles: ["owner", "admin", "faculty_coordinator"] },
+    { href: "/admin", label: "Administration", roles: ["owner", "admin"] },
+  ] },
+  { label: "Account", items: [
+    { href: "/notifications", label: "Notifications" },
+    { href: "/settings", label: "Profile & settings" },
+  ] },
+];
+/** Shared by desktop, mobile, and search. This is navigation, not authorization. */
+export function getNavigation(role: string): NavGroup[] {
+  return groups.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.roles || item.roles.includes(role)),
+  })).filter(group => group.items.length > 0);
+}
+export function isActiveDestination(pathname: string, href: string) {
+  return pathname === href || (href !== "/admin" && pathname.startsWith(href + "/"));
+}

@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/.recovery/
+/node_modules.cached/
+/playwright-report/
+/test-results/
+/artifacts/
+/0
 
 # next.js
 /.next/

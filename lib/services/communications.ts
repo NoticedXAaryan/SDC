@@ -1,4 +1,4 @@
-import { getEventCommunications, createEventCommunicationDb, sendInvitesDb, notifyColleagues, getWhatsappTemplate } from "@/lib/dal/communications";
+import { getEventCommunications, createEventCommunicationDb, getWhatsappTemplate, markEventCommunicationQueueFailed, notifyColleagues, sendInvitesDb } from "@/lib/dal/communications";
 import { getEmailQueue } from "@/lib/queues/email";
 import type { AuthSession } from "@/lib/dal/auth";
 
@@ -11,13 +11,21 @@ export class CommunicationService {
     const { id, subject, messageBody, targetAudience } = await createEventCommunicationDb(sessionAuth, eventId, data);
     
     // Dispatch side-effect
-    await getEmailQueue().add("broadcast_communication", {
-      commId: id,
-      eventId,
-      subject,
-      body: messageBody,
-      targetAudience,
-    });
+    try {
+      await getEmailQueue().add("broadcast_communication", {
+        type: "broadcast_communication",
+        payload: {
+          commId: id,
+          eventId,
+          subject,
+          body: messageBody,
+          targetAudience,
+        },
+      });
+    } catch (error) {
+      await markEventCommunicationQueueFailed(id);
+      throw error;
+    }
 
     return { success: true, id };
   }

@@ -1,41 +1,25 @@
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { Metadata } from "next";
+import { ArrowRight, CalendarDays, UserRound, Check } from "lucide-react";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
+import { requirePageSession } from "@/lib/dal/auth";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Setup Complete | Student Developer Club",
-  description: "Your account is ready.",
-};
-
-interface SetupPageProps {
-  searchParams: Promise<{ callbackUrl?: string | string[] }>;
-}
-
-export default async function SetupPage({ searchParams }: SetupPageProps) {
+export const metadata = { title: "Welcome to SDC", description: "Choose your next step." };
+export default async function SetupPage({ searchParams }: { searchParams: Promise<{ callbackUrl?: string | string[] }> }) {
+  const { user } = await requirePageSession("/setup");
   const callbackUrl = sanitizeAuthRedirect((await searchParams).callbackUrl);
-
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-      <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center space-y-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-10 w-10 text-primary" />
-        </div>
-        
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">You're all set!</h1>
-          <p className="text-muted-foreground">
-            Your account has been created successfully. Welcome to the Student Developer Club.
-          </p>
-        </div>
-
-        <Button asChild className="w-full h-12 text-lg" size="lg">
-          <Link href={callbackUrl}>
-            Continue <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
-        </Button>
+  if (!user.emailVerified) redirect(`/verify-email?callbackUrl=${encodeURIComponent(`/setup?callbackUrl=${encodeURIComponent(callbackUrl)}`)}`);
+  return <AuthLayout>
+    <div className="space-y-6">
+      <span className="club-step-done"><Check size={18} aria-hidden="true" /></span>
+      <div><p className="club-eyebrow">You're in</p><h1 className="text-3xl font-semibold tracking-tight text-white">Welcome to the club.</h1><p className="mt-3 text-sm text-slate-300">Your account is ready. Start with an event, or take a minute to introduce yourself.</p></div>
+      <Link href={callbackUrl} className="club-button w-full">{callbackUrl === "/dashboard" ? "Go to my home" : "Continue where I left off"}<ArrowRight size={16} aria-hidden="true" /></Link>
+      <div className="club-onboarding-links">
+        <Link href="/events"><CalendarDays size={20} aria-hidden="true" /><span>Find your first event<small>Explore upcoming workshops and meetups.</small></span><ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href="/settings"><UserRound size={20} aria-hidden="true" /><span>Set up your profile<small>Add your username and interests.</small></span><ArrowRight size={16} aria-hidden="true" /></Link>
       </div>
+      <p className="text-sm text-slate-400">A club account lets you register for public events. Joining the organizing team is a separate application.</p>
     </div>
-  );
+  </AuthLayout>;
 }

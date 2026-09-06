@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { inventory, inventoryLogs } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { auditLogs, inventory, inventoryLogs } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { logInventoryActionSchema } from "@/lib/validators/inventory";
-import { logAuditEvent } from "@/lib/services/audit";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { withApiHandler, ValidationError } from "@/lib/api-wrapper";
 import crypto from "crypto";
+import { INVENTORY_ACTION_ROLES } from "@/lib/domain/inventory";
 
 export const dynamic = "force-dynamic";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
     
     
-const session = await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
+const session = await requireRole([...INVENTORY_ACTION_ROLES]);
+await checkEmergencyFreeze(session.user.role as string);
 const body = await req.json();
 const parsed = logInventoryActionSchema.safeParse(body);
 
@@ -28,22 +29,21 @@ const { itemId, action, qty } = parsed.data;
 
 // Run within a transaction to ensure atomicity
 const result = await db.transaction(async (tx) => {
-  const res = await tx.execute(sql`SELECT * FROM inventory WHERE id=${itemId} FOR UPDATE`);
-  const item = (res as any).rows ? (res as any).rows[0] : (res as any)[0]; // handle node-postgres vs postgres.js variations
+  const [item] = await tx.select().from(inventory).where(eq(inventory.id, itemId)).limit(1).for("update");
   if (!item) {
-    throw new Error("Item not found");
+    throw new ValidationError("Inventory item not found");
   }
 
   let newQtyAvailable = item.qtyAvailable;
 
   if (action === "check_out") {
     if (item.qtyAvailable < qty) {
-      throw new Error("Insufficient available quantity");
+      throw new ValidationError("Insufficient available quantity");
     }
     newQtyAvailable -= qty;
   } else if (action === "check_in") {
     if (item.qtyAvailable + qty > item.qtyTotal) {
-      throw new Error("Cannot check in more than total quantity");
+      throw new ValidationError("Cannot check in more than total quantity");
     }
     newQtyAvailable += qty;
   }
@@ -64,15 +64,17 @@ const result = await db.transaction(async (tx) => {
     qty,
   });
 
-  return { logId, newQtyAvailable, itemName: item.name };
-});
+  await tx.insert(auditLogs).values({
+    id: crypto.randomUUID(),
+    actorId: session.user.id,
+    action: action === "check_in" ? "inventory_checkin" : "inventory_checkout",
+    entity: "inventory",
+    entityId: itemId,
+    details: JSON.stringify({ itemName: item.name, qty, resultingAvailable: newQtyAvailable }),
+    timestamp: new Date(),
+  });
 
-await logAuditEvent({
-  actorId: session.user.id,
-  action: action === "check_in" ? "inventory_checkin" : "inventory_checkout",
-  entity: "inventory",
-  entityId: itemId,
-  details: `${action === "check_in" ? "Checked in" : "Checked out"} ${qty}x ${result.itemName}`,
+  return { logId, newQtyAvailable };
 });
 
 return NextResponse.json({ success: true, logId: result.logId, qtyAvailable: result.newQtyAvailable }, { status: 201 });

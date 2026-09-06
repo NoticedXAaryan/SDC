@@ -32,7 +32,7 @@ describe("Certificates Integration Tests", () => {
       slug: "cert-test-event",
       type: "workshop",
       description: "Test event for certs",
-      startsAt: new Date(Date.now() - 3600000).toISOString(),
+      startsAt: new Date(Date.now() + 1800000).toISOString(),
       endsAt: new Date(Date.now() + 3600000).toISOString(),
       capacity: 50,
       isPaid: false,
@@ -59,7 +59,7 @@ describe("Certificates Integration Tests", () => {
     await db.update(events).set({ certificateTemplateId: templateId }).where(eq(events.id, eventId));
 
     // Register and check-in member
-    const regRes = await registerForEvent(memberSession, eventId, { answers: {} });
+    const regRes = await registerForEvent(memberSession, eventId, {});
     memberPassToken = (regRes as any).passToken as string || (regRes as any).passCode as string;
     await ScannerService.checkInScanner(adminSession, eventId, memberPassToken);
   });
