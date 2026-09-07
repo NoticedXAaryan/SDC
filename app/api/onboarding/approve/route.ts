@@ -1,79 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { user } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { z } from "zod";
+import { requireSession } from "@/lib/dal/auth";
+import { changeMemberRole } from "@/lib/dal/members";
+import { withApiHandler, AuthorizationError } from "@/lib/api-wrapper";
 import { NotificationService } from "@/lib/services/notifications";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
-import { checkEmergencyFreeze } from "@/lib/dal/auth";
-
-const approveSchema = z.object({
-  userId: z.string(),
-  approve: z.boolean(),
-});
-
-export const POST = withApiHandler(async (req: NextRequest) => {
-    
-    
-const session = await auth.api.getSession({
-  headers: req.headers,
-});
-
-if (!session?.user) {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-// Only leads, admins, owners can approve
-const allowedRoles = ["lead", "admin", "owner"];
-if (!allowedRoles.includes((session.user as any).role)) {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-}
-
-const body = await req.json();
-const parsed = approveSchema.parse(body);
-
-const targetUser = await db.query.user.findFirst({
-  where: eq(user.id, parsed.userId),
-});
-
-if (!targetUser) {
-  return NextResponse.json({ error: "User not found" }, { status: 404 });
-}
-
-if (parsed.approve) {
-  // Using better-auth admin plugin to set role
-  await (auth.api as any).setRole({
-    headers: await headers(),
-    body: {
-      userId: parsed.userId,
-      role: "member",
-    },
-  });
-
-  // Revoke previous sessions to apply new role
-  const { session: dbSession } = await import("@/lib/db/schema");
-  await db.delete(dbSession).where(eq(dbSession.userId, parsed.userId));
-
-  // Send notification
-  await NotificationService.sendInAppNotification({
-    userId: parsed.userId,
-    type: "system",
-    title: "Application Approved",
-    message: "Welcome to the club! You are now a full member.",
-  });
-
-  return NextResponse.json({ message: "User approved successfully" });
-} else {
-  // Reject application
-  await NotificationService.sendInAppNotification({
-    userId: parsed.userId,
-    type: "system",
-    title: "Application Status",
-    message: "Your application is currently under further review or has been declined.",
-  });
-  return NextResponse.json({ message: "User rejected" });
-}
-
+import { z } from "zod";
+const approval = z.object({ userId: z.string().min(1), approve: z.literal(true) });
+export const POST = withApiHandler(async (request: NextRequest) => {
+  const session = await requireSession();
+  if (!["admin", "owner"].includes(session.user.role)) throw new AuthorizationError("An admin must approve direct membership.");
+  const body = approval.parse(await request.json());
+  await changeMemberRole(session, { userId: body.userId, role: "member" });
+  try {
+    await NotificationService.sendInAppNotification({ userId: body.userId, type: "system", title: "Membership approved", message: "Congratulations! You are a member now." });
+  } catch (error) { console.error("Membership approved; notification delivery failed", error); }
+  return NextResponse.json({ success: true, message: "Membership approved." });
 });

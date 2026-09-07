@@ -15,7 +15,8 @@ export const navItems: NavItem[] = [
   { href: "/dashboard", label: "Home" },
   { href: "/events", label: "Explore events" },
   { href: "/certificates", label: "My certificates" },
-  { href: "/recruitment/apply", label: "Join the team", roles: ["user", "outsider", "applicant"] },
+  { href: "/notifications", label: "Notifications" },
+  { href: "/recruitment/apply", label: "Membership", roles: ["user", "outsider", "applicant"] },
 ];
 export const managementNavItems: NavItem[] = [
   { href: "/events/create", label: "Create event", roles: eventManagers },
@@ -48,7 +49,6 @@ const groups: NavGroup[] = [
     { href: "/admin", label: "Administration", roles: ["owner", "admin"] },
   ] },
   { label: "Account", items: [
-    { href: "/notifications", label: "Notifications" },
     { href: "/settings", label: "Profile & settings" },
   ] },
 ];

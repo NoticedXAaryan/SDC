@@ -11,8 +11,9 @@
  *   draft → applied → ai_graded → needs_manual_review → interviewing → accepted | rejected
  */
 import { db } from "@/lib/db";
-import { applications, user, interviews, applicationReviews, auditLogs, notifications } from "@/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { applications, applicationDocuments, user, interviews, applicationReviews, auditLogs, notifications } from "@/lib/db/schema";
+import { resumeAnswerSchema } from "@/lib/recruitment-form";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { createTransactionalEmailJob, getEmailQueue } from "@/lib/queues/email";
 import { getGradingQueue } from "@/lib/queues/grading";
 import { NotificationService } from "@/lib/services/notifications";
@@ -34,6 +35,7 @@ import {
   type ApplicationReviewInput,
 } from "@/lib/validators/application";
 import crypto from "crypto";
+import { isDeepStrictEqual } from "node:util";
 
 // ─── RBAC Constants ────────────────────────────────────────────────────────
 
@@ -70,6 +72,7 @@ export async function submitApplication(
   rawData: unknown
 ): Promise<ApplicationCommandResult> {
   const data = submitApplicationSchema.parse(rawData);
+  if (!session.user.emailVerified) throw new AuthorizationError("Verify your email before applying.");
   const userId = session.user.id;
   const targetStatus = data.isDraft ? "draft" : "applied";
 
@@ -92,9 +95,17 @@ export async function submitApplication(
   };
 
   let applicationId = crypto.randomUUID() as any;
+  let alreadySubmitted = false;
 
   await db.transaction(async (tx) => {
     await tx.execute(sql`select id from ${user} where id = ${userId} for update`);
+    for (const answer of Object.values(data.answers)) {
+      const resume = resumeAnswerSchema.safeParse(answer);
+      if (!resume.success) continue;
+      const [document] = await tx.select({ id: applicationDocuments.id, name: applicationDocuments.name, size: applicationDocuments.size }).from(applicationDocuments)
+        .where(and(eq(applicationDocuments.id, resume.data.id), eq(applicationDocuments.userId, userId), eq(applicationDocuments.cycle, data.applicationCycle))).limit(1);
+      if (!document || document.name !== resume.data.name || document.size !== resume.data.size) throw new ValidationError("Your résumé changed or is unavailable. Upload it again before continuing.");
+    }
     // Check for existing application — upsert pattern
     const existing = await tx.query.applications.findFirst({
       where: and(
@@ -104,8 +115,13 @@ export async function submitApplication(
     });
 
     if (existing) {
+      if (!data.isDraft && existing.status !== "draft" && isDeepStrictEqual(existing.answers, data.answers)) {
+        applicationId = existing.id;
+        alreadySubmitted = true;
+        return;
+      }
       // Cannot re-submit a terminal application
-      if (["ai_graded", "needs_manual_review", "interviewing", "accepted", "rejected"].includes(existing.status ?? "") || (data.isDraft && existing.status !== "draft")) {
+      if (existing.status !== "draft") {
         throw new ValidationError(
           `Cannot modify a ${existing.status} application.`
         );
@@ -124,6 +140,10 @@ export async function submitApplication(
       });
     }
 
+    if (!data.isDraft) {
+      await tx.update(user).set({ role: "applicant", updatedAt: new Date() })
+        .where(and(eq(user.id, userId), inArray(user.role, ["outsider", "user"])));
+    }
     // Write audit record inside the same transaction
     await tx.insert(auditLogs).values({
       id: crypto.randomUUID(),
@@ -138,6 +158,8 @@ export async function submitApplication(
       timestamp: new Date(),
     });
   });
+
+  if (alreadySubmitted) return { success: true, applicationId };
 
   // Queue AI grading if submitted (not a draft) — idempotent via deterministic jobId
   if (!data.isDraft) {
@@ -221,14 +243,17 @@ export async function updateApplicationStatus(
         status: data.status as typeof applications.$inferInsert["status"],
         updatedAt: new Date(),
       })
-      .where(eq(applications.id, applicationId));
+      .where(and(eq(applications.id, applicationId), eq(applications.status, previousStatus as NonNullable<typeof applications.$inferSelect["status"]>)))
+      .returning({ id: applications.id }).then(rows => {
+        if (!rows.length) throw new ValidationError("This application changed while you were reviewing it. Refresh and try again.");
+      });
 
     // ACCEPTANCE: atomically upgrade user role to "member"
     if (data.status === "accepted") {
       await tx
         .update(user)
-        .set({ role: "member", updatedAt: new Date() })
-        .where(eq(user.id, existing.userId));
+        .set({ role: "member", membershipWelcomeSeen: false, updatedAt: new Date() })
+        .where(and(eq(user.id, existing.userId), inArray(user.role, ["user", "outsider", "applicant"])));
     }
 
     if (["accepted", "rejected"].includes(data.status)) {

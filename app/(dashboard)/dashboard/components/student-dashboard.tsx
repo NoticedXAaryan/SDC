@@ -106,13 +106,13 @@ export function StudentDashboard({
             <li><span className={user.username ? "club-step-done" : "club-step"}>{user.username ? <Check size={16} aria-hidden="true" /> : <UserRound size={16} aria-hidden="true" />}</span><div><Link href="/settings">Introduce yourself</Link><p>{user.username ? "Your profile has a username." : "Add a username and your interests so people can find you."}</p></div></li>
             <li><span className={myRegistrations.length || attendedCount ? "club-step-done" : "club-step"}>{myRegistrations.length || attendedCount ? <Check size={16} aria-hidden="true" /> : <CalendarDays size={16} aria-hidden="true" />}</span><div><Link href="/events">Join an event</Link><p>Pick a workshop or meetup that interests you.</p></div></li>
           </ol>
-          <p className="club-footnote">Take these at your own pace.</p>
+          <Link className="club-text-link" href="/setup">How the club works<ArrowRight size={15} aria-hidden="true" /></Link>
         </section>
 
         {(application || canApply) && <section className="club-team-note" aria-labelledby="team-heading">
-          <p className="club-eyebrow">Go a little further</p><h2 id="team-heading">{application ? "Your team application" : "Help shape the club."}</h2>
+          <p className="club-eyebrow">Club membership</p><h2 id="team-heading">{application ? "Your membership application" : "Become a member."}</h2>
           {application ? <><span className="club-status">{application.label}</span><p>{application.description}</p><Link href="/notifications" className="club-text-link">Check updates<ArrowRight size={16} aria-hidden="true" /></Link></> :
-            <><p>Interested in organizing events, writing, designing, or building with the team? Tell us what you'd like to contribute.</p><Link href="/recruitment/apply" className="club-text-link">Apply to the team<ArrowRight size={16} aria-hidden="true" /></Link><p className="club-footnote">You don't need to join the team to attend public events.</p></>}
+            <><p>Tell us your interests and how you'd like to contribute. The club reviews your application before granting membership.</p><Link href="/recruitment/apply" className="club-text-link">Apply for membership<ArrowRight size={16} aria-hidden="true" /></Link><p className="club-footnote">Participants can attend public events while waiting for approval.</p></>}
         </section>}
       </aside>
     </div>

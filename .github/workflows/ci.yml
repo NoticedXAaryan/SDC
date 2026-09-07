@@ -68,7 +68,7 @@ jobs:
       - run: npm run test:integration
       - run: npx playwright install --with-deps chromium
       - name: Verify desktop and mobile account journeys
-        run: npx playwright test tests/e2e/auth.spec.ts tests/e2e/account-journey.spec.ts --reporter=line --global-timeout=300000
+        run: npx playwright test tests/e2e/auth.spec.ts tests/e2e/account-journey.spec.ts tests/e2e/membership-journey.spec.ts --reporter=line --global-timeout=420000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

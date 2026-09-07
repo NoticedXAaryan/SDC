@@ -1,54 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { requireSession } from "@/lib/dal/auth";
+import { eq, or, sql } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
-
-const RESERVED_HANDLES = ["admin", "root", "api", "www", "events", "forms", "recruitment", "finance", "inventory", "settings", "profile", "dashboard", "u"];
+import { normalizeUsername, usernameError } from "@/lib/username-policy";
 
 export const GET = withApiHandler(async (req: NextRequest) => {
-  await requireSession();
-
-  const { searchParams } = new URL(req.url);
-  const u = searchParams.get("u");
-  
-  if (!u) {
-    return NextResponse.json({ error: "Username query parameter 'u' is required" }, { status: 400 });
-  }
-
-  const usernameLower = u.toLowerCase().trim();
-
-  // Regex check: lowercase alphanumeric + underscore, 3-20 chars, no spaces
-  if (!/^[a-z0-9_]{3,20}$/.test(usernameLower)) {
-    return NextResponse.json({ 
-      available: false, 
-      message: "Username must be 3-20 characters, lowercase alphanumeric and underscores only."
-    });
-  }
-
-  if (RESERVED_HANDLES.includes(usernameLower)) {
-    return NextResponse.json({ 
-      available: false, 
-      message: "This username is reserved."
-    });
-  }
-
-  const existingUser = await db.query.user.findFirst({
-    where: eq(user.usernameLower, usernameLower)
-  });
-
-  if (existingUser) {
-    const suggestions = [
-      `${usernameLower}_1`,
-      `${usernameLower}_${new Date().getFullYear()}`,
-      `${usernameLower}_${Math.floor(Math.random() * 1000)}`
-    ];
-    return NextResponse.json({ 
-      available: false, 
-      suggestions 
-    });
-  }
-
-  return NextResponse.json({ available: true });
-}, { requireAuth: false });
+  const candidate = new URL(req.url).searchParams.get("u");
+  const message = usernameError(candidate);
+  if (message) return NextResponse.json({ available: false, message });
+  const normalized = normalizeUsername(candidate!);
+  const [taken] = await db.select({ id: user.id }).from(user)
+    .where(or(eq(user.usernameLower, normalized), sql`lower(trim(${user.username})) = ${normalized}`)).limit(1);
+  // Never return identities, suggestions from accounts, or profile data.
+  return NextResponse.json({ available: !taken, message: taken ? "This username is taken. Choose another." : "Available. It will be yours when you save." }, { headers: { "Cache-Control": "no-store" } });
+}, { requireAuth: false, rateLimitPrefix: "username-availability" });

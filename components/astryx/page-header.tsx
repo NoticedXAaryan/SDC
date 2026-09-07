@@ -27,16 +27,16 @@ export function PageHeader({
   statusBadge,
 }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between mb-8">
+    <header className="club-page-heading">
       {/* Left: title group */}
       <div className="flex flex-col gap-1.5 min-w-0">
         {eyebrow && (
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--soc-accretion-violet)]">
+          <p className="club-eyebrow">
             {eyebrow}
           </p>
         )}
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-fg)] leading-tight">
+          <h1>
             {title}
           </h1>
           {statusBadge}
@@ -55,7 +55,7 @@ export function PageHeader({
           {primaryAction}
         </div>
       )}
-    </div>
+    </header>
   );
 }
 

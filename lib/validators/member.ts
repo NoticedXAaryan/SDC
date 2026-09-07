@@ -28,8 +28,8 @@ const memberUpdateActionSchema = z.object({
   username: z.string()
     .trim()
     .min(3)
-    .max(30)
-    .regex(/^[a-zA-Z0-9_-]+$/, "Username must use letters, numbers, underscores, or hyphens")
+    .max(20)
+    .regex(/^[a-zA-Z0-9_]+$/, "Username must use letters, numbers, or underscores")
     .nullable()
     .optional(),
   year: z.number().int().min(1).max(6).nullable().optional(),

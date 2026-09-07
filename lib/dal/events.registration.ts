@@ -388,7 +388,7 @@ export async function walkInRegister(session: AuthSession, eventId: string, data
         name,
         email,
         emailVerified: false,
-        role: "member",
+        role: "outsider",
         createdAt: new Date(),
         updatedAt: new Date(),
       }).returning();

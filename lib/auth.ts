@@ -1,6 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization } from "better-auth/plugins";
+import { organization, username } from "better-auth/plugins";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { normalizeUsername, usernameError } from "./username-policy";
 import { admin } from "better-auth/plugins/admin";
 import { defaultAc, adminAc, userAc } from "better-auth/plugins/admin/access";
 import { db } from "./db";
@@ -37,7 +39,7 @@ const leadRole = defaultAc.newRole({
 });
 
 const viceLeadRole = defaultAc.newRole({
-    user: ["list", "get", "set-role", "update"], // Handles recruitment
+    user: ["list", "get"], // Recruitment decisions use the audited application service.
     session: [],
 });
 
@@ -77,6 +79,16 @@ const outsiderRole = defaultAc.newRole({
 });
 
 export const auth = betterAuth({
+    // Role/profile changes use the club's audited APIs, which protect executive accounts.
+    disabledPaths: ["/is-username-available", "/sign-in/username", "/admin/set-role", "/admin/update-user"],
+    hooks: {
+        before: createAuthMiddleware(async (ctx) => {
+            // Profile edits must use the audited endpoint with its cooldown and row lock.
+            if (ctx.path === "/update-user" && ctx.body && "username" in ctx.body) {
+                throw new APIError("BAD_REQUEST", { message: "Change your username in Settings." });
+            }
+        }),
+    },
     database: drizzleAdapter(db, {
         provider: "pg",
         schema,
@@ -102,6 +114,8 @@ export const auth = betterAuth({
                         data: {
                             ...user,
                             email,
+                            ...("username" in user && typeof user.username === "string"
+                                ? { usernameLower: normalizeUsername(user.username), handleChangedAt: new Date() } : {}),
                             role: SIGNUP_ROLE,
                             points: 0,
                             level: 1,
@@ -138,7 +152,10 @@ export const auth = betterAuth({
     },
     user: {
         additionalFields: {
-            username: { type: "string", required: false },
+            usernameLower: { type: "string", required: false, input: false, returned: false },
+            handleChangedAt: { type: "date", required: false, input: false, returned: false },
+            onboardingCompleted: { type: "boolean", defaultValue: false, input: false },
+            membershipWelcomeSeen: { type: "boolean", defaultValue: false, input: false, returned: false },
             year: { type: "number", required: false },
             branch: { type: "string", required: false },
             bio: { type: "string", required: false },
@@ -159,6 +176,14 @@ export const auth = betterAuth({
         useSecureCookies: process.env.NODE_ENV === "production"
     },
     plugins: [
+        username({
+            displayUsername: false,
+            minUsernameLength: 3,
+            maxUsernameLength: 20,
+            usernameNormalization: normalizeUsername,
+            usernameValidator: value => !usernameError(value),
+            validationOrder: { username: "post-normalization" },
+        }),
         organization({
             // SDC domains/teams as organizations/roles
         }),
@@ -186,4 +211,3 @@ export const auth = betterAuth({
         }),
     ],
 });
-

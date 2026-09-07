@@ -10,6 +10,21 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Compatibility tokens for the shared Radix/shadcn controls. */
+@theme inline {
+  --color-background: var(--club-bg);
+  --color-foreground: var(--club-text);
+  --color-card-foreground: var(--club-text);
+  --color-popover-foreground: var(--club-text);
+  --color-muted-foreground: var(--club-muted);
+  --color-primary-foreground: var(--club-on-action);
+  --color-secondary-foreground: var(--club-text);
+  --color-accent-foreground: var(--club-text);
+  --color-input: var(--club-line);
+  --color-border: var(--club-line);
+  --color-ring: var(--club-accent);
+}
+
 /* ================================================================
    SOC DESIGN TOKENS — Space Observatory Brand System
    Semantic token names; feature files consume only these.

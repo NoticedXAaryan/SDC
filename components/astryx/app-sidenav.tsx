@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowUpRight, ChevronDown, LogOut, Moon, Sun } from "lucide-react";
+import { ChevronDown, LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "@/lib/auth-client";
 import { getNavigation, isActiveDestination } from "@/lib/config/nav";
+import { useHydrated } from "@/lib/use-hydrated";
 
 interface AppSideNavProps {
   role?: string;
@@ -15,6 +16,7 @@ interface AppSideNavProps {
 }
 export function AppSideNav({ role = "outsider", user, onNavigate }: AppSideNavProps) {
   const pathname = usePathname();
+  const hydrated = useHydrated();
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const [signingOut, setSigningOut] = useState(false);
@@ -60,16 +62,15 @@ export function AppSideNav({ role = "outsider", user, onNavigate }: AppSideNavPr
         })}
       </nav>
       <div className="club-nav-footer">
-        <Link href="/" className="club-nav-link" onClick={onNavigate}>Club website<ArrowUpRight size={15} aria-hidden="true" /></Link>
         <Link href="/settings" onClick={onNavigate} className="club-profile">
           <span className="club-avatar" aria-hidden="true">{(user?.name || "S").slice(0, 1).toUpperCase()}</span>
           <span>{user?.name || "Your account"}<small>Profile & settings</small></span>
         </Link>
         <div className="club-nav-utilities">
-          <button type="button" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} aria-label="Toggle color theme">
+          <button type="button" disabled={!hydrated} onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} aria-label="Toggle color theme">
             <Moon size={16} className="hidden dark:block" aria-hidden="true" /><Sun size={16} className="dark:hidden" aria-hidden="true" />Theme
           </button>
-          <button type="button" onClick={handleSignOut} disabled={signingOut}><LogOut size={16} aria-hidden="true" />{signingOut ? "Signing out…" : "Sign out"}</button>
+          <button type="button" onClick={handleSignOut} disabled={!hydrated || signingOut}><LogOut size={16} aria-hidden="true" />{signingOut ? "Signing out…" : "Sign out"}</button>
         </div>
         {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
       </div>

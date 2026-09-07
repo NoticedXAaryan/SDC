@@ -1,4 +1,5 @@
 "use client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -9,6 +10,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 
 export function ForgotPasswordForm() {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -74,7 +76,7 @@ export function ForgotPasswordForm() {
       <form onSubmit={handleReset} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="reset-email" className="text-slate-300">Email</Label>
-          <Input 
+          <Input disabled={!hydrated}
             id="reset-email" 
             type="email" 
             placeholder="name@paruluniversity.ac.in" 
@@ -93,7 +95,7 @@ export function ForgotPasswordForm() {
           </div>
         )}
 
-        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading}>
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={!hydrated || loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

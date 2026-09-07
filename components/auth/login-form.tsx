@@ -1,4 +1,5 @@
 "use client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -27,6 +28,7 @@ function GoogleIcon() {
 }
 
 export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }: LoginFormProps) {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -84,7 +86,7 @@ export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }:
       </div>
 
       {googleEnabled && <>
-      <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleLogin} disabled={loading || socialLoading}>
+      <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleLogin} disabled={!hydrated || loading || socialLoading}>
         {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GoogleIcon />}
         Continue with Google
       </Button>
@@ -100,7 +102,7 @@ export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }:
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="login-email" className="text-slate-300">Email</Label>
-          <Input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+          <Input disabled={!hydrated} id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
         </div>
 
         <div className="space-y-2">
@@ -109,7 +111,7 @@ export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }:
             <Link href="/forgot-password" className="text-xs font-semibold text-violet-300 transition-colors hover:text-violet-200">Forgot password?</Link>
           </div>
           <div className="relative">
-            <Input id="login-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+            <Input disabled={!hydrated} id="login-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
             <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400" aria-label={showPassword ? "Hide password" : "Show password"}>
               {showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
             </button>
@@ -123,7 +125,7 @@ export function LoginForm({ callbackUrl = "/dashboard", googleEnabled = false }:
           </div>
         )}
 
-        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading || socialLoading}>
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={!hydrated || loading || socialLoading}>
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Signing in…</> : <>Sign in<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
         </Button>
       </form>

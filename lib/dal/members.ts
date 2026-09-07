@@ -9,6 +9,8 @@ import {
 } from "@/lib/dal/auth";
 import { NotFoundError, ValidationError } from "@/lib/api-wrapper";
 import { makeAuditRecord } from "@/lib/services/audit";
+import { normalizeUsername, usernameError } from "@/lib/username-policy";
+import { isClubMember } from "@/lib/membership";
 import type {
   MemberDeleteInput,
   MemberLifecycleInput,
@@ -164,7 +166,7 @@ export async function changeMemberRole(session: AuthSession, input: RoleChangeIn
 
   const [updated] = await db.transaction(async (tx) => {
     const changed = await tx.update(user)
-      .set({ role: input.role, updatedAt: new Date() })
+      .set({ role: input.role, ...(!isClubMember(target.role) && isClubMember(input.role) ? { membershipWelcomeSeen: false } : {}), updatedAt: new Date() })
       .where(eq(user.id, input.userId))
       .returning(memberSelection);
     await tx.delete(sessionTable).where(eq(sessionTable.userId, input.userId));
@@ -193,9 +195,11 @@ export async function applyMemberLifecycleAction(
   if (input.action === "update") {
     const username = input.username === undefined
       ? undefined
-      : input.username?.trim() || null;
+      : input.username ? normalizeUsername(input.username) : null;
 
     if (username) {
+      const error = usernameError(username);
+      if (error) throw new ValidationError(error);
       const [existing] = await db.select({ id: user.id })
         .from(user)
         .where(and(eq(user.username, username), ne(user.id, userId)))
@@ -205,7 +209,7 @@ export async function applyMemberLifecycleAction(
 
     const updates = {
       ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-      ...(input.username !== undefined ? { username } : {}),
+      ...(input.username !== undefined ? { username, usernameLower: username } : {}),
       ...(input.year !== undefined ? { year: input.year } : {}),
       ...(input.branch !== undefined
         ? { branch: input.branch?.trim() || null }

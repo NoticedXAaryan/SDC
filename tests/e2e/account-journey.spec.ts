@@ -27,13 +27,15 @@ test("signup, verification, onboarding and password recovery work together", asy
   const newPassword = "New-local-password-456!";
 
   await page.goto("/register?callbackUrl=%2Fevents");
+  const username = "journey_" + crypto.randomUUID().replaceAll("-", "").slice(0, 10);
+  await page.getByLabel("Username", { exact: true }).fill(username);
   await page.getByLabel("Full name", { exact: true }).fill("Journey Test Member");
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Verify your email", exact: true })).toBeVisible();
   const before = await (await page.request.get("/api/auth/get-session", { params: { disableCookieCache: true } })).json();
-  expect(before.user).toMatchObject({ email, emailVerified: false, role: "outsider", points: 0 });
+  expect(before.user).toMatchObject({ email, username, emailVerified: false, role: "outsider", points: 0 });
   const blocked = await page.request.post("/api/events/missing/register", { data: {} });
   expect(blocked.status()).toBe(403);
   expect(await blocked.json()).toMatchObject({ code: "EMAIL_NOT_VERIFIED" });
@@ -49,14 +51,25 @@ test("signup, verification, onboarding and password recovery work together", asy
   await page.screenshot({ path: testInfo.outputPath("email-verification.png"), fullPage: true });
 
   await page.goto(await emailLink(request, email, "Verify your email", 2));
-  await expect(page.getByRole("heading", { name: "Welcome to the club." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue where I left off" })).toHaveAttribute("href", "/events");
+  await expect(page.getByRole("heading", { name: "Find your place at SDC." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How membership works" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue where I left off" }).click();
+  await expect(page).toHaveURL(/\/events$/);
   const after = await (await page.request.get("/api/auth/get-session", { params: { disableCookieCache: true } })).json();
   expect(after.user).toMatchObject({ emailVerified: true, role: "outsider" });
   await page.goto("/dashboard");
   await expect(page.locator("#main-content")).toBeVisible();
   await expect(page.getByRole("link", { name: "Verify email", exact: true })).toHaveCount(0);
   if (testInfo.project.name === "Mobile Chrome") {
+    await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await page.getByRole("combobox").fill("Notifications");
+    await expect(page.getByRole("option", { name: "Notifications", exact: true })).toBeVisible();
+    await expect.poll(() => page.locator(".club-command-dialog").evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.left >= 0 && bounds.top >= 0 && bounds.right <= innerWidth;
+    })).toBe(true);
+    await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Open navigation" }).click();
     await expect(page.getByRole("dialog")).toContainText("Explore events");
     await page.getByRole("dialog").press("Escape");

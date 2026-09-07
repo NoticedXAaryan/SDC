@@ -1,4 +1,5 @@
 "use client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -10,6 +11,8 @@ import { signIn, signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UsernameField } from "./username-field";
+import { usernameError, normalizeUsername } from "@/lib/username-policy";
 
 interface RegisterFormProps {
   callbackUrl?: string;
@@ -28,11 +31,15 @@ function GoogleIcon() {
 }
 
 export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false }: RegisterFormProps) {
+  const hydrated = useHydrated();
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [website, setWebsite] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [challengeKey, setChallengeKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,6 +56,8 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
     event.preventDefault();
     setError("");
 
+    const handleError = usernameError(username);
+    if (handleError) { setError(handleError); return; }
     if (name.trim().length < 2) {
       setError("Please enter your full name.");
       return;
@@ -68,7 +77,9 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
         ? "/setup"
         : `/setup?callbackUrl=${encodeURIComponent(callbackUrl)}`;
       const verificationUrl = `/verify-email?callbackUrl=${encodeURIComponent(setupUrl)}`;
-      const payload: Parameters<typeof signUp.email>[0] & { turnstileToken?: string } = {
+      const payload: Parameters<typeof signUp.email>[0] & { turnstileToken?: string; website?: string } = {
+        username: normalizeUsername(username),
+        website,
         name: name.trim(),
         email: email.trim(),
         password,
@@ -79,6 +90,7 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
 
       if (result.error) {
         setError(result.error.message || "We could not create your account. Please try again.");
+        setTurnstileToken(""); setChallengeKey(value => value + 1);
         return;
       }
 
@@ -86,6 +98,7 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
       router.refresh();
     } catch {
       setError("The registration service is temporarily unavailable. Please try again.");
+      setTurnstileToken(""); setChallengeKey(value => value + 1);
     } finally {
       setLoading(false);
     }
@@ -119,7 +132,7 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
       </div>
 
       {googleEnabled && <>
-      <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleRegister} disabled={loading || socialLoading}>
+      <Button type="button" variant="outline" className="h-12 w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08] hover:text-white" onClick={handleGoogleRegister} disabled={!hydrated || loading || socialLoading}>
         {socialLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GoogleIcon />}
         Continue with Google
       </Button>
@@ -131,19 +144,21 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
       </>}
 
       <form onSubmit={handleRegister} className="space-y-4">
+        <div className="club-honeypot" aria-hidden="true"><label htmlFor="register-website">Website<input id="register-website" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={event => setWebsite(event.target.value)} /></label></div>
+        <UsernameField value={username} onChange={setUsername} disabled={!hydrated || loading || socialLoading} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="register-name" className="text-slate-300">Full name</Label>
-            <Input id="register-name" placeholder="Your full name" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} autoComplete="name" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+            <Input disabled={!hydrated} id="register-name" placeholder="Your full name" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} autoComplete="name" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="register-email" className="text-slate-300">Email</Label>
-            <Input id="register-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+            <Input disabled={!hydrated} id="register-email" type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" inputMode="email" className="h-12 border-white/10 bg-black/30 text-white placeholder:text-slate-400 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="register-password" className="text-slate-300">Password</Label>
             <div className="relative">
-              <Input id="register-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
+              <Input disabled={!hydrated} id="register-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="new-password" className="h-12 border-white/10 bg-black/30 pr-11 text-white focus-visible:border-violet-400/60 focus-visible:ring-violet-400/20" />
               <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400" aria-label={showPassword ? "Hide password" : "Show password"}>
                 {showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
               </button>
@@ -160,7 +175,7 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
 
         {hasTurnstile && (
           <div className="flex justify-center overflow-hidden rounded-xl border border-white/10 bg-white p-2">
-            <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
+            <Turnstile key={challengeKey} siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onSuccess={setTurnstileToken} onExpire={() => setTurnstileToken("")} onError={() => { setTurnstileToken(""); setError("The security check couldn't load. Please try again."); }} />
           </div>
         )}
 
@@ -170,12 +185,12 @@ export function RegisterForm({ callbackUrl = "/dashboard", googleEnabled = false
           </div>
         )}
 
-        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading || socialLoading || (hasTurnstile && !turnstileToken)}>
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={!hydrated || loading || socialLoading || (hasTurnstile && !turnstileToken)}>
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Creating account…</> : <>Create account<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
         </Button>
       </form>
 
-      <p className="text-center text-sm text-slate-400">Already a member?{" "}<Link href={loginHref} className="font-bold text-white transition-colors hover:text-violet-200">Sign in</Link></p>
+      <p className="text-center text-sm text-slate-400">Already have an account?{" "}<Link href={loginHref} className="font-bold text-white transition-colors hover:text-violet-200">Sign in</Link></p>
       <p className="text-center text-[11px] leading-relaxed text-slate-400">By creating an account, you agree to our <Link href="/terms" className="text-slate-400 hover:text-white">Terms</Link> and <Link href="/privacy" className="text-slate-400 hover:text-white">Privacy Policy</Link>.</p>
     </div>
   );

@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { eq, desc } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { submitApplication } from "@/lib/services/applications";
+import { recruitmentFieldsSchema, validateRecruitmentAnswers } from "@/lib/recruitment-form";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const rl = await checkRateLimit(req, "apply");
@@ -29,7 +30,7 @@ export const POST = withApiHandler(async (req: NextRequest) => {
 
   // 1. Turnstile validation
   const { validateTurnstile } = await import("@/lib/turnstile");
-  const turnstileValid = await validateTurnstile(body.turnstileToken || req.headers.get("x-turnstile-token"));
+  const turnstileValid = body.status === "draft" || await validateTurnstile(body.turnstileToken || req.headers.get("x-turnstile-token"));
   if (!turnstileValid) {
     return NextResponse.json({ error: "Invalid captcha token" }, { status: 400 });
   }
@@ -41,19 +42,15 @@ export const POST = withApiHandler(async (req: NextRequest) => {
     return NextResponse.json({ error: "No active application cycle found" }, { status: 400 });
   }
 
-  if (activeForm && body.status !== "draft") {
-    const fields = activeForm.fields as any[];
-    const answers = body.answers || body;
-    const missingFields = fields
-      .filter(f => f.required)
-      .filter(f => !answers[f.id] || String(answers[f.id]).trim() === "");
-
-    if (missingFields.length > 0) {
-      return NextResponse.json({ 
-        error: "Validation failed", 
-        details: { missing: missingFields.map(f => f.id) } 
-      }, { status: 400 });
-    }
+  if (body.applicationCycle && body.applicationCycle !== activeForm.cycleName) return NextResponse.json({ error: "The recruitment round changed. Reload the form before submitting." }, { status: 409 });
+  {
+    const parsed = recruitmentFieldsSchema.safeParse(activeForm.fields);
+    if (!parsed.success) return NextResponse.json({ error: "This form needs an update. Contact a club admin." }, { status: 503 });
+    if (!body.answers || typeof body.answers !== "object" || Array.isArray(body.answers)) return NextResponse.json({ error: "Complete the application questions." }, { status: 400 });
+    const error = validateRecruitmentAnswers(body.status === "draft" ? parsed.data.map(field => ({ ...field, required: false })) : parsed.data, body.answers);
+    if (error) return NextResponse.json({ error }, { status: 400 });
+    // Store only configured questions, not arbitrary client-supplied metadata.
+    body.answers = Object.fromEntries(parsed.data.filter(field => body.answers[field.id] !== undefined).map(field => [field.id, body.answers[field.id]]));
   }
 
   try {

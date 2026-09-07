@@ -1,122 +1,27 @@
-"use client";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { applications, formTemplates } from "@/lib/db/schema";
+import { and, desc, eq } from "drizzle-orm";
+import { requirePageSession } from "@/lib/dal/auth";
+import { isClubMember } from "@/lib/membership";
+import { recruitmentFieldsSchema } from "@/lib/recruitment-form";
+import { MembershipForm } from "@/components/recruitment/membership-form";
+import { PageHeader } from "@/components/astryx/page-header";
+import { describeApplicationStatus } from "@/lib/domain/application-status";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
-
-export default function RecruitmentApplyPage() {
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const [formData, setFormData] = useState({
-    domain: "",
-    answers: {
-      whyJoin: "",
-      experience: "",
-      portfolio: ""
-    }
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.domain) {
-      toast.error("Please select a domain to apply for");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to submit application");
-      }
-      
-      toast.success("Application submitted successfully!");
-      router.push("/dashboard");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="max-w-3xl mx-auto py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Apply for the Club</CardTitle>
-          <CardDescription>
-            Join our core team. We are looking for passionate individuals who want to build, learn, and grow.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Which domain are you applying for?</label>
-              <Select value={formData.domain} onValueChange={(v) => setFormData({...formData, domain: v || ""})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a domain" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="technical">Technical / Development</SelectItem>
-                  <SelectItem value="design">UI/UX Design</SelectItem>
-                  <SelectItem value="marketing">Marketing & PR</SelectItem>
-                  <SelectItem value="content">Content Writing</SelectItem>
-                  <SelectItem value="management">Event Management</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Why do you want to join us?</label>
-              <Textarea 
-                required
-                placeholder="Tell us about your motivation..."
-                value={formData.answers.whyJoin}
-                onChange={(e) => setFormData({...formData, answers: {...formData.answers, whyJoin: e.target.value}})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">What relevant experience do you have?</label>
-              <Textarea 
-                required
-                placeholder="Languages, frameworks, past roles, etc."
-                value={formData.answers.experience}
-                onChange={(e) => setFormData({...formData, answers: {...formData.answers, experience: e.target.value}})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Portfolio / GitHub / Resume Link (Optional)</label>
-              <Input 
-                type="url"
-                placeholder="https://github.com/yourusername"
-                value={formData.answers.portfolio}
-                onChange={(e) => setFormData({...formData, answers: {...formData.answers, portfolio: e.target.value}})}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Submit Application
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+export default async function RecruitmentApplyPage() {
+  const { user } = await requirePageSession("/recruitment/apply");
+  const [form] = await db.select().from(formTemplates).where(eq(formTemplates.isActive, true)).orderBy(desc(formTemplates.updatedAt)).limit(1);
+  const [application] = form ? await db.select({ status: applications.status, answers: applications.answers }).from(applications).where(and(eq(applications.userId, user.id), eq(applications.applicationCycle, form.cycleName))).limit(1) : [];
+  const parsed = form ? recruitmentFieldsSchema.safeParse(form.fields) : null;
+  const status = application ? describeApplicationStatus(application.status) : null;
+  return <div className="mx-auto max-w-2xl">
+    <PageHeader title="Apply for membership" description="Tell us what you enjoy and how you'd like to contribute." />
+    {isClubMember(user.role) ? <div className="club-settings-panel"><h2>You're already a club member.</h2><p className="club-field-help">You don't need to apply again.</p><Link className="club-text-link" href="/dashboard">Back to your home</Link></div> :
+      !user.emailVerified ? <div className="club-settings-panel"><h2>Verify your email first</h2><p className="club-field-help">Confirm your address before sending an application.</p><Link className="club-text-link" href="/verify-email?callbackUrl=%2Frecruitment%2Fapply">Verify email</Link></div> :
+      !form ? <div className="club-settings-panel"><h2>Applications are currently closed.</h2><p className="club-field-help">The next form will appear here when the club opens recruitment. You can still join public events.</p><Link className="club-text-link" href="/events">Explore events</Link></div> :
+      application && application.status !== "draft" ? <div className="club-settings-panel"><span className="club-status">{status?.label}</span><h2 className="mt-4">Your application is with the club.</h2><p className="club-field-help mt-2">{status?.description}</p><Link className="club-text-link" href="/dashboard">Track your application</Link></div> :
+      parsed?.success ? <MembershipForm fields={parsed.data} cycle={form.cycleName} initialAnswers={{ fullName: user.name, email: user.email, ...(application?.answers || {}) as Record<string, unknown> }} hasDraft={application?.status === "draft"} /> :
+      <div className="club-settings-panel"><h2>This application form needs an update.</h2><p className="club-field-help">Please contact a club admin or check back later. Your account is ready to use.</p></div>}
+  </div>;
 }

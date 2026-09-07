@@ -2,6 +2,17 @@ import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, rea
 import { relations, sql } from "drizzle-orm";
 import crypto from "crypto";
 
+// Small, private intake documents stay out of the public asset store. One per account/round.
+export const applicationDocuments = pgTable("application_documents", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  cycle: text("cycle").notNull(),
+  name: text("name").notNull(),
+  size: integer("size").notNull(),
+  content: text("content").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [unique("application_document_owner_cycle").on(table.userId, table.cycle), drizzleCheck("application_document_size", sql`${table.size} > 0 AND ${table.size} <= 2097152 AND length(${table.content}) <= 2796204`)]);
+
 export const user = pgTable("user", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
 					name: text("name").notNull(),
@@ -19,6 +30,8 @@ export const user = pgTable("user", {
 					
 					// SDC specific fields
 					username: text("username").unique(),
+                    onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+                    membershipWelcomeSeen: boolean("membership_welcome_seen").default(false).notNull(),
 					usernameLower: text("username_lower").unique(),
 					displayName: text("display_name"),
 					handleChangedAt: timestamp("handle_changed_at"),

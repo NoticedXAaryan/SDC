@@ -1,4 +1,5 @@
 "use client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -10,6 +11,7 @@ export function VerifyEmailForm({ email, callbackUrl, deliveryEnabled, invalidLi
   email: string; callbackUrl: string; deliveryEnabled: boolean; invalidLink: boolean;
 }) {
   const router = useRouter();
+  const hydrated = useHydrated();
   const [pending, setPending] = useState<"send" | "check" | "signout" | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -57,13 +59,13 @@ export function VerifyEmailForm({ email, callbackUrl, deliveryEnabled, invalidLi
     {error && <p role="alert" className="text-sm text-red-200">{error}</p>}
     <p role="status" aria-live="polite" className="text-sm text-slate-300">{message}</p>
     <div className="space-y-3">
-      <button type="button" className="club-button w-full" onClick={() => run("check")} disabled={Boolean(pending)}>{pending === "check" ? "Checking…" : "I’ve verified my email"}</button>
-      <button type="button" className="club-button club-button-secondary w-full" onClick={() => run("send")} disabled={Boolean(pending) || !deliveryEnabled}>{pending === "send" ? "Sending…" : "Resend verification email"}</button>
+      <button type="button" className="club-button w-full" onClick={() => run("check")} disabled={!hydrated || Boolean(pending)}>{pending === "check" ? "Checking…" : "I’ve verified my email"}</button>
+      <button type="button" className="club-button club-button-secondary w-full" onClick={() => run("send")} disabled={!hydrated || Boolean(pending) || !deliveryEnabled}>{pending === "send" ? "Sending…" : "Resend verification email"}</button>
     </div>
     <p className="text-sm text-slate-400">Links expire after one hour. Check your spam folder if the email hasn’t arrived.</p>
     <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
       <Link href="/events" className="text-violet-200 underline underline-offset-4">Explore public events</Link>
-      <button type="button" className="min-h-11 text-slate-300 underline underline-offset-4" disabled={Boolean(pending)} onClick={() => run("signout")}>Sign out</button>
+      <button type="button" className="min-h-11 text-slate-300 underline underline-offset-4" disabled={!hydrated || Boolean(pending)} onClick={() => run("signout")}>Sign out</button>
     </div>
   </div>;
 }

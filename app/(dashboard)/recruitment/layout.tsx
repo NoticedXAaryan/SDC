@@ -1,13 +1,6 @@
-import { getCurrentUser, MANAGEMENT_ROLES } from "@/lib/dal/auth";
-import { redirect } from "next/navigation";
+import { requirePageSession } from "@/lib/dal/auth";
 
-export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const session = await getCurrentUser();
-  if (!session) redirect("/login");
-  
-  if (!session.user.role || !MANAGEMENT_ROLES.includes(session.user.role as any)) {
-    redirect("/dashboard");
-  }
-
+export default async function RecruitmentLayout({ children }: { children: React.ReactNode }) {
+  await requirePageSession("/recruitment/apply");
   return <>{children}</>;
 }

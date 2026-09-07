@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { user } from "@/lib/db/schema";
 import { eq, ilike, desc, and, ne } from "drizzle-orm";
 import { isManagementRole } from "@/lib/dal/auth";
+import { isClubMember } from "@/lib/membership";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +21,12 @@ export const GET = withApiHandler(async (req: NextRequest) => {
 
     const url = new URL(req.url);
     const search = url.searchParams.get("search") || "";
-    const page = parseInt(url.searchParams.get("page") || "1", 10);
-    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+    const page = z.coerce.number().int().min(1).parse(url.searchParams.get("page") || "1");
+    const limit = z.coerce.number().int().min(1).max(100).parse(url.searchParams.get("limit") || "20");
     const offset = (page - 1) * limit;
 
-    const isManagement = isManagementRole((session.user as any).role);
+    const [viewer] = await db.select({ role: user.role }).from(user).where(eq(user.id, session.user.id));
+    const isManagement = isManagementRole(viewer?.role || "outsider");
 
     // Filter to only approved members or leads, exclude outsiders and applicants
     const roleFilters = ne(user.role, "applicant");
@@ -32,6 +35,7 @@ export const GET = withApiHandler(async (req: NextRequest) => {
     
     // Ensure we also exclude the outsider role from public directory
     conditions.push(ne(user.role, "outsider"));
+    conditions.push(ne(user.role, "user"));
 
     if (search) {
       conditions.push(ilike(user.name, `%${search}%`));
@@ -51,6 +55,7 @@ export const GET = withApiHandler(async (req: NextRequest) => {
       branch: true,
       links: true,
     };
+    if (isClubMember(viewer?.role)) columns.username = true;
 
     // If management, include sensitive fields
     if (isManagement) {

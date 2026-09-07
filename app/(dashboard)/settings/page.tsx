@@ -1,387 +1,133 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useSession, authClient } from "@/lib/auth-client";
-import { Button } from "@astryxdesign/core/Button";
-import { Card } from "@astryxdesign/core/Card";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Text } from "@astryxdesign/core/Text";
-import { VStack } from "@astryxdesign/core/VStack";
-import { HStack } from "@astryxdesign/core/HStack";
-import { Loader2, AtSign, CheckCircle2, ScanFace, ChevronRight } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Monitor, ArrowUpRight } from "lucide-react";
 import { PageHeader } from "@/components/astryx/page-header";
+import { UsernameField } from "@/components/auth/username-field";
+import { MembershipBadge } from "@/components/app/membership-badge";
+import { usernameError } from "@/lib/username-policy";
 
 export default function SettingsPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, refetch } = useSession();
+  const [username, setUsername] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pictureMessage, setPictureMessage] = useState("");
+  const [pictureError, setPictureError] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const [username, setUsername] = useState("");
-  const [isChecking, setIsChecking] = useState(false);
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
-  const [usernameError, setUsernameError] = useState("");
-  const [usernameSuccess, setUsernameSuccess] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  useEffect(() => {
-    if (session?.user && (session.user as any).username) {
-      setUsername((session.user as any).username);
-    }
-  }, [session]);
-
-  // Debounce username check
-  useEffect(() => {
-    if (!username || username === (session?.user as any)?.username || username.length < 3) {
-      setIsAvailable(null);
-      setUsernameError("");
-      return;
-    }
-    
-    const checkUsername = async () => {
-      setIsChecking(true);
-      setUsernameError("");
-      try {
-        const res = await fetch(`/api/username/check?u=${encodeURIComponent(username)}`);
-        const data = await res.json();
-        
-        if (data.available) {
-          setIsAvailable(true);
-        } else {
-          setIsAvailable(false);
-          if (data.message) setUsernameError(data.message);
-        }
-      } catch (err) {
-        setUsernameError("Failed to check username");
-      } finally {
-        setIsChecking(false);
-      }
-    };
-    
-    const timeout = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timeout);
-  }, [username, session]);
-
-  const handleUpdateUsername = async () => {
-    if (!username || !isAvailable) return;
-    
-    setIsUpdating(true);
-    setUsernameError("");
-    setUsernameSuccess("");
-    try {
-      const res = await fetch("/api/users/me/username", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setUsernameSuccess(`Handle successfully updated to @${data.username}!`);
-      } else {
-        setUsernameError(data.error || "Failed to update handle");
-      }
-    } catch (err) {
-      setUsernameError("An error occurred");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
-
-  if (isPending) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
+  if (isPending) return <p role="status" className="club-loading"><Loader2 size={18} aria-hidden="true" />Loading your account…</p>;
+  if (!session) return null;
   const user = session.user;
-  const initials = user.name?.substring(0, 2).toUpperCase() || "US";
-  const currentUsername = (user as any).username;
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("File must be less than 5MB");
-      return;
-    }
-
-    setUploading(true);
-    setError("");
-    setSuccess("");
-
+  const currentUsername = user.username || "";
+  const value = username ?? currentUsername;
+  async function saveUsername(event: React.FormEvent) {
+    event.preventDefault();
+    const validation = usernameError(value);
+    if (validation) { setError(validation); return; }
+    setSaving(true); setError(""); setMessage("");
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to upload image");
-      }
-
-      const data = await res.json();
-      
-      await authClient.updateUser({
-        image: data.url
-      });
-
-      setSuccess("Profile picture updated successfully! It may take a moment to reflect everywhere.");
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
-    } finally {
-      setUploading(false);
+      const response = await fetch("/api/users/me/username", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: value }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Couldn't save your username.");
+      await authClient.getSession({ query: { disableCookieCache: true } });
+      await refetch();
+      setUsername(data.username);
+      setMessage("Username saved.");
+    } catch (error) { setError(error instanceof Error ? error.message : "Couldn't save your username. Try again."); }
+    finally { setSaving(false); }
+  }
+  async function uploadPicture(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setPictureError(""); setPictureMessage("");
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setPictureError("Choose a PNG, JPG, or WebP image under 5 MB."); return;
     }
-  };
-
-  return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <PageHeader title="Settings" description="Manage your account preferences." />
-
-      <div className="flex space-x-1 border-b border-border">
-        <button
-          onClick={() => setActiveTab("profile")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "profile" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-        >
-          Profile
-        </button>
-        <button
-          onClick={() => setActiveTab("security")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "security" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-        >
-          Security
-        </button>
+    setUploading(true);
+    try {
+      const form = new FormData(); form.append("file", file);
+      const response = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Couldn't upload this image.");
+      const result = await authClient.updateUser({ image: data.url });
+      if (result.error) throw new Error(result.error.message || "Couldn't save your picture.");
+      await refetch();
+      setPictureMessage("Profile picture updated.");
+    } catch (error) { setPictureError(error instanceof Error ? error.message : "Couldn't update your picture. Try again."); }
+    finally { setUploading(false); event.target.value = ""; }
+  }
+  return <div className="club-settings">
+    <PageHeader title="Settings" description="Your identity, membership, and account security." />
+    <div className="club-settings-layout">
+      <aside className="club-account-summary" aria-label="Your account">
+        <div className="club-profile-avatar">{user.image ? <img src={user.image} alt="" width={72} height={72} /> : user.name.slice(0, 2).toUpperCase()}</div>
+        <h2>{user.name}</h2><p className="club-field-help break-all">{user.email}</p>
+        <MembershipBadge role={user.role || "outsider"} />
+        <nav aria-label="Settings sections"><a href="#profile">Profile</a><a href="#username">Username</a><a href="#security">Security</a></nav>
+        <Link className="club-text-link" href="/setup">Membership guide<ArrowUpRight size={14} aria-hidden="true" /></Link>
+      </aside>
+      <div className="club-settings-sections">
+        <section className="club-settings-panel" id="profile" aria-labelledby="profile-title">
+          <div className="club-panel-heading"><Camera size={19} aria-hidden="true" /><div><h2 id="profile-title">Your profile</h2><p>Help the team recognize you.</p></div></div>
+          <dl className="club-account-details"><div><dt>Full name</dt><dd>{user.name}</dd></div><div><dt>Email address</dt><dd>{user.email}<span className="club-status">{user.emailVerified ? "Email verified" : "Verification needed"}</span></dd></div></dl>
+          <div className="club-field"><label htmlFor="profile-picture">Profile picture</label><p className="club-field-help" id="picture-help">PNG, JPG, or WebP · up to 5 MB. A square image works best.</p><input type="file" id="profile-picture" accept="image/png,image/jpeg,image/webp" aria-describedby="picture-help" onChange={uploadPicture} disabled={uploading || !user.emailVerified} /></div>
+          {uploading && <p role="status" className="club-field-help">Uploading your picture…</p>}
+          {pictureMessage && <p role="status" className="club-form-success">{pictureMessage}</p>}
+          {pictureError && <p role="alert" className="club-form-error">{pictureError}</p>}
+        </section>
+        <section className="club-settings-panel" id="username" aria-labelledby="username-title">
+          <div className="club-panel-heading"><span aria-hidden="true">@</span><div><h2 id="username-title">Your club username</h2><p>A consistent identity inside the community.</p></div></div>
+          <form className="space-y-5" onSubmit={saveUsername}>
+            <UsernameField value={value} onChange={next => { setUsername(next); setMessage(""); setError(""); }} currentValue={currentUsername} disabled={saving || !user.emailVerified} />
+            <p className="club-field-help">After choosing your username, you can change it once every 30 days, up to three times. Your name and username are separate.</p>
+            {message && <p role="status" className="club-form-success">{message}</p>}
+            {error && <p role="alert" className="club-form-error">{error}</p>}
+            <button className="club-button" disabled={saving || value === currentUsername || !user.emailVerified}>{saving ? "Saving…" : "Save username"}</button>
+          </form>
+        </section>
+        <section className="club-settings-panel" id="security" aria-labelledby="security-title">
+          <div className="club-panel-heading"><ShieldCheck size={19} aria-hidden="true" /><div><h2 id="security-title">Security</h2><p>Keep control of your account and devices.</p></div></div>
+          <div className="club-settings-row"><div><h3>Password</h3><p>Request an email link to choose a new password.</p></div><Link href="/forgot-password" className="club-button club-button-secondary">Reset password</Link></div>
+          <div className="club-settings-row"><div><h3>Optional face check-in</h3><p>You can keep using your event QR pass without enrolling.</p></div><Link href="/settings/face-enrollment" className="club-text-link">Manage enrollment<ArrowUpRight size={15} aria-hidden="true" /></Link></div>
+          <ActiveSessions currentToken={session.session.token} />
+        </section>
       </div>
-
-      {activeTab === "profile" && (
-        <div className="space-y-8">
-          <Card padding={6}>
-            <VStack gap={6}>
-              <VStack gap={1}>
-                <Text weight="bold" className="text-xl">Profile Details</Text>
-                <Text type="supporting" className="text-sm">Manage your account settings and profile picture.</Text>
-              </VStack>
-              
-              <HStack gap={6} align="center">
-                <Avatar size="lg" src={user.image || undefined} name={user.name || initials} />
-
-                <VStack gap={2}>
-                  <Text weight="medium" className="text-lg">Profile Picture</Text>
-                  <Text type="supporting" className="text-sm">
-                    Upload a new profile picture. Recommended size is 256x256px. Max 5MB.
-                  </Text>
-                  
-                  <div className="mt-2">
-                    <label className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                      {uploading ? "Uploading..." : "Upload new picture"}
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/png, image/jpeg, image/webp" 
-                        onChange={handleFileChange}
-                        disabled={uploading}
-                      />
-                    </label>
-                  </div>
-                  
-                  {error && <Text className="text-sm text-red-500 font-medium">{error}</Text>}
-                  {success && <Text className="text-sm text-green-500 font-medium">{success}</Text>}
-                </VStack>
-              </HStack>
-
-              <div className="space-y-4 pt-6 border-t border-border">
-                <div className="grid gap-2">
-                  <Text type="supporting" className="font-medium text-sm">Name</Text>
-                  <Text weight="medium">{user.name}</Text>
-                </div>
-                <div className="grid gap-2">
-                  <Text type="supporting" className="font-medium text-sm">Email</Text>
-                  <Text weight="medium">{user.email}</Text>
-                </div>
-                <div className="grid gap-2">
-                  <Text type="supporting" className="font-medium text-sm">Role</Text>
-                  <Text weight="medium" className="capitalize">{user.role?.replace("_", " ")}</Text>
-                </div>
-              </div>
-            </VStack>
-          </Card>
-
-          <Card padding={6}>
-            <VStack gap={6}>
-              <VStack gap={1}>
-                <Text weight="bold" className="text-xl">Username Handle</Text>
-                <Text type="supporting" className="text-sm">Your unique @handle used for mentions and public profile. You can change this once every 30 days, maximum 3 times.</Text>
-              </VStack>
-              
-              <div className="space-y-2 max-w-md">
-                <div className="relative">
-                  <AtSign className="absolute left-3 top-[38px] h-4 w-4 text-muted-foreground z-10" />
-                  <TextInput
-                    htmlName="username"
-                    label="Username"
-                    className="pl-9"
-                    value={username}
-                    onChange={(val) => setUsername(val.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  />
-                </div>
-                
-                <div className="h-5">
-                  {isChecking && <Text type="supporting" className="text-sm flex items-center"><Loader2 className="h-3 w-3 mr-2 animate-spin" /> Checking availability...</Text>}
-                  {!isChecking && isAvailable === true && username !== currentUsername && (
-                    <Text className="text-sm text-green-600 flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Available!</Text>
-                  )}
-                  {!isChecking && usernameError && <Text className="text-sm text-red-500">{usernameError}</Text>}
-                  {!isChecking && usernameSuccess && <Text className="text-sm text-green-600">{usernameSuccess}</Text>}
-                </div>
-              </div>
-              
-              <div className="pt-2">
-                <Button 
-                  label="Update Handle"
-                  onClick={handleUpdateUsername} 
-                  isDisabled={!isAvailable || isUpdating || isChecking || username === currentUsername}
-                  icon={isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-                />
-              </div>
-            </VStack>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === "security" && (
-        <div className="space-y-8">
-          <Card padding={6}>
-            <VStack gap={6}>
-              <HStack justify="between" align="start">
-                <VStack gap={1}>
-                  <Text weight="bold" className="text-xl">Face ID Enrollment</Text>
-                  <Text type="supporting" className="text-sm">Enroll your face to enable quick, secure check-ins at events.</Text>
-                </VStack>
-              </HStack>
-              
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/10">
-                <HStack align="center" gap={4}>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                    <ScanFace className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <Text weight="medium">Biometric Check-in</Text>
-                    <Text type="supporting" className="text-sm">
-                      {(user as any).faceDescriptor 
-                        ? "Your face is currently enrolled for fast lane access." 
-                        : "Not enrolled. Check-ins will require a manual QR scan."}
-                    </Text>
-                  </div>
-                </HStack>
-                <Button 
-                  variant="secondary" 
-                  href="/settings/face-enrollment" 
-                  label={(user as any).faceDescriptor ? "Re-enroll Face" : "Set Up Face ID"}
-                  icon={<ChevronRight className="w-4 h-4" />}
-                />
-              </div>
-            </VStack>
-          </Card>
-          
-          <ActiveSessionsCard />
-        </div>
-      )}
-
     </div>
-  );
+  </div>;
 }
 
-function ActiveSessionsCard() {
-  const [activeSessions, setActiveSessions] = useState<any[] | null>(null);
-  const [isPending, setIsPending] = useState(true);
-  const [revoking, setRevoking] = useState<string | null>(null);
-  const [revokingAll, setRevokingAll] = useState(false);
-
-  useEffect(() => {
-    authClient.listSessions().then(({ data }) => {
-      setActiveSessions(data || []);
-      setIsPending(false);
-    }).catch(() => setIsPending(false));
-  }, []);
-
-  const handleRevoke = async (token: string) => {
-    setRevoking(token);
+type DeviceSession = { id: string; token: string; userAgent?: string | null; createdAt: Date; ipAddress?: string | null };
+function ActiveSessions({ currentToken }: { currentToken: string }) {
+  const [sessions, setSessions] = useState<DeviceSession[]>([]);
+  const [pending, setPending] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  async function load() {
+    setPending(true); setError("");
     try {
-      await authClient.revokeSession({ token });
-      window.location.reload();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setRevoking(null);
-    }
-  };
-
-  const handleRevokeAllOther = async () => {
-    setRevokingAll(true);
+      const result = await authClient.listSessions();
+      if (result.error) throw new Error();
+      setSessions(result.data || []);
+    } catch { setError("Couldn't load your devices. Try again."); }
+    finally { setPending(false); }
+  }
+  useEffect(() => { void load(); }, []);
+  async function revoke(token: string | null) {
+    setBusy(token || "others"); setError("");
     try {
-      await authClient.revokeOtherSessions();
-      window.location.reload();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setRevokingAll(false);
-    }
-  };
-
-  return (
-    <Card padding={6}>
-      <VStack gap={6}>
-        <HStack justify="between" align="start">
-          <VStack gap={1}>
-            <Text weight="bold" className="text-xl">Active Sessions</Text>
-            <Text type="supporting" className="text-sm">Manage your active devices and sessions.</Text>
-          </VStack>
-          <Button 
-            variant="ghost" 
-            label="Logout other devices"
-            onClick={handleRevokeAllOther}
-            isDisabled={revokingAll || !activeSessions || activeSessions.length <= 1}
-            icon={revokingAll ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-          />
-        </HStack>
-        
-        <div className="space-y-4">
-          {isPending ? (
-            <div className="flex items-center text-muted-foreground"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading sessions...</div>
-          ) : (
-            <div className="space-y-4">
-              {activeSessions?.map((s: any) => (
-                <div key={s.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/10">
-                  <div>
-                    <Text weight="medium">{s.userAgent || "Unknown Device"}</Text>
-                    <Text type="supporting" className="text-sm">IP: {s.ipAddress || "Unknown"}</Text>
-                    <Text type="supporting" className="text-xs mt-1">Started: {new Date(s.createdAt).toLocaleString()}</Text>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                    isDisabled={revoking === s.token} 
-                    onClick={() => handleRevoke(s.token)}
-                    label={revoking === s.token ? "Revoking..." : "Revoke"}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </VStack>
-    </Card>
-  );
+      const result = token ? await authClient.revokeSession({ token }) : await authClient.revokeOtherSessions();
+      if (result.error) throw new Error();
+      setSessions(previous => previous.filter(item => token ? item.token !== token : item.token === currentToken));
+    } catch { setError("Couldn't sign out that device. Try again."); }
+    finally { setBusy(null); }
+  }
+  return <div className="club-device-section">
+    <div className="club-section-heading"><h3>Signed-in devices</h3><button className="club-text-link" disabled={pending || !!busy || sessions.filter(item => item.token !== currentToken).length === 0} onClick={() => revoke(null)}>Sign out other devices</button></div>
+    {pending && <p role="status">Loading devices…</p>}
+    {error && <div role="alert" className="club-form-error">{error}<button className="club-text-link" onClick={load}>Try again</button></div>}
+    <ul className="club-device-list">{sessions.map(item => <li key={item.id}><Monitor size={19} aria-hidden="true" /><div><strong>{item.userAgent?.includes("Mobile") ? "Mobile browser" : "Web browser"}</strong><p title={item.userAgent || undefined}>{item.ipAddress || "Address unavailable"} · Started {new Date(item.createdAt).toLocaleDateString()}</p></div>{item.token === currentToken ? <span className="club-status">This device</span> : <button className="club-button club-button-secondary" disabled={!!busy} onClick={() => revoke(item.token)}>{busy === item.token ? "Signing out…" : "Sign out"}</button>}</li>)}</ul>
+  </div>;
 }
