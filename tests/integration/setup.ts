@@ -1,43 +1,9 @@
-import { vi, beforeAll } from "vitest";
+import { beforeAll } from "vitest";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import "../setup";
 
-beforeAll(async ({}, suite) => {
-  try {
-    await db.execute(sql`SELECT 1`);
-  } catch (err) {
-    console.warn("Database not available, skipping test suite.");
-    if (typeof (suite as any)?.skip === "function") {
-      (suite as any).skip();
-    }
-  }
+beforeAll(async () => {
+  // Infrastructure failures fail the suite. Never silently skip coverage.
+  await db.execute(sql`SELECT 1`);
 });
-
-// Mock ioredis to prevent connection errors when testing locally without Redis
-vi.mock("ioredis", () => {
-  const RedisMock = vi.fn(function() {
-    return {
-      get: vi.fn(),
-      set: vi.fn(),
-      del: vi.fn(),
-      quit: vi.fn(),
-      on: vi.fn(),
-      disconnect: vi.fn(),
-      multi: vi.fn(() => ({
-        exec: vi.fn(() => Promise.resolve([])),
-      })),
-    };
-  });
-  return { default: RedisMock, Redis: RedisMock };
-});
-
-vi.mock("bullmq", () => ({
-  Queue: vi.fn(function() {
-    return {
-      add: vi.fn(),
-      addBulk: vi.fn(),
-      close: vi.fn(),
-    };
-  }),
-  Worker: vi.fn(),
-}));

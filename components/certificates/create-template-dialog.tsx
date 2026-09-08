@@ -17,10 +17,16 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Loader2 } from "lucide-react";
 
-export function CreateTemplateDialog() {
+interface CertificateEventContext {
+  id: string;
+  title: string;
+}
+
+export function CreateTemplateDialog({ event }: { event?: CertificateEventContext }) {
+  const defaultName = event ? `${event.title} certificate` : "";
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(defaultName);
   const [file, setFile] = useState<File | null>(null);
   const router = useRouter();
 
@@ -59,7 +65,8 @@ export function CreateTemplateDialog() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          name, 
+          name,
+          eventId: event?.id,
           backgroundUrl: fileUrl,
         }),
       });
@@ -73,11 +80,11 @@ export function CreateTemplateDialog() {
       
       toast.success("Template created successfully");
       setIsOpen(false);
-      setName("");
+      setName(defaultName);
       setFile(null);
       
       // Redirect to the designer
-      router.push(`/lead/certificates/templates/${templateData.id}/edit`);
+      router.push(`/lead/certificates/templates/${templateData.template.id}/edit`);
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
     } finally {
@@ -89,13 +96,15 @@ export function CreateTemplateDialog() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger render={<Button className="flex gap-2" />}>
         <Plus className="w-4 h-4" />
-        Create New Template
+        {event ? "Create event template" : "Create new template"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create Certificate Template</DialogTitle>
           <DialogDescription>
-            Upload a base PDF to use as the background for your certificate template.
+            {event
+              ? `Create and attach the certificate design for ${event.title}.`
+              : "Upload a base PDF to use as the background for your certificate template."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCreate} className="space-y-4 py-4">
@@ -110,7 +119,7 @@ export function CreateTemplateDialog() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pdf">Base PDF File</Label>
+            <Label htmlFor="pdf">Approved base PDF</Label>
             <Input 
               id="pdf" 
               type="file" 
@@ -124,10 +133,10 @@ export function CreateTemplateDialog() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
+                  Creating…
                 </>
               ) : (
-                "Create Template"
+                event ? "Create and attach template" : "Create template"
               )}
             </Button>
           </DialogFooter>

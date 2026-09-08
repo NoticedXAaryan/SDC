@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 
 import { CreateContentDialog } from "./create-dialog";
+import { ContentActions } from "./content-actions";
+import { PageHeader } from "@/components/astryx/page-header";
 
 export default async function ContentCalendarPage() {
-  await requireRole(["content_lead", "lead", "admin", "owner"]);
+  await requireRole(["content_lead", "co_lead", "lead", "admin", "owner"]);
 
   const items = await db.select({
     content: contentItems,
@@ -27,14 +29,8 @@ export default async function ContentCalendarPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto py-12 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Content Calendar</h1>
-          <p className="text-muted-foreground">Manage social media posts and blog content across platforms.</p>
-        </div>
-        <CreateContentDialog />
-      </div>
+    <div className="max-w-7xl mx-auto py-6 space-y-8">
+      <PageHeader title="Content Calendar" description="Move social posts and articles from idea through review, scheduling, and publication." primaryAction={<CreateContentDialog />} />
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map(col => {
@@ -49,7 +45,7 @@ export default async function ContentCalendarPage() {
               
               <div className="flex flex-col gap-3">
                 {colItems.map(({ content, author }) => (
-                  <Card key={content.id} className="cursor-pointer hover:border-primary/50 transition-colors">
+                  <Card key={content.id} className="hover:border-primary/50 transition-colors">
                     <CardHeader className="p-4 pb-2">
                       <div className="flex justify-between items-start mb-2">
                         <Badge variant="outline" className="text-[10px] uppercase">
@@ -69,6 +65,9 @@ export default async function ContentCalendarPage() {
                             {new Date(content.scheduledFor).toLocaleDateString()}
                           </span>
                         )}
+                      </div>
+                      <div className="mt-3 border-t pt-3">
+                        <ContentActions id={content.id} status={(content.status || "idea") as "idea" | "drafting" | "review" | "scheduled" | "published"} hasSchedule={Boolean(content.scheduledFor)} />
                       </div>
                     </CardContent>
                   </Card>

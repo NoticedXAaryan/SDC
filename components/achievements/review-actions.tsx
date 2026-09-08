@@ -7,14 +7,16 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { HStack } from "@astryxdesign/core/HStack";
 import { VStack } from "@astryxdesign/core/VStack";
 import { useToast } from "@/components/astryx/toast-provider";
+import { RejectModal } from "@/components/reject-modal";
 
 export function ReviewActions({ submissionId }: { submissionId: string }) {
   const [loading, setLoading] = useState(false);
   const [points, setPoints] = useState("10");
+  const [rejecting, setRejecting] = useState(false);
   const router = useRouter();
   const { success, error } = useToast();
 
-  async function handleReview(status: "approved" | "rejected") {
+  async function handleReview(status: "approved" | "rejected", reasonCode?: string, reasonNote?: string) {
     setLoading(true);
     try {
       const parsedPoints = parseInt(points) || 0;
@@ -24,18 +26,22 @@ export function ReviewActions({ submissionId }: { submissionId: string }) {
         body: JSON.stringify({ 
           id: submissionId, 
           status, 
-          pointsAwarded: status === "approved" ? parsedPoints : 0 
+          pointsAwarded: status === "approved" ? parsedPoints : 0,
+          reasonCode,
+          reasonNote,
         }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to review");
+        const result = await res.json().catch(() => null);
+        throw new Error(result?.error || "Achievement review could not be saved");
       }
 
-      success(`Submission ${status} successfully!`);
+      setRejecting(false);
+      success(status === "approved" ? "Achievement approved" : "Achievement rejected with feedback");
       router.refresh();
-    } catch (err) {
-      error("Error reviewing submission");
+    } catch (caughtError) {
+      error(caughtError instanceof Error ? caughtError.message : "Achievement review could not be saved");
     } finally {
       setLoading(false);
     }
@@ -63,9 +69,16 @@ export function ReviewActions({ submissionId }: { submissionId: string }) {
           label="Reject" 
           variant="destructive" 
           isDisabled={loading} 
-          onClick={() => handleReview("rejected")} 
+          onClick={() => setRejecting(true)}
         />
       </HStack>
+      <RejectModal
+        isOpen={rejecting}
+        onOpenChange={setRejecting}
+        title="Reject achievement"
+        description="Give the member clear feedback so they can correct the evidence and resubmit."
+        onConfirm={(code, note) => { void handleReview("rejected", code, note); }}
+      />
     </VStack>
   );
 }

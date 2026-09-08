@@ -25,6 +25,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/dal/auth", () => ({
+  getCurrentUser: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, email: "test@college.edu.in", role: "applicant", emailVerified: true } })),
   requireSession: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, email: "test@college.edu.in", role: "admin", emailVerified: true } })),
   requireAdmin: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, role: "admin", emailVerified: true } })),
   requireRole: vi.fn().mockImplementation(async () => ({ user: { id: authState.userId, role: "admin", emailVerified: true } })),

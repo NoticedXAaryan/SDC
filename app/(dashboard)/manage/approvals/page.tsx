@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { events, procurementRequests, user } from "@/lib/db/schema";
+import { events, procurementRequests, user, vendors } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApprovalActions } from "./approval-actions";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export default async function ApprovalsPage() {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const drafts = await db.select().from(events)
     .where(eq(events.status, "draft"))
@@ -22,10 +22,16 @@ export default async function ApprovalsPage() {
     estimatedCost: procurementRequests.estimatedCost,
     createdAt: procurementRequests.createdAt,
     requestedBy: user.name,
+    requestedById: procurementRequests.requestedBy,
+    selectedVendorId: procurementRequests.selectedVendorId,
+    vendorName: vendors.name,
+    quotesUrl: procurementRequests.quotesUrl,
   }).from(procurementRequests)
     .leftJoin(user, eq(procurementRequests.requestedBy, user.id))
+    .leftJoin(vendors, eq(procurementRequests.selectedVendorId, vendors.id))
     .where(eq(procurementRequests.status, "approval" as any))
     .orderBy(desc(procurementRequests.createdAt));
+  const vendorOptions = await db.select({ id: vendors.id, name: vendors.name }).from(vendors).orderBy(desc(vendors.createdAt));
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -124,10 +130,26 @@ export default async function ApprovalsPage() {
                       <span className="block text-muted-foreground text-xs">Estimated Cost</span>
                       <span className="font-medium">₹{req.estimatedCost || 0}</span>
                     </div>
+                    <div>
+                      <span className="block text-muted-foreground text-xs">Selected Vendor</span>
+                      <span className="font-medium">{req.vendorName || "Not selected"}</span>
+                    </div>
+                    <div>
+                      <span className="block text-muted-foreground text-xs">Quote</span>
+                      {req.quotesUrl ? <a href={req.quotesUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">Open quote</a> : <span className="font-medium">Missing</span>}
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end border-t pt-4">
-                  <ProcurementActions reqId={req.id} status="approval" />
+                  <ProcurementActions
+                    reqId={req.id}
+                    status="approval"
+                    vendors={vendorOptions}
+                    selectedVendorId={req.selectedVendorId}
+                    quotesUrl={req.quotesUrl}
+                    canProgress={false}
+                    canApprove={req.requestedById !== session.user.id}
+                  />
                 </CardFooter>
               </Card>
             ))}

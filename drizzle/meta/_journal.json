@@ -134,6 +134,55 @@
       "when": 1787211524857,
       "tag": "0018_add-issuer-to-account",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787720000000,
+      "tag": "0019_certificate_email_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788048000000,
+      "tag": "0020_task_workflow_queues",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788134400000,
+      "tag": "0021_project_ownership",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788220800000,
+      "tag": "0022_vendor_rating_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788754471945,
+      "tag": "0023_familiar_wither",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788790588136,
+      "tag": "0024_strange_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788830104518,
+      "tag": "0025_smiling_blizzard",
+      "breakpoints": true
     }
   ]
 }

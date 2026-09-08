@@ -26,7 +26,9 @@ export default async function AchievementsPage() {
   const [regCount] = await db.select({ count: sql<number>`count(*)` }).from(registrations).where(eq(registrations.userId, session.user.id));
   const [currentUser] = await db.select({ points: user.points, level: user.level }).from(user).where(eq(user.id, session.user.id)).limit(1);
   
-  const hasSubmissions = submissions.filter(s => s.status === "approved").length > 0;
+  const hasSubmissions = submissions.some((submission) => submission.status === "approved");
+  const hasHallOfFameEntry = papers.some((paper) => paper.userId === session.user.id)
+    || wins.some((win) => win.userId === session.user.id);
   const eventsCount = Number(regCount.count);
   const userPoints = currentUser?.points || 0;
   const userLevel = currentUser?.level || 1;
@@ -37,7 +39,7 @@ export default async function AchievementsPage() {
     { title: "Point Collector", description: "Earned over 500 SDC points.", icon: <Star className="w-8 h-8" />, unlocked: userPoints >= 500 },
     { title: "Rising Star", description: "Reached Level 5 in SDC.", icon: <Sparkles className="w-8 h-8" />, unlocked: userLevel >= 5 },
     { title: "Contributor", description: "Got an external achievement approved.", icon: <Shield className="w-8 h-8" />, unlocked: hasSubmissions },
-    { title: "Hall of Famer", description: "Got a research paper or competition win.", icon: <Trophy className="w-8 h-8" />, unlocked: false }, // Currently manual
+    { title: "Hall of Famer", description: "Got a research paper or competition win.", icon: <Trophy className="w-8 h-8" />, unlocked: hasHallOfFameEntry },
   ];
 
   return (

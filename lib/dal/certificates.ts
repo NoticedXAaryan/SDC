@@ -18,8 +18,15 @@ export async function getEventWithTemplate(eventId: string) {
   return { event, template: template ?? null };
 }
 
-export async function getEligibleAttendeesForCertificates(eventId: string) {
-  const existingCerts = await db.select({ userId: certificates.userId }).from(certificates).where(eq(certificates.eventId, eventId));
+export async function getEligibleAttendeesForCertificates(eventId: string, templateId: string) {
+  const existingCerts = await db
+    .select({ userId: certificates.userId })
+    .from(certificates)
+    .where(and(
+      eq(certificates.eventId, eventId),
+      eq(certificates.templateId, templateId),
+      eq(certificates.status, "valid")
+    ));
   const existingUserIds = new Set(existingCerts.map(c => c.userId));
 
   const attendees = await db

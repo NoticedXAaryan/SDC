@@ -19,18 +19,17 @@ import { getEventWithTemplate, getEligibleAttendeesForCertificates } from "@/lib
 import { getCertificateQueue } from "@/lib/queues/certificates";
 import { logAuditEvent } from "@/lib/services/audit";
 import { db } from "@/lib/db";
-import { user, certTemplates, certificates, auditLogs } from "@/lib/db/schema";
+import { user, certTemplates, certificates, auditLogs, events } from "@/lib/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import {
   issueCertificatesSchema,
   issueAdhocCertificatesSchema,
   revokeCertificateSchema,
 } from "@/lib/validators/certificate";
+import { canIssueCertificates, canIssueCertificatesAcrossDomains } from "@/lib/domain/certificate";
 import crypto from "crypto";
 
 // ─── RBAC Constants ────────────────────────────────────────────────────────
-
-const CERTIFICATE_ISSUER_ROLES: SDCRole[] = ["co_lead", "lead", "vice_lead", "admin", "owner"];
 
 // ─── Issue to All Eligible Event Attendees ─────────────────────────────────
 
@@ -42,22 +41,29 @@ const CERTIFICATE_ISSUER_ROLES: SDCRole[] = ["co_lead", "lead", "vice_lead", "ad
 export class CertificateService {
   static async issueCertificatesForEvent(
     session: AuthSession,
-    eventId: string
+    eventId: string,
+    requestedTemplateId?: string
   ): Promise<{ success: true; count: number; message?: string }> {
-    issueCertificatesSchema.parse({ eventId });
+    issueCertificatesSchema.parse({ eventId, templateId: requestedTemplateId });
     const role = session.user.role as SDCRole;
 
-    if (!CERTIFICATE_ISSUER_ROLES.includes(role)) {
+    if (!canIssueCertificates(role)) {
       throw new AuthorizationError("Unauthorized to issue certificates.");
     }
 
     // Fetch event + template
-    const { event, template } = await getEventWithTemplate(eventId);
+    const { event, template: configuredTemplate } = await getEventWithTemplate(eventId);
     if (!event) throw new ValidationError("Event not found.");
+    const template = requestedTemplateId
+      ? await db.query.certTemplates.findFirst({ where: eq(certTemplates.id, requestedTemplateId) })
+      : configuredTemplate;
     if (!template) throw new ValidationError("No certificate template configured for this event.");
+    if (template.eventId && template.eventId !== eventId) {
+      throw new ValidationError("The selected template belongs to a different event.");
+    }
 
     // Domain check for non-admins
-    if (!ADMIN_ROLES.includes(role)) {
+    if (!canIssueCertificatesAcrossDomains(role)) {
       const userDomain = await getUserDomain(session.user.id, role);
       if (event.domain && event.domain !== userDomain) {
         throw new AuthorizationError("Event is outside your domain.");
@@ -65,7 +71,7 @@ export class CertificateService {
     }
 
     // Get eligible attendees (checked-in, no existing certificate)
-    const eligibleAttendees = await getEligibleAttendeesForCertificates(eventId);
+    const eligibleAttendees = await getEligibleAttendeesForCertificates(eventId, template.id);
     if (eligibleAttendees.length === 0) {
       return {
         success: true,
@@ -124,10 +130,10 @@ export class CertificateService {
     eventId?: string | null,
     idempotencyKey?: string
   ): Promise<{ success: true; count: number }> {
-    issueAdhocCertificatesSchema.parse({ templateId, userIds, eventId, idempotencyKey });
+    const input = issueAdhocCertificatesSchema.parse({ templateId, userIds, eventId, idempotencyKey });
     const role = session.user.role as SDCRole;
 
-    if (!CERTIFICATE_ISSUER_ROLES.includes(role)) {
+    if (!canIssueCertificates(role)) {
       throw new AuthorizationError("Unauthorized to issue certificates.");
     }
 
@@ -136,18 +142,40 @@ export class CertificateService {
     });
     if (!template) throw new ValidationError("Certificate template not found.");
 
+    const resolvedRealEventId = input.eventId || template.eventId || null;
+    const event = resolvedRealEventId
+      ? await db.query.events.findFirst({ where: eq(events.id, resolvedRealEventId) })
+      : null;
+    if (resolvedRealEventId && !event) throw new ValidationError("Event not found.");
+    if (template.eventId && resolvedRealEventId !== template.eventId) {
+      throw new ValidationError("The selected template belongs to a different event.");
+    }
+
+    if (!canIssueCertificatesAcrossDomains(role)) {
+      if (event) {
+        const userDomain = await getUserDomain(session.user.id, role);
+        if (event.domain && event.domain !== userDomain) {
+          throw new AuthorizationError("Event is outside your domain.");
+        }
+      } else if (template.createdBy !== session.user.id) {
+        throw new AuthorizationError("Only the template owner may issue ad-hoc certificates.");
+      }
+    }
+
+    const uniqueUserIds = [...new Set(input.userIds)];
+
     const targetUsers = await db
       .select({ id: user.id, name: user.name, email: user.email })
       .from(user)
-      .where(inArray(user.id, userIds));
+      .where(inArray(user.id, uniqueUserIds));
 
-    if (targetUsers.length === 0) {
-      throw new ValidationError("No valid users found for the given IDs.");
+    if (targetUsers.length !== uniqueUserIds.length) {
+      throw new ValidationError("One or more certificate recipients do not exist.");
     }
 
-    const resolvedEventId = eventId || template.eventId || "SYSTEM_BLAST";
+    const resolvedEventId = resolvedRealEventId || "SYSTEM_BLAST";
     const batchKey = idempotencyKey ||
-      crypto.createHash("sha256").update(`adhoc:${templateId}:${userIds.sort().join(",")}`).digest("hex");
+      crypto.createHash("sha256").update(`adhoc:${templateId}:${[...uniqueUserIds].sort().join(",")}`).digest("hex");
 
     await logAuditEvent({
       actorId: session.user.id,

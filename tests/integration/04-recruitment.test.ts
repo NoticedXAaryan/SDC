@@ -1,100 +1,61 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
-import { db } from "@/lib/db";
-import { applications, user } from "@/lib/db/schema";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
+import crypto from "node:crypto";
+import { db } from "@/lib/db";
+import { applications, applicationReviews, user } from "@/lib/db/schema";
+import { createTestUser, cleanupTestUser, getMockSession } from "./test-utils";
 
-vi.mock("next/headers", () => ({
-  headers: () => new Map(),
-  cookies: () => new Map()
-}));
+const { activeSession } = vi.hoisted(() => ({ activeSession: { current: null as any } }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: async () => activeSession.current } } }));
+vi.mock("@/lib/rate-limit", () => ({ getClientIp: () => "127.0.0.1", checkRateLimit: async () => ({ success: true }) }));
 
-vi.mock("next/headers", () => ({
-  headers: () => new Map(),
-  cookies: () => new Map()
-}));
-
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: vi.fn().mockResolvedValue({ user: { id: "test-user-123", email: "test@college.edu.in", role: "admin", emailVerified: true } })
-    }
-  }
-}));
-
-vi.mock("@/lib/dal/auth", () => ({
-  requireSession: vi.fn().mockResolvedValue({ user: { id: "test-user-123", email: "test@college.edu.in", role: "admin", emailVerified: true } }),
-  requireAdmin: vi.fn().mockResolvedValue({ user: { id: "test-user-123", role: "admin", emailVerified: true } }),
-  requireRole: vi.fn().mockResolvedValue({ user: { id: "test-user-123", role: "admin", emailVerified: true } }),
-  checkEmergencyFreeze: vi.fn(),
-  AuthorizationError: class AuthorizationError extends Error {}
-}));
-
-describe("Recruitment DAL Integration Tests", () => {
+describe("Recruitment status API", () => {
   let adminId: string;
   let applicantId: string;
-  let adminSession: any;
-  let applicantSession: any;
+  const applicationId = crypto.randomUUID();
 
   beforeAll(async () => {
     adminId = await createTestUser("admin");
-    applicantId = await createTestUser("applicant"); // Role is applicant
-    adminSession = getMockSession(adminId, "admin");
-    applicantSession = getMockSession(applicantId, "applicant");
+    applicantId = await createTestUser("applicant");
+    activeSession.current = getMockSession(adminId, "admin");
+    // Only the starting fixture is inserted directly; all transitions use the API.
+    await db.insert(applications).values({
+      id: applicationId, userId: applicantId, applicationCycle: "recruitment-api-test",
+      status: "applied", answers: { why: "I love tech" }, teamPreference: "tech", skills: ["typescript"],
+    });
   });
-
   afterAll(async () => {
-    // Clean up
-    await db.delete(applications).where(eq(applications.userId, applicantId));
-    
+    await db.delete(applicationReviews).where(eq(applicationReviews.applicationId, applicationId));
+    await db.delete(applications).where(eq(applications.id, applicationId));
     await cleanupTestUser(adminId);
     await cleanupTestUser(applicantId);
   });
-
-  it("should allow applicant to submit an application", async () => {
-    const application = await db.insert(applications).values({
-      id: "app-1",
-      userId: applicantId,
-      applicationCycle: "Spring 2026",
-      status: "applied",
-      answers: { "why": "I love tech" },
-      teamPreference: "tech",
-      skills: ["typescript", "react"],
-    }).returning();
-
-    expect(application[0]).toBeDefined();
-    expect(application[0].status).toBe("applied");
-  });
-
-  it("should block bypass of interview state (Zero-day check)", async () => {
-    // Attempt to accept straight from applied
+  async function changeStatus(status: string) {
     const { PATCH } = await import("@/app/api/applications/[id]/status/route");
-    const req = new Request(`http://localhost:3000/api/applications/app-1/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "accepted" }) // bypassed interviewing
-    });
-
-    // Mock NextRequest requires a little trick, but we can call it directly
-    const res = await PATCH(req as any, { params: Promise.resolve({ id: "app-1" }) });
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.error).toMatch(/Cannot accept application directly/);
+    return PATCH(new NextRequest(`http://localhost:3000/api/applications/${applicationId}/status`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
+    }), { params: Promise.resolve({ id: applicationId }) });
+  }
+  it("explains an invalid transition and leaves the applicant unchanged", async () => {
+    const response = await changeStatus("accepted");
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain("Cannot transition");
+    expect((await db.query.applications.findFirst({ where: eq(applications.id, applicationId) }))?.status).toBe("applied");
+    expect((await db.query.user.findFirst({ where: eq(user.id, applicantId) }))?.role).toBe("applicant");
   });
-
-  it("should allow admin to accept application from interviewing state", async () => {
-    // First update to interviewing
-    await db.update(applications).set({ status: "interviewing" }).where(eq(applications.id, "app-1"));
-
-    const [app] = await db.update(applications)
-      .set({ status: "accepted" })
-      .where(eq(applications.id, "app-1"))
-      .returning();
-      
-    await db.update(user).set({ role: "member" }).where(eq(user.id, applicantId));
-    
-    const [updatedUser] = await db.select().from(user).where(eq(user.id, applicantId));
-    expect(updatedUser.role).toBe("member");
-    expect(app.status).toBe("accepted");
+  it("accepts through the real review flow and saves membership and review together", async () => {
+    // A human reviewer can take the application through manual review.
+    expect((await changeStatus("needs_manual_review")).status).toBe(200);
+    expect((await changeStatus("interviewing")).status).toBe(200);
+    expect((await changeStatus("accepted")).status).toBe(200);
+    expect((await db.query.applications.findFirst({ where: eq(applications.id, applicationId) }))?.status).toBe("accepted");
+    expect((await db.query.user.findFirst({ where: eq(user.id, applicantId) }))?.role).toBe("member");
+    expect(await db.select().from(applicationReviews).where(eq(applicationReviews.applicationId, applicationId))).toHaveLength(1);
+  });
+  it("rejects applicant access at the API boundary", async () => {
+    activeSession.current = getMockSession(applicantId, "applicant");
+    expect((await changeStatus("interviewing")).status).toBe(403);
   });
 });

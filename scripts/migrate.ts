@@ -4,13 +4,14 @@ import { Pool } from "pg";
 import { env } from "@/lib/env";
 import * as schema from "@/lib/db/schema";
 import "dotenv/config";
+import { getSecurePostgresConnection } from "@/lib/db/connection-config";
 
 async function main() {
   console.log("Running migrations...");
 
   // Use the connection string from env
   const pool = new Pool({
-    connectionString: env.DATABASE_URL,
+    ...getSecurePostgresConnection(env.DATABASE_URL),
   });
 
   const db = drizzle(pool, { schema });

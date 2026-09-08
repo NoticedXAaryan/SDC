@@ -1,74 +1,61 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { forms, formFields, formResponses } from "@/lib/db/schema";
-import { requireAdmin, checkEmergencyFreeze } from "@/lib/dal/auth";
+import { auditLogs, forms, formFields, formResponses } from "@/lib/db/schema";
+import { getCurrentUser, requireRole } from "@/lib/dal/auth";
 import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
 import { withApiHandler } from "@/lib/api-wrapper";
-
-const fieldSchema = z.object({
-  type: z.enum(["short_text", "long_text", "email", "number", "dropdown", "checkbox", "file", "date", "rating"]),
-  label: z.string().min(1),
-  required: z.boolean().default(false),
-  options: z.array(z.string()).optional(),
-  autoFillKey: z.string().optional(),
-});
-
-const formSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  status: z.enum(["draft", "published", "closed", "archived"]).default("draft"),
-  settings: z.object({
-    allowExternal: z.boolean().default(false),
-    requireLogin: z.boolean().default(true),
-    allowMultiple: z.boolean().default(false),
-    autoFillProfile: z.boolean().default(true),
-    quotaPerUser: z.number().default(1),
-    quotaPerForm: z.number().default(1000),
-    collegeDomainOnly: z.boolean().default(true),
-  }),
-  fields: z.array(fieldSchema),
-});
+import { canDesignForms, FORM_DESIGNER_ROLES } from "@/lib/domain/forms";
+import { formDefinitionSchema } from "@/lib/validators/forms";
 
 export const POST = withApiHandler(async (req: Request) => {
-    const session = await requireAdmin();
+    const session = await requireRole([...FORM_DESIGNER_ROLES]);
     
     
     const body = await req.json();
-    const data = formSchema.parse(body);
+    const data = formDefinitionSchema.parse(body);
 
-    const [newForm] = await db.insert(forms).values({
-      title: data.title,
-      description: data.description,
-      status: data.status,
-      settings: data.settings,
-      createdBy: session.user.id,
-    }).returning();
+    const result = await db.transaction(async (tx) => {
+      const [newForm] = await tx.insert(forms).values({
+        title: data.title,
+        description: data.description,
+        status: data.status,
+        settings: data.settings,
+        createdBy: session.user.id,
+      }).returning();
 
-    if (data.fields.length > 0) {
-      await db.insert(formFields).values(
-        data.fields.map((field, index) => ({
+      if (data.fields.length > 0) {
+        await tx.insert(formFields).values(data.fields.map((field, index) => ({
+          id: field.id,
           formId: newForm.id,
           type: field.type,
           label: field.label,
           required: field.required,
           options: field.options,
           autoFillKey: field.autoFillKey,
+          visibilityRules: field.visibilityRules,
           order: index,
-        }))
-      );
-    }
-
-    const createdFields = await db.query.formFields.findMany({
-      where: (ff, { eq }) => eq(ff.formId, newForm.id),
-      orderBy: (ff, { asc }) => asc(ff.order),
+        })));
+      }
+      await tx.insert(auditLogs).values({
+        actorId: session.user.id,
+        action: "form_created",
+        entity: "form",
+        entityId: newForm.id,
+        details: JSON.stringify({ status: data.status, fieldCount: data.fields.length }),
+      });
+      const createdFields = await tx.query.formFields.findMany({
+        where: (ff, { eq }) => eq(ff.formId, newForm.id),
+        orderBy: (ff, { asc }) => asc(ff.order),
+      });
+      return { newForm, createdFields };
     });
 
-    return NextResponse.json({ ...newForm, fields: createdFields });
+    return NextResponse.json({ ...result.newForm, fields: result.createdFields });
 });
 
-export const GET = withApiHandler(async (req: Request) => {
-    const session = await requireAdmin(); 
+export const GET = withApiHandler(async () => {
+    const session = await getCurrentUser();
+    const canSeeDrafts = canDesignForms(session?.user.role as string | undefined);
     
     // Fetch all forms with their response counts
     const formsWithCounts = await db.select({
@@ -81,8 +68,9 @@ export const GET = withApiHandler(async (req: Request) => {
     })
     .from(forms)
     .leftJoin(formResponses, eq(forms.id, formResponses.formId))
+    .where(canSeeDrafts ? undefined : eq(forms.status, "published"))
     .groupBy(forms.id)
     .orderBy(sql`${forms.createdAt} DESC`);
 
     return NextResponse.json(formsWithCounts);
-});
+}, { requireAuth: false, requireRateLimit: false });

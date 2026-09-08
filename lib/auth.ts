@@ -1,11 +1,14 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization } from "better-auth/plugins";
+import { organization, username } from "better-auth/plugins";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { normalizeUsername, usernameError } from "./username-policy";
 import { admin } from "better-auth/plugins/admin";
 import { defaultAc, adminAc, userAc } from "better-auth/plugins/admin/access";
 import { db } from "./db";
 import * as schema from "./db/schema";
 import { Mailer } from "./services/mailer";
+import { SIGNUP_ROLE, hasEmailDelivery } from "./auth-policy";
 
 /**
  * SDC roles (ordered by privilege):
@@ -18,7 +21,8 @@ import { Mailer } from "./services/mailer";
  * - alumni: Graduated member, read-only + certificates
  *
  * Better Auth's admin plugin manages the `role` column on the user table.
- * The `defaultRole` is "member" — every new signup gets this.
+ * Every public signup starts as an outsider. Club membership is approved
+ * through recruitment; owners are provisioned using the operator CLI.
  * The `adminRoles` are ["owner", "admin"] — these can access admin endpoints.
  */
 
@@ -30,12 +34,12 @@ const ownerRole = defaultAc.newRole({
 });
 
 const leadRole = defaultAc.newRole({
-    user: ["create", "list", "set-role", "ban", "impersonate", "delete", "set-password", "set-email", "get", "update"],
-    session: ["list", "revoke", "delete"],
+    user: ["list", "get"],
+    session: [],
 });
 
 const viceLeadRole = defaultAc.newRole({
-    user: ["list", "get", "set-role", "update"], // Handles recruitment
+    user: ["list", "get"], // Recruitment decisions use the audited application service.
     session: [],
 });
 
@@ -75,6 +79,15 @@ const outsiderRole = defaultAc.newRole({
 });
 
 export const auth = betterAuth({
+    // Role/profile changes use the club's audited APIs, which protect executive accounts.
+    disabledPaths: ["/is-username-available", "/sign-in/username", "/admin/set-role", "/admin/update-user"],
+    hooks: {
+        before: createAuthMiddleware(async (ctx) => {
+            if (ctx.body && "username" in ctx.body && ["/update-user", "/sign-up/email"].includes(ctx.path)) {
+                throw new APIError("BAD_REQUEST", { message: "Usernames are requested during membership enrollment and become permanent after approval." });
+            }
+        }),
+    },
     database: drizzleAdapter(db, {
         provider: "pg",
         schema,
@@ -96,18 +109,16 @@ export const auth = betterAuth({
                         throw new Error("Use your college email or personal Gmail, disposable emails blocked");
                     }
 
-                    const isUni = email.endsWith('@goa.paruluniversity.ac.in') || email.endsWith('@paruluniversity.ac.in');
-                    const domain = email.split("@")[1];
-
-                    // Check if this user is the designated system administrator
-                    const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL.toLowerCase().trim();
-
                     return {
                         data: {
                             ...user,
                             email,
-                            role: isAdmin ? "owner" : (isUni ? "member" : "user"),
-                            domain: domain
+                            username: null,
+                            usernameLower: null,
+                            requestedUsername: null,
+                            role: SIGNUP_ROLE,
+                            points: 0,
+                            level: 1,
                         }
                     };
                 }
@@ -124,7 +135,7 @@ export const auth = betterAuth({
         }
     },
     emailVerification: {
-        sendOnSignUp: true,
+        sendOnSignUp: hasEmailDelivery(process.env),
         autoSignInAfterVerification: true,
         expiresIn: 3600,
         sendVerificationEmail: async ({ user, url, token }, request) => {
@@ -141,14 +152,18 @@ export const auth = betterAuth({
     },
     user: {
         additionalFields: {
-            username: { type: "string", required: false },
+            usernameLower: { type: "string", required: false, input: false, returned: false },
+            requestedUsername: { type: "string", required: false, input: false },
+            handleChangedAt: { type: "date", required: false, input: false, returned: false },
+            onboardingCompleted: { type: "boolean", defaultValue: false, input: false },
+            membershipWelcomeSeen: { type: "boolean", defaultValue: false, input: false, returned: false },
             year: { type: "number", required: false },
             branch: { type: "string", required: false },
             bio: { type: "string", required: false },
             skills: { type: "string", required: false }, 
             links: { type: "string", required: false },  
-            points: { type: "number", required: false, defaultValue: 0 },
-            level: { type: "number", required: false, defaultValue: 1 },
+            points: { type: "number", required: false, defaultValue: 0, input: false },
+            level: { type: "number", required: false, defaultValue: 1, input: false },
             role: { type: "string", required: true, defaultValue: "outsider", input: false }
         },
     },
@@ -162,12 +177,20 @@ export const auth = betterAuth({
         useSecureCookies: process.env.NODE_ENV === "production"
     },
     plugins: [
+        username({
+            displayUsername: false,
+            minUsernameLength: 3,
+            maxUsernameLength: 20,
+            usernameNormalization: normalizeUsername,
+            usernameValidator: value => !usernameError(value),
+            validationOrder: { username: "post-normalization" },
+        }),
         organization({
             // SDC domains/teams as organizations/roles
         }),
         admin({
-            defaultRole: "applicant",
-            adminRoles: ["owner", "admin", "lead"],
+            defaultRole: SIGNUP_ROLE,
+            adminRoles: ["owner", "admin"],
             roles: {
                 owner: ownerRole,
                 admin: adminAc,
@@ -189,5 +212,3 @@ export const auth = betterAuth({
         }),
     ],
 });
-
-

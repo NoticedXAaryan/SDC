@@ -10,13 +10,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Compatibility tokens for the shared Radix/shadcn controls. */
+@theme inline {
+  --color-background: var(--club-bg);
+  --color-foreground: var(--club-text);
+  --color-card-foreground: var(--club-text);
+  --color-popover-foreground: var(--club-text);
+  --color-muted-foreground: var(--club-muted);
+  --color-primary-foreground: var(--club-on-action);
+  --color-secondary-foreground: var(--club-text);
+  --color-accent-foreground: var(--club-text);
+  --color-input: var(--club-line);
+  --color-border: var(--club-line);
+  --color-ring: var(--club-accent);
+}
+
 /* ================================================================
    SOC DESIGN TOKENS — Space Observatory Brand System
    Semantic token names; feature files consume only these.
    ================================================================ */
 
 @theme static {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
   --font-mono: ui-monospace, "Fira Code", "Cascadia Code", monospace;
 
@@ -301,9 +316,11 @@
     --section-padding:  var(--spacing-section-tablet);
   }
 
-  h1 { font-size: 3rem; }
-  h2 { font-size: 2.5rem; }
-  h3 { font-size: 1.75rem; }
+  @layer base {
+    h1 { font-size: 3rem; }
+    h2 { font-size: 2.5rem; }
+    h3 { font-size: 1.75rem; }
+  }
 }
 
 @media (min-width: 64rem) {
@@ -311,8 +328,10 @@
     --section-padding: var(--spacing-section-desktop);
   }
 
-  h1 { font-size: var(--text-h1); line-height: 1.05; }
-  h2 { font-size: var(--text-h2); line-height: 1.15; }
+  @layer base {
+    h1 { font-size: var(--text-h1); line-height: 1.05; }
+    h2 { font-size: var(--text-h2); line-height: 1.15; }
+  }
 }
 
 /* Mobile: 44×44 px touch targets */

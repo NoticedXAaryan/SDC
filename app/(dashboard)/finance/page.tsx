@@ -11,7 +11,8 @@
  * Shadcn exception: Skeleton from @/components/ui/skeleton (documented in §03 audit).
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Wallet, ArrowUpRight, ArrowDownRight, DollarSign } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -19,9 +20,11 @@ import { cn } from "@/lib/utils";
 import { Budget, Expense } from "@/lib/types";
 import { SubmitExpenseDialog } from "./submit-expense-dialog";
 import { ExpenseActions } from "./expense-actions";
+import { AllocateBudgetDialog, RecordIncomeDialog } from "./finance-actions";
 import { OrbitalMetric, OrbitalMetricGrid } from "@/components/design-system/cosmic/OrbitalMetric";
 import { CosmicSurface } from "@/components/design-system/cosmic/CosmicSurface";
 import { PageHeader } from "@/components/astryx/page-header";
+import { useSession } from "@/lib/auth-client";
 
 // Income type matches actual DB schema
 interface Income {
@@ -32,52 +35,83 @@ interface Income {
   createdAt: string;
 }
 
+interface EventOption {
+  id: string;
+  title: string;
+}
+
 export default function FinancePage() {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgets, setBudgets] = useState<Array<Budget & { eventTitle?: string | null }>>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
+  const [availableBudgetEvents, setAvailableBudgetEvents] = useState<EventOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "budgets" | "expenses" | "income">("overview");
+  const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const tab = (["overview", "budgets", "expenses", "income"] as const).includes(requestedTab as "overview")
+    ? requestedTab as "overview" | "budgets" | "expenses" | "income"
+    : "overview";
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const canSubmitExpenses = ["lead", "vice_lead", "co_lead", "event_lead", "finance_lead", "admin", "owner"].includes(role || "");
+  const canApproveExpenses = ["finance_lead", "admin", "owner"].includes(role || "");
+  const canManageFinance = ["finance_lead", "admin", "owner"].includes(role || "");
+
+  const loadFinance = useCallback(async () => {
+    try {
+      const fetchFinanceData = async (url: string) => {
+        const response = await fetch(url);
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || "Finance data could not be loaded");
+        return data;
+      };
+      const [budgetResult, expenseResult, incomeResult] = await Promise.all([
+        fetchFinanceData("/api/finance/budgets"),
+        fetchFinanceData("/api/finance/expenses"),
+        fetchFinanceData("/api/finance/incomes"),
+      ]);
+      setBudgets(budgetResult.budgets || []);
+      setEventOptions(budgetResult.events || []);
+      setAvailableBudgetEvents(budgetResult.availableBudgetEvents || []);
+      setExpenses(expenseResult.expenses || expenseResult || []);
+      setIncomes(incomeResult.incomes || incomeResult || []);
+    } catch {
+      toast.error("Finance data could not be loaded. Check your access and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [bRes, eRes, iRes] = await Promise.all([
-          fetch("/api/finance/budgets").then((r) => r.json()),
-          fetch("/api/finance/expenses").then((r) => r.json()),
-          fetch("/api/finance/incomes").then((r) => r.json()),
-        ]);
-        setBudgets(bRes.budgets || bRes || []);
-        setExpenses(eRes.expenses || eRes || []);
-        setIncomes(iRes.incomes || iRes || []);
-      } catch {
-        toast.error("Failed to load finance data");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    void loadFinance();
+  }, [loadFinance]);
 
   const refreshExpenses = async () => {
     try {
-      const res = await fetch("/api/finance/expenses").then((r) => r.json());
-      setExpenses(res.expenses || res || []);
+      const response = await fetch("/api/finance/expenses");
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || "Expenses could not be refreshed");
+      setExpenses(data.expenses || data || []);
     } catch {
-      // silently skip re-fetch errors; stale data is acceptable
+      toast.error("Expenses could not be refreshed");
     }
   };
 
   const totalBudget = Array.isArray(budgets)
     ? budgets.reduce((s: number, b) => s + (Number(b.allocated) || 0), 0)
     : 0;
-  const totalExpenses = Array.isArray(expenses)
-    ? expenses.reduce((s: number, e) => s + (Number(e.amount) || 0), 0)
+  const approvedExpenses = Array.isArray(expenses)
+    ? expenses.filter((expense) => expense.status === "approved").reduce((sum: number, expense) => sum + (Number(expense.amount) || 0), 0)
+    : 0;
+  const pendingExpenses = Array.isArray(expenses)
+    ? expenses.filter((expense) => expense.status === "pending").reduce((sum: number, expense) => sum + (Number(expense.amount) || 0), 0)
     : 0;
   const totalIncome = Array.isArray(incomes)
     ? incomes.reduce((s: number, i) => s + (Number(i.amount) || 0), 0)
     : 0;
-  const balance = totalBudget + totalIncome - totalExpenses;
+  const balance = totalBudget + totalIncome - approvedExpenses;
 
   const tabs = [
     { id: "overview" as const, label: "Overview" },
@@ -91,7 +125,13 @@ export default function FinancePage() {
       <PageHeader
         title="Finance"
         description="Track budgets, expenses, and income across all events."
-        primaryAction={<SubmitExpenseDialog budgets={budgets} onSubmitted={refreshExpenses} />}
+        primaryAction={(canManageFinance || canSubmitExpenses) ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {canManageFinance ? <AllocateBudgetDialog events={availableBudgetEvents} onChanged={loadFinance} /> : null}
+            {canManageFinance ? <RecordIncomeDialog events={eventOptions} onChanged={loadFinance} /> : null}
+            {canSubmitExpenses ? <SubmitExpenseDialog budgets={budgets} onSubmitted={loadFinance} /> : null}
+          </div>
+        ) : undefined}
       />
 
       {/* SOC metric cards */}
@@ -114,11 +154,11 @@ export default function FinancePage() {
           />
           <OrbitalMetric
             title="Total Spent"
-            value={`₹${totalExpenses.toLocaleString()}`}
+            value={`₹${approvedExpenses.toLocaleString()}`}
             icon={<ArrowDownRight aria-hidden="true" size={14} />}
             accent="none"
-            trend={totalExpenses > totalBudget ? "down" : "neutral"}
-            trendLabel={totalExpenses > totalBudget ? "over budget" : "on track"}
+            trend={approvedExpenses > totalBudget ? "down" : "neutral"}
+            trendLabel={pendingExpenses > 0 ? `₹${pendingExpenses.toLocaleString()} pending` : "on track"}
           />
           <OrbitalMetric
             title="Total Income"
@@ -149,7 +189,7 @@ export default function FinancePage() {
             key={t.id}
             role="tab"
             aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => router.replace(`/finance?tab=${t.id}`, { scroll: false })}
             className={cn(
               "whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-focus)]",
               tab === t.id
@@ -258,7 +298,7 @@ export default function FinancePage() {
                   <thead>
                     <tr className="border-b border-[var(--d-line)] bg-[var(--d-panel-alt)]">
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-[var(--d-fg-dim)]">
-                        Event ID
+                        Event
                       </th>
                       <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-[var(--d-fg-dim)]">
                         Allocated
@@ -275,7 +315,7 @@ export default function FinancePage() {
                         className="hover:bg-[var(--d-panel-alt)] transition-colors"
                       >
                         <td className="px-5 py-3 font-mono text-xs text-[var(--d-fg-dim)]">
-                          {b.eventId.slice(0, 8)}…
+                          {b.eventTitle || `${b.eventId.slice(0, 8)}…`}
                         </td>
                         <td className="px-5 py-3 font-semibold text-[var(--d-fg)]">
                           ₹{Number(b.allocated || 0).toLocaleString()}
@@ -353,7 +393,7 @@ export default function FinancePage() {
                           </span>
                         </td>
                         <td className="px-5 py-3">
-                          <ExpenseActions expense={e} onUpdate={refreshExpenses} />
+                          <ExpenseActions expense={e} onUpdate={refreshExpenses} canApprove={canApproveExpenses} />
                         </td>
                       </tr>
                     ))}

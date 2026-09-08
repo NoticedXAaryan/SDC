@@ -9,6 +9,9 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { VStack } from "@astryxdesign/core/VStack";
 import { useRouter } from "next/navigation";
 import { RejectModal } from "@/components/reject-modal";
+import { ScheduleInterviewDialog } from "@/app/(dashboard)/recruitment/interviews/components/schedule-interview-dialog";
+import { toast } from "sonner";
+import Link from "next/link";
 
 const COLUMNS = [
   { id: "applied", label: "New Applications" },
@@ -34,14 +37,16 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
         body: JSON.stringify({ status: newStatus, reasonCode, reasonNote })
       });
       
-      if (res.ok) {
-        setData(prev => prev.map(app => 
-          app.id === applicationId ? { ...app, status: newStatus } : app
-        ));
-        router.refresh();
-      }
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Application could not be updated");
+
+      setData(prev => prev.map(app =>
+        app.id === applicationId ? { ...app, status: newStatus } : app
+      ));
+      toast.success(newStatus === "accepted" ? "Applicant accepted" : "Application updated");
+      router.refresh();
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Application could not be updated");
     } finally {
       setLoading(null);
     }
@@ -87,19 +92,23 @@ export function ApplicationsBoard({ initialData }: { initialData: any[] }) {
                     )}
 
                     <div className="pt-3 border-t border-border mt-auto">
-                      {col.id === "applied" && (
-                        <Button 
-                          variant="ghost" 
-                          label="AI grading queued"
-                          isDisabled
-                        />
-                      )}
-                      {(col.id === "ai_graded" || col.id === "needs_manual_review") && (
-                        <Button 
-                          variant="primary" 
-                          label="Invite to Interview" 
-                          onClick={() => handleStatusChange(app.id, "interviewing")}
-                          isDisabled={loading === app.id}
+                      <Link className="club-text-link" href={`/applications/${app.id}`}>Read application</Link>
+                      {(col.id === "applied" || col.id === "ai_graded" || col.id === "needs_manual_review") && (
+                        <ScheduleInterviewDialog
+                          applicants={[{
+                            id: app.id,
+                            name: app.user?.name || "Unknown applicant",
+                            email: app.user?.email || "No email",
+                          }]}
+                          initialApplicantId={app.id}
+                          triggerLabel="Schedule Interview"
+                          onScheduled={(applicationId) => {
+                            setData((current) => current.map((candidate) =>
+                              candidate.id === applicationId
+                                ? { ...candidate, status: "interviewing" }
+                                : candidate
+                            ));
+                          }}
                         />
                       )}
                       {col.id === "interviewing" && (

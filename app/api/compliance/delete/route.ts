@@ -1,7 +1,24 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { account, applications, certificates, registrations, session as authSession, user } from "@/lib/db/schema";
+import {
+  account,
+  achievementSubmissions,
+  applications,
+  applicationDocuments,
+  collegeIdentities,
+  certificates,
+  eventInvites,
+  formResponses,
+  notifications,
+  pointLogs,
+  projects,
+  registrations,
+  session as authSession,
+  sessionAttendance,
+  tasks,
+  user,
+} from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { logger } from "@/lib/logger";
@@ -11,16 +28,27 @@ export const DELETE = withApiHandler(async () => {
   const currentSession = await requireSession();
   const userId = currentSession.user.id;
 
-  const [profileRows, applicationFiles, certificateFiles] = await Promise.all([
+  const [profileRows, applicationFiles, certificateFiles, achievementFiles] = await Promise.all([
     db.select({ image: user.image }).from(user).where(eq(user.id, userId)).limit(1),
     db.select({ resumeUrl: applications.resumeUrl }).from(applications).where(eq(applications.userId, userId)),
     db.select({ pdfUrl: certificates.pdfUrl }).from(certificates).where(eq(certificates.userId, userId)),
+    db.select({ proofUrl: achievementSubmissions.proofUrl }).from(achievementSubmissions).where(eq(achievementSubmissions.userId, userId)),
   ]);
 
   await db.transaction(async (tx) => {
     await tx.delete(applications).where(eq(applications.userId, userId));
+    await tx.delete(applicationDocuments).where(eq(applicationDocuments.userId, userId));
+    await tx.delete(collegeIdentities).where(eq(collegeIdentities.userId, userId));
     await tx.delete(certificates).where(eq(certificates.userId, userId));
     await tx.delete(registrations).where(eq(registrations.userId, userId));
+    await tx.delete(sessionAttendance).where(eq(sessionAttendance.userId, userId));
+    await tx.delete(eventInvites).where(eq(eventInvites.userId, userId));
+    await tx.delete(formResponses).where(eq(formResponses.userId, userId));
+    await tx.delete(achievementSubmissions).where(eq(achievementSubmissions.userId, userId));
+    await tx.delete(pointLogs).where(eq(pointLogs.userId, userId));
+    await tx.delete(notifications).where(eq(notifications.userId, userId));
+    await tx.update(projects).set({ submittedBy: null }).where(eq(projects.submittedBy, userId));
+    await tx.update(tasks).set({ assigneeId: null }).where(eq(tasks.assigneeId, userId));
 
     // Revoke every login method and active session before anonymizing the retained row.
     await tx.delete(account).where(eq(account.userId, userId));
@@ -36,6 +64,7 @@ export const DELETE = withApiHandler(async () => {
       banReason: "Account deleted by user",
       username: null,
       usernameLower: null,
+      requestedUsername: null,
       displayName: null,
       year: null,
       branch: null,
@@ -44,6 +73,8 @@ export const DELETE = withApiHandler(async () => {
       skills: null,
       privacy: null,
       faceDescriptor: null,
+      points: 0,
+      level: 1,
       deletedAt: new Date(),
       updatedAt: new Date(),
     }).where(eq(user.id, userId));
@@ -53,6 +84,7 @@ export const DELETE = withApiHandler(async () => {
     profileRows[0]?.image,
     ...applicationFiles.map((item) => item.resumeUrl),
     ...certificateFiles.map((item) => item.pdfUrl),
+    ...achievementFiles.map((item) => item.proofUrl),
   ].filter((url): url is string => Boolean(url));
   const storage = getStorageService();
   const deletionResults = await Promise.allSettled(fileUrls.map((url) => storage.deleteFile(url)));

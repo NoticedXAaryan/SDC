@@ -2,7 +2,7 @@
 
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { registrations } from "@/lib/db/schema";
+import { registrations, events } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateSignedPass } from "@/lib/passes/qr";
 
@@ -18,13 +18,16 @@ export async function refreshPassAction(eventId: string, passCode: string) {
     )
   });
 
-  if (!userRegistration || userRegistration.status !== "confirmed") {
+  if (!userRegistration || !["confirmed", "checked_in"].includes(userRegistration.status || "")) {
     throw new Error("Invalid or unconfirmed registration");
   }
+
+  const event = await db.query.events.findFirst({ where: eq(events.id, eventId) });
+  if (!event || event.deletedAt || event.status !== "published") throw new Error("This event pass is no longer available");
 
   return generateSignedPass({
     userId: session.user.id,
     eventId: eventId,
     passCode: passCode
-  });
+  }, event.endsAt);
 }

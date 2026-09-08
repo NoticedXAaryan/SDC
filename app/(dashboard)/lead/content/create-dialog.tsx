@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
 export function CreateContentDialog() {
   const [open, setOpen] = useState(false);
@@ -35,16 +36,16 @@ export function CreateContentDialog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic: formData.title, platform: formData.platform }),
       });
-      if (!res.ok) throw new Error("Failed to draft");
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Draft could not be generated");
       setFormData(prev => ({
         ...prev,
         title: data.title,
         description: data.description,
       }));
       toast.success("Draft generated!");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Draft could not be generated");
     } finally {
       setDrafting(false);
     }
@@ -62,12 +63,14 @@ export function CreateContentDialog() {
           scheduledFor: formData.scheduledFor ? new Date(formData.scheduledFor).toISOString() : undefined,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create content");
-      toast.success("Content item created!");
+      const result = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(result?.error || "Content item could not be created");
+      toast.success("Content draft created");
       setOpen(false);
+      setFormData({ title: "", description: "", platform: "twitter", scheduledFor: "" });
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Content item could not be created");
     } finally {
       setLoading(false);
     }
@@ -75,19 +78,24 @@ export function CreateContentDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* @ts-ignore */}
-      <DialogTrigger asChild>
-        <Button>Create Content</Button>
+      <DialogTrigger render={<Button />}>
+        Create Content
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>New Content Item</DialogTitle>
+          <DialogDescription>Create a working draft and optionally set its target publication date.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Topic / Title</label>
+            <Label htmlFor="content-title">Topic / Title</Label>
             <Input 
-              placeholder="e.g. Next upcoming hackathon announcement" 
+              id="content-title"
+              name="title"
+              autoComplete="off"
+              minLength={3}
+              maxLength={160}
+              placeholder="Upcoming hackathon announcement"
               value={formData.title} 
               onChange={e => setFormData({ ...formData, title: e.target.value })} 
               required 
@@ -95,9 +103,9 @@ export function CreateContentDialog() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">Platform</label>
-            <Select value={formData.platform} onValueChange={(val) => setFormData({ ...formData, platform: val || "twitter" })}>
-              <SelectTrigger>
+            <Label htmlFor="content-platform">Platform</Label>
+            <Select name="platform" value={formData.platform} onValueChange={(val) => setFormData(current => ({ ...current, platform: val || "twitter" }))}>
+              <SelectTrigger id="content-platform" className="w-full">
                 <SelectValue placeholder="Select Platform" />
               </SelectTrigger>
               <SelectContent>
@@ -111,13 +119,16 @@ export function CreateContentDialog() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Post Content</label>
+              <Label htmlFor="content-description">Post Content</Label>
               <Button type="button" variant="outline" size="sm" onClick={handleAI} disabled={drafting}>
                 {drafting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                 AI Draft
               </Button>
             </div>
             <Textarea 
+              id="content-description"
+              name="description"
+              maxLength={5000}
               className="min-h-[150px]"
               placeholder="Post description..." 
               value={formData.description} 
@@ -126,9 +137,11 @@ export function CreateContentDialog() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Schedule For</label>
+            <Label htmlFor="content-schedule">Target publication date (optional)</Label>
             <Input 
-              type="datetime-local" 
+              id="content-schedule"
+              name="scheduledFor"
+              type="datetime-local"
               value={formData.scheduledFor} 
               onChange={e => setFormData({ ...formData, scheduledFor: e.target.value })} 
             />
@@ -136,7 +149,7 @@ export function CreateContentDialog() {
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Save Item
+            {loading ? "Saving…" : "Save Draft"}
           </Button>
         </form>
       </DialogContent>

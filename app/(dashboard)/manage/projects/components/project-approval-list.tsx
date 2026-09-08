@@ -18,12 +18,13 @@ type Project = {
   description: string;
   githubUrl: string | null;
   liveUrl: string | null;
-  teamMembers: any;
-  images: any;
+  teamMembers: Array<{ name: string }>;
+  images: unknown[];
   status: string | null;
+  submittedBy: string | null;
 };
 
-export function ProjectApprovalList({ initialProjects }: { initialProjects: Project[] }) {
+export function ProjectApprovalList({ initialProjects, currentUserId }: { initialProjects: Project[]; currentUserId: string }) {
   const [projects, setProjects] = useState(initialProjects);
   const [rejectProjectId, setRejectProjectId] = useState<string | null>(null);
   const router = useRouter();
@@ -38,15 +39,15 @@ export function ProjectApprovalList({ initialProjects }: { initialProjects: Proj
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         throw new Error(data.error || "Failed to update project");
       }
 
       success(`Project ${action}d successfully`);
       setProjects(prev => prev.filter(p => p.id !== id));
       router.refresh();
-    } catch (err: any) {
-      error(err.message);
+    } catch (caughtError) {
+      error(caughtError instanceof Error ? caughtError.message : "Project review could not be saved");
     }
   };
 
@@ -69,7 +70,7 @@ export function ProjectApprovalList({ initialProjects }: { initialProjects: Proj
               <VStack gap={1}>
                 <Text weight="bold" className="text-xl">{project.title}</Text>
                 <Text type="supporting" className="text-sm">
-                  Team: {Array.isArray(project.teamMembers) ? project.teamMembers.map((m: any) => m.name).join(", ") : "Unknown"}
+                  Team: {project.teamMembers.length > 0 ? project.teamMembers.map((member) => member.name).join(", ") : "Not provided"}
                 </Text>
               </VStack>
               <Badge variant="neutral" label={project.status || "pending"} className="capitalize" />
@@ -90,10 +91,14 @@ export function ProjectApprovalList({ initialProjects }: { initialProjects: Proj
               )}
             </HStack>
 
-            <HStack justify="end" gap={2} className="border-t border-border pt-4">
-              <Button variant="destructive" label="Reject" onClick={() => setRejectProjectId(project.id)} />
-              <Button variant="primary" label="Approve" onClick={() => handleAction(project.id, "approve")} />
-            </HStack>
+            {project.submittedBy === currentUserId ? (
+              <Text type="supporting" className="border-t border-border pt-4 text-sm">An independent reviewer must decide this submission.</Text>
+            ) : (
+              <HStack justify="end" gap={2} className="border-t border-border pt-4">
+                <Button variant="destructive" label="Reject" onClick={() => setRejectProjectId(project.id)} />
+                <Button variant="primary" label="Approve" onClick={() => handleAction(project.id, "approve")} />
+              </HStack>
+            )}
           </VStack>
         </Card>
       ))}

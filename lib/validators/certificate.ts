@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const issueCertificatesSchema = z.object({
   eventId: z.string().min(1, "Event ID required"),
+  templateId: z.string().min(1, "Template ID required").optional(),
 });
 
 export type IssueCertificatesInput = z.infer<typeof issueCertificatesSchema>;
@@ -30,10 +31,13 @@ export type RevokeCertificateInput = z.infer<typeof revokeCertificateSchema>;
 // ─── Certificate Template ──────────────────────────────────────────────────
 
 export const createCertTemplateSchema = z.object({
-  name: z.string().min(1).max(200),
+  name: z.string().trim().min(1).max(200),
   eventId: z.string().optional().nullable(),
-  backgroundUrl: z.string().url("Must be a valid URL").optional().nullable(),
-  fields: z.array(z.any()).default([]),
+  backgroundUrl: z.string().refine(
+    (value) => value.startsWith("/uploads/") || z.string().url().safeParse(value).success,
+    "Must be an uploaded file path or valid URL"
+  ),
+  fields: z.array(z.array(z.record(z.string(), z.unknown()))).default([[]]),
 });
 
 export type CreateCertTemplateInput = z.infer<typeof createCertTemplateSchema>;

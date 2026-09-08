@@ -1,20 +1,17 @@
 "use server";
 
-import { requireSession } from "@/lib/dal/auth";
-import { EventService } from "@/lib/services/events";
-import { DrizzleEventRepository } from "@/lib/repositories/drizzle/DrizzleEventRepository";
-import { DrizzleRegistrationRepository } from "@/lib/repositories/drizzle/DrizzleRegistrationRepository";
+import { checkEmergencyFreeze, requireSession } from "@/lib/dal/auth";
+import { registerForEvent } from "@/lib/dal/events";
 import { revalidatePath } from "next/cache";
 
 export async function registerForEventAction(eventId: string) {
   try {
     const session = await requireSession();
-    
-    const eventService = new EventService(
-      new DrizzleEventRepository(),
-      new DrizzleRegistrationRepository()
-    );
-    const registration = await eventService.registerForEvent(eventId, session.user.id);
+    await checkEmergencyFreeze(session.user.role as string);
+    const registration = await registerForEvent(session, eventId);
+    if ("error" in registration) {
+      return { success: false, error: registration.error };
+    }
     
     revalidatePath("/events/[slug]", "page");
     revalidatePath("/dashboard");
@@ -24,4 +21,3 @@ export async function registerForEventAction(eventId: string) {
     return { success: false, error: error.message || "Failed to register" };
   }
 }
-

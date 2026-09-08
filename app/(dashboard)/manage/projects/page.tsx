@@ -8,7 +8,7 @@ import { ProjectApprovalList } from "./components/project-approval-list";
 export const dynamic = "force-dynamic";
 
 export default async function ManageProjectsPage() {
-  await requireRole(["admin", "lead", "owner"]);
+  const session = await requireRole(["admin", "lead", "owner", "tech_lead", "co_lead"]);
 
   const pendingProjects = await db.query.projects.findMany({
     where: eq(projects.status, "pending"),
@@ -26,7 +26,7 @@ export default async function ManageProjectsPage() {
         description="Review and approve student project submissions to showcase them on the public gallery."
       />
       
-      <ProjectApprovalList initialProjects={pendingProjects as any} />
+      <ProjectApprovalList initialProjects={pendingProjects} currentUserId={session.user.id} />
     </div>
   );
 }

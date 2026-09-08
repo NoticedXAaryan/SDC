@@ -14,23 +14,15 @@ import { Badge } from "@astryxdesign/core/Badge";
 import { useToast } from "@/components/astryx/toast-provider";
 import { useFieldArray, useForm } from "react-hook-form";
 import { Trash, Plus, Settings2, Save, FileText } from "lucide-react";
-
-type FormTemplate = {
-  id: string;
-  title: string;
-  description: string | null;
-  status: "draft" | "published" | "closed" | "archived";
-  settings: {
-    allowExternal: boolean;
-    requireLogin: boolean;
-    allowMultiple: boolean;
-    autoFillProfile: boolean;
-    quotaPerUser: number;
-    quotaPerForm: number;
-    collegeDomainOnly: boolean;
-  };
-  fields: any[];
-};
+import {
+  builderValuesToPayload,
+  DEFAULT_FORM_VALUES,
+  templateToBuilderValues,
+  validateBuilderValues,
+  type FormBuilderValues,
+  type FormField,
+  type FormTemplate,
+} from "./form-builder-contract";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
@@ -55,42 +47,37 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const { success, error } = useToast();
 
-  const { register, control, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm({
-    defaultValues: {
-      title: "",
-      description: "",
-      status: "draft",
-      settings: {
-        allowExternal: false,
-        requireLogin: true,
-        allowMultiple: false,
-        autoFillProfile: true,
-        quotaPerUser: 1,
-        quotaPerForm: 1000,
-        collegeDomainOnly: true,
-      },
-      fields: [] as any[]
-    }
+  const { control, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm<FormBuilderValues>({
+    defaultValues: DEFAULT_FORM_VALUES,
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: "fields"
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormBuilderValues) => {
+    const validationError = validateBuilderValues(data);
+    if (validationError) {
+      error(validationError);
+      return;
+    }
+
     try {
       const isEditing = editingIndex !== null;
-      const url = isEditing ? `/api/admin/forms/${templates[editingIndex].id}` : "/api/admin/forms";
+      const url = isEditing ? `/api/forms/${templates[editingIndex].id}` : "/api/forms";
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify(builderValuesToPayload(data))
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const responseBody = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(responseBody?.error || `Failed to save form (${res.status})`);
+      }
       const saved = await res.json();
       
       if (isEditing) {
@@ -103,25 +90,15 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
       
       success("Form saved successfully");
       setEditingIndex(null);
-      reset({ title: "", description: "", status: "draft", settings: { allowExternal: false, requireLogin: true, allowMultiple: false, autoFillProfile: true, quotaPerUser: 1, quotaPerForm: 1000, collegeDomainOnly: true }, fields: [] });
-    } catch (e: any) {
-      error(e.message || "Failed to save form");
+      reset(DEFAULT_FORM_VALUES);
+    } catch (caught) {
+      error(caught instanceof Error ? caught.message : "Failed to save form");
     }
   };
 
   const editTemplate = (index: number) => {
     setEditingIndex(index);
-    const t = templates[index];
-    reset({
-      title: t.title,
-      description: t.description || "",
-      status: t.status,
-      settings: t.settings,
-      fields: t.fields.map(f => ({
-        ...f,
-        options: f.options ? f.options.join(", ") : ""
-      }))
-    });
+    reset(templateToBuilderValues(templates[index]));
   };
 
   const formValues = watch();
@@ -139,10 +116,12 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
             
             <VStack gap={3}>
               {templates.map((t, idx) => (
-                <div 
+                <button
+                  type="button"
                   key={t.id} 
-                  className={`p-3 border rounded-xl bg-card hover:bg-accent/50 transition-colors flex justify-between items-start cursor-pointer ${editingIndex === idx ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`} 
+                  className={`w-full p-3 text-left border rounded-xl bg-card hover:bg-accent/50 transition-colors flex justify-between items-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${editingIndex === idx ? 'border-primary ring-1 ring-primary/20' : 'border-border'}`}
                   onClick={() => editTemplate(idx)}
+                  aria-pressed={editingIndex === idx}
                 >
                   <VStack gap={1}>
                     <Text weight="medium" className="text-sm">{t.title}</Text>
@@ -154,7 +133,7 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                       <Text type="supporting" className="text-xs">{t.fields.length} questions</Text>
                     </HStack>
                   </VStack>
-                </div>
+                </button>
               ))}
               {templates.length === 0 && (
                 <Text type="supporting" className="text-sm text-center py-4">No forms created yet.</Text>
@@ -168,7 +147,7 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
               icon={<Plus className="w-4 h-4" />}
               onClick={() => { 
                 setEditingIndex(null); 
-                reset({ title: "", description: "", status: "draft", settings: { allowExternal: false, requireLogin: true, allowMultiple: false, autoFillProfile: true, quotaPerUser: 1, quotaPerForm: 1000, collegeDomainOnly: true }, fields: [] }); 
+                reset(DEFAULT_FORM_VALUES);
               }} 
             />
           </VStack>
@@ -176,10 +155,10 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
       </div>
 
       <div className="lg:col-span-8">
-        <form onSubmit={handleSubmit(onSubmit as any)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Card padding={6}>
             <VStack gap={6}>
-              <HStack justify="between" align="center">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <VStack gap={1}>
                   <Text weight="bold" className="text-xl">{editingIndex !== null ? "Edit Form" : "Create Form"}</Text>
                   <Text type="supporting" className="text-sm">Configure your form settings and questions.</Text>
@@ -191,7 +170,7 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                   icon={<Save className="w-4 h-4" />}
                   isDisabled={isSubmitting}
                 />
-              </HStack>
+              </div>
               
               <div className="space-y-4 border-b border-border pb-6">
                 <FormLayout>
@@ -211,7 +190,7 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                     placeholder="Brief description of this form..."
                   />
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Selector
                       htmlName="status"
                       label="Status"
@@ -277,22 +256,34 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                       onChange={(c) => setValue("settings.allowMultiple", c, { shouldValidate: true })} 
                     />
                   </HStack>
+
+                  <HStack justify="between" align="center">
+                    <VStack gap={0}>
+                      <Text weight="medium" className="text-sm">College Domain Only</Text>
+                      <Text type="supporting" className="text-xs">Restrict responses to Parul University accounts</Text>
+                    </VStack>
+                    <Switch
+                      label="College Domain Only"
+                      value={settingsWatch.collegeDomainOnly}
+                      onChange={(c) => setValue("settings.collegeDomainOnly", c, { shouldValidate: true })}
+                    />
+                  </HStack>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
                   <TextInput
                     htmlName="quotaPerUser"
                     label="Quota Per User"
                     type="text"
                     value={settingsWatch.quotaPerUser?.toString() || "1"}
-                    onChange={(val) => setValue("settings.quotaPerUser", parseInt(val) || 1, { shouldValidate: true })}
+                    onChange={(val) => setValue("settings.quotaPerUser", Number.parseInt(val, 10) || 1, { shouldValidate: true })}
                   />
                   <TextInput
                     htmlName="quotaPerForm"
                     label="Max Submissions (Form Quota)"
                     type="text"
                     value={settingsWatch.quotaPerForm?.toString() || "1000"}
-                    onChange={(val) => setValue("settings.quotaPerForm", parseInt(val) || 1000, { shouldValidate: true })}
+                    onChange={(val) => setValue("settings.quotaPerForm", Number.parseInt(val, 10) || 1, { shouldValidate: true })}
                   />
                 </div>
               </div>
@@ -318,8 +309,8 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                     return (
                       <Card key={field.id} padding={4} className="bg-muted/20">
                         <VStack gap={4}>
-                          <div className="flex gap-4">
-                            <div className="flex-1">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div className="sm:col-span-2">
                               <TextInput
                                 htmlName={`fields.${index}.label`}
                                 label="Question Label"
@@ -329,19 +320,19 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                                 isRequired
                               />
                             </div>
-                            <div className="w-1/3">
+                            <div>
                               <Selector
                                 htmlName={`fields.${index}.type`}
                                 label="Field Type"
                                 options={FIELD_TYPE_OPTIONS}
                                 value={typeWatch}
-                                onChange={(val) => setValue(`fields.${index}.type`, val, { shouldValidate: true })}
+                                onChange={(val) => setValue(`fields.${index}.type`, val as FormField["type"], { shouldValidate: true })}
                               />
                             </div>
                           </div>
                           
-                          <HStack justify="between" align="center" className="pt-2">
-                            <HStack gap={4}>
+                          <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                               <HStack gap={2} align="center">
                                 <Switch 
                                   label="Required"
@@ -363,12 +354,12 @@ export default function FormBuilderClient({ initialTemplates }: { initialTemplat
                                   />
                                 </div>
                               </HStack>
-                            </HStack>
+                            </div>
 
-                            <button type="button" onClick={() => remove(index)} className="text-red-500 hover:text-red-700 p-2">
-                              <Trash className="w-4 h-4" />
+                            <button type="button" onClick={() => remove(index)} aria-label={`Remove field ${index + 1}`} className="inline-flex min-h-11 min-w-11 items-center justify-center self-end rounded-md text-red-500 hover:bg-red-500/10 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:self-auto">
+                              <Trash aria-hidden="true" className="w-4 h-4" />
                             </button>
-                          </HStack>
+                          </div>
 
                           {(typeWatch === "dropdown" || typeWatch === "checkbox") && (
                             <div className="border-t border-border pt-4 mt-2">

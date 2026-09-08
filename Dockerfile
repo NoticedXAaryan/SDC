@@ -9,11 +9,14 @@ WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
-# Rebuild the source code only when needed
-FROM base AS builder
+# Copy application source once. Runtime-only services branch from this stage so
+# they never depend on the expensive Next.js compilation stage.
+FROM deps AS source
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Build the web application only when needed.
+FROM source AS builder
 
 # Browser-visible variables are compiled into the client bundle by Next.js.
 ARG NEXT_PUBLIC_APP_URL
@@ -43,6 +46,15 @@ ENV SKIP_REDIS="1"
 
 # Build Next.js app
 RUN npm run build
+
+# One-shot deployment tooling. Migrations need source, Drizzle migrations and
+# dependencies, but they do not need a compiled Next.js application.
+FROM source AS migrator-runner
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+CMD ["sh", "-c", "npx tsx scripts/migrate.ts && npx tsx scripts/set-owner.ts"]
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -77,8 +89,9 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
 
 CMD ["node", "server.js"]
 
-# Worker runtime image
-FROM base AS worker-runner
+# Worker runtime image. It runs TypeScript directly and therefore branches from
+# source instead of forcing the web builder stage to run first.
+FROM source AS worker-runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -87,14 +100,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN apk add --no-cache wget
-
-# Copy dependencies and the source required by the TypeScript worker runtime.
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/worker.ts ./worker.ts
-COPY --from=builder /app/scripts ./scripts
 
 # Certificate jobs write here. docker-compose mounts the same volume in app and worker.
 RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads

@@ -5,9 +5,9 @@ import { TaskBoard } from "./task-board";
 
 export default async function TasksPage() {
   const session = await requireSession();
-  const tasks: any = await getTasks(session);
+  const tasks = await getTasks(session);
   const userRole = session.user.role as string;
-  const isLead = ["lead", "admin", "owner", "tech_lead", "event_lead", "marketing_lead", "finance_lead", "content_lead", "vice_lead", "co_lead"].includes(userRole);
+  const canCreateTasks = ["lead", "admin", "owner", "tech_lead", "event_lead", "marketing_lead", "finance_lead", "content_lead", "vice_lead", "co_lead"].includes(userRole);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -15,7 +15,7 @@ export default async function TasksPage() {
         title="Task Board" 
         description="Manage your tasks and track team progress." 
       />
-      <TaskBoard initialTasks={tasks} isLead={isLead} />
+      <TaskBoard initialTasks={tasks} canCreateTasks={canCreateTasks} />
     </div>
   );
 }

@@ -17,6 +17,6 @@ export async function LeadContainer({ user }: { user: DashboardUser }) {
 }
 
 export async function StudentContainer({ user }: { user: DashboardUser }) {
-  const { myRegistrations, myApplication, myCertificates } = await getStudentDashboardData(user.id);
-  return <StudentDashboard user={user} myRegistrations={myRegistrations} myApplication={myApplication} myCertificates={myCertificates} />;
+  const data = await getStudentDashboardData(user.id, user.role);
+  return <StudentDashboard user={user} {...data} />;
 }

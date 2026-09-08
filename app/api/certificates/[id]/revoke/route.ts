@@ -1,53 +1,22 @@
-import { NextResponse, NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { certificates } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
-import { logAuditEvent } from "@/lib/services/audit";
-import { z } from "zod";
-import { withApiHandler } from "@/lib/api-wrapper";
+import { NextRequest, NextResponse } from "next/server";
 
-const revokeSchema = z.object({
-  reason: z.string().min(5),
-});
+import { withApiHandler } from "@/lib/api-wrapper";
+import { requireRole } from "@/lib/dal/auth";
+import { CertificateService } from "@/lib/services/certificates";
 
 export const dynamic = "force-dynamic";
 
-export const POST = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    
-    
-  const sessionAuth = await requireRole(["admin", "owner"]); // only high level admins should revoke
-
-  const body = await req.json();
-  const parsed = revokeSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload", details: parsed.error.format() }, { status: 400 });
-  }
-
+export const POST = withApiHandler(async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const session = await requireRole(["admin", "owner"]);
   const { id } = await params;
-  const { reason } = parsed.data;
+  const body = await req.json().catch(() => ({}));
 
-  const [cert] = await db.select().from(certificates).where(eq(certificates.id, id)).limit(1);
-  if (!cert) {
-    return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
-  }
-
-  if (cert.status === "revoked") {
-    return NextResponse.json({ error: "Certificate is already revoked" }, { status: 400 });
-  }
-
-  await db.update(certificates).set({
-    status: "revoked",
-    revokedReason: reason,
-  }).where(eq(certificates.id, id));
-
-  await logAuditEvent({
-    actorId: sessionAuth.user.id,
-    action: "certificate_revoke" as any,
-    entity: "certificate",
-    entityId: cert.id,
-    details: `Revoked certificate for reason: ${reason}`
+  await CertificateService.revokeCertificate(session, {
+    certificateId: id,
+    reason: body.reason,
   });
 
   return NextResponse.json({ success: true, message: "Certificate revoked successfully" });

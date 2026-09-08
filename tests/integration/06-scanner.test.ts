@@ -35,7 +35,7 @@ describe("Scanner & Check-In Integration Tests", () => {
       slug: "scanner-test-event",
       type: "workshop",
       description: "Test event for scanner",
-      startsAt: new Date(Date.now() - 3600000).toISOString(), // Started 1h ago
+      startsAt: new Date(Date.now() + 1800000).toISOString(), // Registration opens before the event starts
       endsAt: new Date(Date.now() + 3600000).toISOString(),
       capacity: 50,
       isPaid: false,
@@ -83,7 +83,7 @@ describe("Scanner & Check-In Integration Tests", () => {
   it("5.3 should fail to scan same code again (already checked in)", async () => {
     await expect(
       ScannerService.checkInScanner(adminSession, eventId, member1PassToken)
-    ).rejects.toThrow("Already checked in");
+    ).resolves.toMatchObject({ success: true, alreadyCheckedIn: true });
   });
 
   it("5.4 should fail to scan invalid code", async () => {

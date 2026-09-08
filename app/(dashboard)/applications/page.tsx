@@ -1,21 +1,27 @@
 import { requireSession } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
-import { applications, user } from "@/lib/db/schema";
+import { applications, formTemplates, user } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/astryx/page-header";
 import { ApplicationsBoard } from "./components/applications-board";
+import { Button } from "@astryxdesign/core/Button";
+import { Download } from "lucide-react";
 
 export default async function ApplicationsPage() {
   const session = await requireSession();
   
   const userRole = session.user.role || "member";
-  if (!["owner", "admin", "lead", "co_lead"].includes(userRole as string)) {
+  if (!["owner", "admin", "lead", "vice_lead", "co_lead"].includes(userRole as string)) {
     redirect("/");
   }
 
-  // Fetch applications for the current cycle
-  const currentCycle = "Fall 2024"; // Or fetch from settings
+  const [activeForm] = await db.select({ cycleName: formTemplates.cycleName })
+    .from(formTemplates)
+    .where(eq(formTemplates.isActive, true))
+    .orderBy(desc(formTemplates.updatedAt))
+    .limit(1);
+  const currentCycle = activeForm?.cycleName;
 
   const allApplications = await db.select({
     id: applications.id,
@@ -31,7 +37,7 @@ export default async function ApplicationsPage() {
   })
   .from(applications)
   .leftJoin(user, eq(applications.userId, user.id))
-  .where(eq(applications.applicationCycle, currentCycle))
+  .where(currentCycle ? eq(applications.applicationCycle, currentCycle) : undefined)
   .orderBy(desc(applications.createdAt));
 
   return (
@@ -39,7 +45,17 @@ export default async function ApplicationsPage() {
       <div className="shrink-0">
         <PageHeader 
           title="Recruitment Pipeline" 
-          description={`Manage applications and applicant status for ${currentCycle}.`}
+          description={currentCycle
+            ? `Manage applications and applicant status for ${currentCycle}.`
+            : "No recruitment form is active, so applications from every cycle are shown."}
+          primaryAction={currentCycle ? (
+            <Button
+              href={`/api/applications/export?cycle=${encodeURIComponent(currentCycle)}`}
+              variant="secondary"
+              label="Export CSV"
+              icon={<Download className="h-4 w-4" />}
+            />
+          ) : undefined}
         />
       </div>
 

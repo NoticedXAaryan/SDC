@@ -4,7 +4,7 @@ test.describe("Authentication", () => {
   test("preserves a safe destination between sign-in and registration", async ({ page }) => {
     await page.goto("/login?callbackUrl=%2Fevents%2Fcreate");
 
-    await expect(page.getByRole("heading", { name: "Sign in to your orbit" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Create an account" })).toHaveAttribute(
       "href",
       "/register?callbackUrl=%2Fevents%2Fcreate",

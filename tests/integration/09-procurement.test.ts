@@ -76,6 +76,8 @@ describe("Procurement DAL Integration Tests & Security Audit", () => {
     });
     await updateProcurementStatus(financeLeadSession, procurementId, {
       status: "approval",
+      selectedVendorId: vendorId,
+      quotesUrl: "https://example.test/quote.pdf",
     });
 
     await expect(

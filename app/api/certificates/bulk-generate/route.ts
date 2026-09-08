@@ -12,13 +12,13 @@ export const POST = withApiHandler(async (req: NextRequest) => {
     
   
   const body = await req.json().catch(() => ({}));
-  const { templateId, userIds, eventId } = body;
+  const { templateId, userIds, eventId, idempotencyKey } = body;
 
   if (!templateId || !Array.isArray(userIds) || userIds.length === 0) {
     return NextResponse.json({ error: "Missing templateId or userIds array" }, { status: 400 });
   }
 
-  const result = await CertificateService.issueAdhocCertificates(session, templateId, userIds, eventId);
+  const result = await CertificateService.issueAdhocCertificates(session, templateId, userIds, eventId, idempotencyKey);
 
   await logAuditEvent({
     actorId: session.user.id,

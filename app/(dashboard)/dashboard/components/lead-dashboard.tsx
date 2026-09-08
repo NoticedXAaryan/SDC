@@ -120,7 +120,7 @@ export function LeadDashboard({ user, managementStats, upcomingEvents = [], pend
                 <VStack gap={2}>
                   <Button variant="secondary" className="justify-start w-full py-3" href="/events/create" label="Create New Event" icon={<Calendar className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/forms" label="Form Builder" icon={<FileText className="w-4 h-4 text-muted-foreground" />} />
-                  <Button variant="secondary" className="justify-start w-full py-3" href="/manage/recruitment" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
+                  <Button variant="secondary" className="justify-start w-full py-3" href="/applications" label="Recruitment" icon={<Users className="w-4 h-4 text-muted-foreground" />} />
                   <Button variant="secondary" className="justify-start w-full py-3" href="/manage/settings" label="Settings" icon={<Settings className="w-4 h-4 text-muted-foreground" />} />
                 </VStack>
               )}

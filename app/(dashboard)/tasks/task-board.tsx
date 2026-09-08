@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CalendarIcon, Plus, User, Clock, AlertCircle } from "lucide-react";
+import { ArrowUpRight, CalendarIcon, Plus, User } from "lucide-react";
 
 type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 
@@ -17,15 +20,31 @@ interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
-  dueDate: string | null;
-  createdAt: string;
+  dueDate: Date | string | null;
+  createdAt: Date | string;
+  assigneeRole: string | null;
+  actionHref: string | null;
+  actionLabel: string | null;
   assigneeName: string | null;
   eventName: string | null;
+  eventSlug: string | null;
 }
 
-export function TaskBoard({ initialTasks, isLead }: { initialTasks: Task[], isLead: boolean }) {
+function humanizeRole(role: string): string {
+  return role.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getErrorMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string") {
+    return payload.error;
+  }
+  return fallback;
+}
+
+export function TaskBoard({ initialTasks, canCreateTasks }: { initialTasks: Task[], canCreateTasks: boolean }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isCreating, setIsCreating] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
 
   const statuses: { id: TaskStatus, label: string, color: string }[] = [
@@ -35,19 +54,29 @@ export function TaskBoard({ initialTasks, isLead }: { initialTasks: Task[], isLe
     { id: "done", label: "Done", color: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
   ];
 
+  const tasksByStatus = useMemo(() => {
+    const grouped: Record<TaskStatus, Task[]> = { todo: [], in_progress: [], blocked: [], done: [] };
+    for (const task of tasks) grouped[task.status].push(task);
+    return grouped;
+  }, [tasks]);
+
   const handleUpdateStatus = async (id: string, newStatus: TaskStatus) => {
+    setUpdatingTaskId(id);
     try {
       const res = await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: newStatus }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      
-      setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t));
-      toast.success("Task updated");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update task");
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getErrorMessage(payload, "Task status could not be updated"));
+
+      setTasks((current) => current.map((task) => task.id === id ? { ...task, status: newStatus } : task));
+      toast.success("Task status updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Task status could not be updated");
+    } finally {
+      setUpdatingTaskId(null);
     }
   };
 
@@ -59,45 +88,53 @@ export function TaskBoard({ initialTasks, isLead }: { initialTasks: Task[], isLe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newTask }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const created = await res.json();
-      setTasks([created, ...tasks]);
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getErrorMessage(payload, "Task could not be created"));
+      const created = payload as Omit<Task, "assigneeName" | "eventName" | "eventSlug">;
+      setTasks((current) => [{ ...created, assigneeName: null, eventName: null, eventSlug: null }, ...current]);
       setIsCreating(false);
       setNewTask({ title: "", description: "" });
       toast.success("Task created");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create task");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Task could not be created");
     }
   };
 
   return (
     <div className="space-y-6">
-      {isLead && (
+      {canCreateTasks ? (
         <Dialog open={isCreating} onOpenChange={setIsCreating}>
-          {/* @ts-ignore */}
-          <DialogTrigger asChild>
-            <Button className="bg-primary/10 text-primary hover:bg-primary/20"><Plus className="w-4 h-4 mr-2"/> New Task</Button>
+          <DialogTrigger render={<Button className="bg-primary/10 text-primary hover:bg-primary/20" />}>
+            <Plus className="w-4 h-4 mr-2"/> New task
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Task</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <Input 
-                placeholder="Task title" 
-                value={newTask.title}
-                onChange={e => setNewTask({...newTask, title: e.target.value})}
-              />
-              <Textarea 
-                placeholder="Description" 
-                value={newTask.description}
-                onChange={e => setNewTask({...newTask, description: e.target.value})}
-              />
-              <Button onClick={handleCreateTask} className="w-full">Create Task</Button>
+              <div className="space-y-2">
+                <Label htmlFor="task-title">Task title</Label>
+                <Input
+                  id="task-title"
+                  placeholder="Confirm workshop mentors"
+                  value={newTask.title}
+                  onChange={(event) => setNewTask((current) => ({ ...current, title: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="task-description">Description</Label>
+                <Textarea
+                  id="task-description"
+                  placeholder="Add the outcome, owner context, and definition of done."
+                  value={newTask.description}
+                  onChange={(event) => setNewTask((current) => ({ ...current, description: event.target.value }))}
+                />
+              </div>
+              <Button onClick={handleCreateTask} className="w-full">Create task</Button>
             </div>
           </DialogContent>
         </Dialog>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
         {statuses.map(col => (
@@ -106,53 +143,80 @@ export function TaskBoard({ initialTasks, isLead }: { initialTasks: Task[], isLe
               <h3 className="font-semibold text-sm tracking-wide text-foreground uppercase flex items-center gap-2">
                 {col.label}
                 <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs font-medium bg-muted/50 text-muted-foreground border-transparent">
-                  {tasks.filter(t => t.status === col.id).length}
+                  {tasksByStatus[col.id].length}
                 </Badge>
               </h3>
             </div>
             <div className="flex flex-col gap-3 min-h-[200px] rounded-xl bg-muted/30 p-3 border border-border/50">
-              {tasks.filter(t => t.status === col.id).map(task => (
+              {tasksByStatus[col.id].map(task => {
+                const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+                const isOverdue = dueDate && dueDate.getTime() < Date.now() && task.status !== "done";
+
+                return (
                 <Card key={task.id} className="p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-all group bg-card border-border hover:border-primary/30">
                   <div className="flex justify-between items-start gap-2">
                     <p className="font-medium text-sm leading-tight text-foreground">{task.title}</p>
                     <Badge variant="outline" className={`capitalize text-[10px] whitespace-nowrap ${col.color}`}>{task.status.replace("_", " ")}</Badge>
                   </div>
                   
-                  {task.description && (
+                  {task.description ? (
                     <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-                  )}
+                  ) : null}
+
+                  {task.eventName ? (
+                    <p className="text-xs font-medium text-primary">{task.eventName}</p>
+                  ) : null}
                   
                   <div className="flex items-center gap-4 mt-1">
-                    {task.assigneeName && (
+                    {task.assigneeName ? (
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <User className="w-3.5 h-3.5 opacity-70" />
                         <span className="truncate max-w-[100px]">{task.assigneeName}</span>
                       </div>
-                    )}
-                    {task.dueDate && (
+                    ) : task.assigneeRole ? (
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <CalendarIcon className="w-3.5 h-3.5 opacity-70" />
-                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                        <User className="w-3.5 h-3.5 opacity-70" />
+                        <span>{humanizeRole(task.assigneeRole)} queue</span>
                       </div>
-                    )}
+                    ) : null}
+                    {dueDate ? (
+                      <div className={`flex items-center gap-1.5 text-xs ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}>
+                        <CalendarIcon className="w-3.5 h-3.5 opacity-70" />
+                        <span>{isOverdue ? "Overdue · " : ""}{dueDate.toLocaleDateString()}</span>
+                      </div>
+                    ) : null}
                   </div>
 
-                  <div className="flex gap-2 mt-2 pt-3 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {col.id !== "todo" && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs flex-1" onClick={() => handleUpdateStatus(task.id, "todo")}>To Do</Button>
-                    )}
-                    {col.id !== "in_progress" && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs flex-1 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10" onClick={() => handleUpdateStatus(task.id, "in_progress")}>Start</Button>
-                    )}
-                    {col.id !== "blocked" && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => handleUpdateStatus(task.id, "blocked")}>Block</Button>
-                    )}
-                    {col.id !== "done" && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs flex-1 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" onClick={() => handleUpdateStatus(task.id, "done")}>Done</Button>
-                    )}
+                  <div className="mt-2 flex flex-col gap-2 border-t border-border/50 pt-3">
+                    {task.actionHref && task.actionLabel ? (
+                      <Button asChild variant="outline" size="sm" className="w-full justify-between">
+                        <Link href={task.actionHref}>
+                          {task.actionLabel}
+                          <ArrowUpRight className="size-3.5" />
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Select
+                      value={task.status}
+                      onValueChange={(value) => value ? handleUpdateStatus(task.id, value as TaskStatus) : undefined}
+                      disabled={updatingTaskId === task.id}
+                    >
+                      <SelectTrigger className="w-full" aria-label={`Status for ${task.title}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>{status.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </Card>
-              ))}
+                );
+              })}
+              {tasksByStatus[col.id].length === 0 ? (
+                <p className="px-2 py-8 text-center text-xs text-muted-foreground">No tasks in {col.label.toLowerCase()}.</p>
+              ) : null}
             </div>
           </div>
         ))}

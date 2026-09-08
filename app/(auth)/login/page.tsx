@@ -2,6 +2,7 @@ import { AuthLayout } from "@/components/auth/auth-layout";
 import { LoginForm } from "@/components/auth/login-form";
 import { Metadata } from "next";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
+import { hasGoogleSignIn } from "@/lib/auth-policy";
 
 export const metadata: Metadata = {
   title: "Login | Student Developer Club",
@@ -20,7 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       heading="Welcome to SDC"
       subheading="Sign in to access your dashboard and manage your club activities."
     >
-      <LoginForm callbackUrl={callbackUrl} />
+      <LoginForm callbackUrl={callbackUrl} googleEnabled={hasGoogleSignIn(process.env)} />
     </AuthLayout>
   );
 }

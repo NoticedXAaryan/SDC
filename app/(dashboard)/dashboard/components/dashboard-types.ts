@@ -8,6 +8,7 @@ export interface DashboardUser {
   points?: number | null;
   level?: number | null;
   image?: string | null;
+  emailVerified?: boolean;
 }
 
 export interface ManagementStats {
@@ -68,10 +69,15 @@ export interface UpcomingEvent {
 export interface UserRegistration {
   eventId: string;
   eventTitle: string;
+  eventSlug: string;
+  eventStartsAt: Date | string;
+  eventLocation?: string | null;
+  status: string | null;
 }
 
 export interface UserApplication {
   status: string | null;
+  applicationCycle?: string;
 }
 
 export interface UserCertificate {

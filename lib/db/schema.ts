@@ -1,6 +1,17 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique, check as drizzleCheck, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, jsonb, pgEnum, numeric, real, index, unique, uniqueIndex, check as drizzleCheck, foreignKey } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import crypto from "crypto";
+
+// Small, private intake documents stay out of the public asset store. One per account/round.
+export const applicationDocuments = pgTable("application_documents", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  cycle: text("cycle").notNull(),
+  name: text("name").notNull(),
+  size: integer("size").notNull(),
+  content: text("content").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [unique("application_document_owner_cycle").on(table.userId, table.cycle), drizzleCheck("application_document_size", sql`${table.size} > 0 AND ${table.size} <= 2097152 AND length(${table.content}) <= 2796204`)]);
 
 export const user = pgTable("user", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -19,6 +30,9 @@ export const user = pgTable("user", {
 					
 					// SDC specific fields
 					username: text("username").unique(),
+                    requestedUsername: text("requested_username"),
+                    onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+                    membershipWelcomeSeen: boolean("membership_welcome_seen").default(false).notNull(),
 					usernameLower: text("username_lower").unique(),
 					displayName: text("display_name"),
 					handleChangedAt: timestamp("handle_changed_at"),
@@ -36,6 +50,21 @@ export const user = pgTable("user", {
 }, (table) => [
 	drizzleCheck("role_check", sql`${table.role} IN ('owner', 'admin', 'lead', 'vice_lead', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead', 'faculty_coordinator', 'member', 'alumni', 'applicant', 'outsider', 'user')`)
 ]);
+
+export const collegeIdentities = pgTable("college_identities", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  collegeEmail: text("college_email").unique(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  enrollmentNumber: text("enrollment_number"),
+  collegeName: text("college_name"),
+  pendingEmail: text("pending_email"),
+  codeHash: text("code_hash"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  attempts: integer("attempts").notNull().default(0),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+  sendWindowAt: timestamp("send_window_at", { withTimezone: true }),
+  sendCount: integer("send_count").notNull().default(0),
+});
 
 export const session = pgTable("session", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -236,10 +265,16 @@ export const tasks = pgTable("tasks", {
   status: taskStatusEnum("status").default("todo"),
   eventId: text("eventId").references(() => events.id, { onDelete: "cascade" }),
   assigneeId: text("assigneeId").references(() => user.id, { onDelete: "cascade" }),
+  assigneeRole: text("assigneeRole"),
   dueDate: timestamp("dueDate", { withTimezone: true }),
+  actionHref: text("actionHref"),
+  actionLabel: text("actionLabel"),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull()
-}, (table) => [index("tasks_event_id_idx").on(table.eventId)]);
+}, (table) => [
+  index("tasks_event_id_idx").on(table.eventId),
+  index("tasks_assignee_role_idx").on(table.assigneeRole),
+]);
 
 export const budgets = pgTable("budgets", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -302,8 +337,9 @@ export const projects = pgTable("projects", {
   liveUrl: text("liveUrl"),
   upvotes: integer("upvotes").default(0),
   status: submissionStatusEnum("status").default("pending"),
+  submittedBy: text("submittedBy").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull()
-});
+}, (t) => [index("projects_submitted_by_idx").on(t.submittedBy)]);
 
 export const projectMembers = pgTable("project_members", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -444,6 +480,18 @@ export const vendors = pgTable("vendors", {
   createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const vendorRatings = pgTable("vendor_ratings", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  vendorId: text("vendorId").notNull().references(() => vendors.id, { onDelete: "cascade" }),
+  ratedBy: text("ratedBy").notNull().references(() => user.id, { onDelete: "restrict" }),
+  rating: integer("rating").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  index("vendor_ratings_vendor_id_idx").on(t.vendorId),
+  index("vendor_ratings_rated_by_idx").on(t.ratedBy),
+]);
 
 export const procurementStatusEnum = pgEnum("procurement_status", ["draft", "pending_quotes", "approval", "approved", "rejected", "completed"]);
 
@@ -814,10 +862,16 @@ export const certificates = pgTable("certificates_v2", {
   revokedReason: text("revoked_reason"),
   issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow(),
   issuedBy: text("issued_by").notNull(),
+  emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+  emailAttempts: integer("email_attempts").default(0).notNull(),
+  emailLastError: text("email_last_error"),
 }, (t) => [
   index("certificates_v2_template_id_idx").on(t.templateId),
   index("certificates_v2_user_id_idx").on(t.userId),
-  index("certificates_v2_event_id_idx").on(t.eventId)
+  index("certificates_v2_event_id_idx").on(t.eventId),
+  uniqueIndex("certificates_v2_active_issuance_uidx")
+    .on(t.userId, t.templateId, sql`coalesce(${t.eventId}, '__adhoc__')`)
+    .where(sql`${t.status} = 'valid'`)
 ]);
 
 export const applicationReviews = pgTable("application_reviews", {

@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import { desc } from "drizzle-orm";
 import { z } from "zod";
 import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { PROCUREMENT_READ_ROLES, VENDOR_MANAGER_ROLES } from "@/lib/dal/procurement";
 
 const vendorSchema = z.object({
   name: z.string().min(2),
@@ -19,7 +20,7 @@ const vendorSchema = z.object({
 export const dynamic = "force-dynamic";
 
 export const GET = withApiHandler(async () => {
-  await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
+  await requireRole([...PROCUREMENT_READ_ROLES]);
   const allVendors = await db.select().from(vendors).orderBy(desc(vendors.createdAt));
   return NextResponse.json(allVendors);
 }, { requireRateLimit: false });
@@ -27,7 +28,7 @@ export const GET = withApiHandler(async () => {
 export const POST = withApiHandler(async (req: NextRequest) => {
     
     
-await requireRole(["admin", "owner", "finance_lead", "event_lead", "lead", "vice_lead"]);
+await requireRole([...VENDOR_MANAGER_ROLES]);
 
 const body = await req.json();
 const parsed = vendorSchema.safeParse(body);

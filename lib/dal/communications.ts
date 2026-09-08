@@ -5,6 +5,9 @@ import crypto from "crypto";
 
 import { AuthorizationError, ValidationError } from "@/lib/api-wrapper";
 import type { AuthSession } from "@/lib/dal/auth";
+import { assertCanManageEvent } from "@/lib/dal/event-access";
+import { createTransactionalEmailJob } from "@/lib/queues/email";
+import { escapeHtml, toSafeHttpUrl } from "@/lib/email/html";
 
 export async function getEventCommunications(sessionAuth: AuthSession, eventId: string) {
   const role = sessionAuth.user.role as string;
@@ -15,14 +18,7 @@ export async function getEventCommunications(sessionAuth: AuthSession, eventId: 
   const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
   if (!event) throw new ValidationError("Event not found");
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const { getUserDomain } = await import("@/lib/dal/auth");
-    const userDomain = await getUserDomain(sessionAuth.user.id, role);
-    if (event.domain !== userDomain) {
-      throw new AuthorizationError("You can only view communications for events within your domain.");
-    }
-  }
+  await assertCanManageEvent(sessionAuth, event);
 
   const comms = await db.select()
     .from(communications)
@@ -41,14 +37,7 @@ export async function createEventCommunicationDb(sessionAuth: AuthSession, event
   const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
   if (!event) throw new ValidationError("Event not found");
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const { getUserDomain } = await import("@/lib/dal/auth");
-    const userDomain = await getUserDomain(sessionAuth.user.id, role);
-    if (event.domain !== userDomain) {
-      throw new AuthorizationError("You can only create communications for events within your domain.");
-    }
-  }
+  await assertCanManageEvent(sessionAuth, event);
 
   const { subject, body: messageBody, targetAudience } = data;
 
@@ -69,6 +58,12 @@ export async function createEventCommunicationDb(sessionAuth: AuthSession, event
   });
 
   return { id: commId, subject, messageBody, targetAudience };
+}
+
+export async function markEventCommunicationQueueFailed(communicationId: string) {
+  await db.update(communications)
+    .set({ status: "failed" })
+    .where(eq(communications.id, communicationId));
 }
 
 export async function sendInvitesDb(sessionAuth: AuthSession, eventId: string, emails: string[]) {
@@ -102,14 +97,19 @@ export async function sendInvitesDb(sessionAuth: AuthSession, eventId: string, e
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
     });
 
-    const inviteUrl = `${process.env.BETTER_AUTH_URL}/events/${eventId}/join?token=${token}`;
+    const inviteUrl = toSafeHttpUrl(
+      `/events/${encodeURIComponent(eventId)}/join?token=${encodeURIComponent(token)}`,
+      process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    );
+    if (!inviteUrl) throw new ValidationError("Application URL must use HTTP or HTTPS");
+    const safeEventTitle = escapeHtml(event.title);
     jobsToQueue.push({
       name: "send-event-invite",
-      data: {
+      data: createTransactionalEmailJob({
         to: email,
         subject: `You're invited to ${event.title}`,
-        body: `You have been invited to ${event.title}. Click here to RSVP: ${inviteUrl}`,
-      },
+        html: `<p>You have been invited to ${safeEventTitle}.</p><p><a href="${escapeHtml(inviteUrl)}">View invitation and RSVP</a></p>`,
+      }),
       opts: { jobId: `invite-${inviteId}` }
     });
   }
@@ -124,7 +124,7 @@ export async function sendInvitesDb(sessionAuth: AuthSession, eventId: string, e
 
 export async function notifyColleagues(sessionAuth: AuthSession, eventId: string, data: { subject: string; message: string }) {
   const role = sessionAuth.user.role as string;
-  if (!["lead", "co_lead", "admin", "owner"].includes(role)) {
+  if (!["lead", "co_lead", "event_lead", "admin", "owner"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
   }
 
@@ -142,14 +142,7 @@ export async function notifyColleagues(sessionAuth: AuthSession, eventId: string
     throw new ValidationError("Event not found");
   }
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const { getUserDomain } = await import("@/lib/dal/auth");
-    const userDomain = await getUserDomain(sessionAuth.user.id, role);
-    if (event.domain !== userDomain) {
-      throw new AuthorizationError("You can only notify colleagues about events within your domain.");
-    }
-  }
+  await assertCanManageEvent(sessionAuth, event);
 
   const colleagues = await db.select({ id: user.id })
     .from(user)
@@ -167,7 +160,7 @@ export async function notifyColleagues(sessionAuth: AuthSession, eventId: string
     type: "colleague_update",
     title: subject,
     message: `${event.title} Update: ${message}`,
-    link: `/events/${event.slug}/management`,
+    link: `/events/${event.slug}/manage?tab=communications`,
   }));
 
   if (notifs.length > 0) {
@@ -182,7 +175,7 @@ export async function notifyColleagues(sessionAuth: AuthSession, eventId: string
 
 export async function getWhatsappTemplate(sessionAuth: AuthSession, eventId: string) {
   const role = sessionAuth.user.role as string;
-  if (!["lead", "co_lead", "admin", "owner"].includes(role)) {
+  if (!["lead", "co_lead", "event_lead", "admin", "owner"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
   }
 
@@ -194,14 +187,7 @@ export async function getWhatsappTemplate(sessionAuth: AuthSession, eventId: str
     throw new ValidationError("Event not found");
   }
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const { getUserDomain } = await import("@/lib/dal/auth");
-    const userDomain = await getUserDomain(sessionAuth.user.id, role);
-    if (event.domain !== userDomain) {
-      throw new AuthorizationError("You can only get templates for events within your domain.");
-    }
-  }
+  await assertCanManageEvent(sessionAuth, event);
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://club.com";
   const eventUrl = `${baseUrl}/events/${event.slug}`;

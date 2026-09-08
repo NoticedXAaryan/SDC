@@ -41,7 +41,7 @@ export function AddInventoryDialog() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         throw new Error(data.error || "Failed to add inventory item");
       }
 
@@ -50,8 +50,8 @@ export function AddInventoryDialog() {
       setName("");
       setQtyTotal("");
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Inventory item could not be added");
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,8 @@ export function AddInventoryDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"><Plus className="w-4 h-4 mr-2" /> Add Item</div>
+      <DialogTrigger render={<Button />}>
+        <Plus aria-hidden="true" /> Add Item
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit}>
@@ -73,16 +73,16 @@ export function AddInventoryDialog() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Item Name</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Arduino Uno" />
+              <Input id="name" name="name" autoComplete="off" maxLength={120} value={name} onChange={e => setName(e.target.value)} required placeholder="Arduino Uno" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="qty">Total Quantity</Label>
-              <Input id="qty" type="number" min="1" value={qtyTotal} onChange={e => setQtyTotal(e.target.value)} required />
+              <Input id="qty" name="qtyTotal" type="number" min="1" step="1" inputMode="numeric" autoComplete="off" value={qtyTotal} onChange={e => setQtyTotal(e.target.value)} required />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Add Item"}</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Saving…" : "Add Item"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

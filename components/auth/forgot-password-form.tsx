@@ -1,4 +1,5 @@
 "use client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -9,6 +10,7 @@ import Link from "next/link";
 import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 
 export function ForgotPasswordForm() {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,7 +49,7 @@ export function ForgotPasswordForm() {
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
+          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
           <p className="text-sm text-slate-400">
             If an account exists for <span className="font-medium text-white">{email}</span>, a reset link is on its way.
           </p>
@@ -64,7 +66,7 @@ export function ForgotPasswordForm() {
       {/* Header */}
       <div className="space-y-2">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-violet-300">Account recovery</p>
-        <h2 className="text-3xl font-black tracking-[-0.03em] text-white">Reset your access</h2>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">Reset your password</h1>
         <p className="text-sm text-slate-400">
           Enter your email address and we will send you a link to reset your password.
         </p>
@@ -74,7 +76,7 @@ export function ForgotPasswordForm() {
       <form onSubmit={handleReset} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="reset-email" className="text-slate-300">Email</Label>
-          <Input 
+          <Input disabled={!hydrated}
             id="reset-email" 
             type="email" 
             placeholder="name@paruluniversity.ac.in" 
@@ -93,7 +95,7 @@ export function ForgotPasswordForm() {
           </div>
         )}
 
-        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={loading}>
+        <Button type="submit" className="h-12 w-full bg-white font-bold text-slate-950 hover:bg-violet-100" disabled={!hydrated || loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

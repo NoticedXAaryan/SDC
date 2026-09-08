@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole, checkEmergencyFreeze } from "@/lib/dal/auth";
+import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { budgets, events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { createBudgetSchema } from "@/lib/validators/finance";
-import { logAuditEvent } from "@/lib/services/audit";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
+import { withApiHandler } from "@/lib/api-wrapper";
+import { allocateBudget, BUDGET_ADMIN_ROLES } from "@/lib/services/finance";
+import { FINANCE_READ_ROLES } from "@/lib/dal/finance";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  * Requires finance_lead, admin, or owner.
  */
 export const GET = withApiHandler(async () => {
-  await requireRole(["finance_lead", "admin", "owner"]);
+  await requireRole(FINANCE_READ_ROLES);
 
   const allBudgets = await db.select({
     id: budgets.id,
@@ -27,47 +27,24 @@ export const GET = withApiHandler(async () => {
   .leftJoin(events, eq(budgets.eventId, events.id))
   .orderBy(budgets.updatedAt);
 
-  return NextResponse.json(allBudgets);
+  const eventOptions = await db.select({ id: events.id, title: events.title })
+    .from(events)
+    .orderBy(events.startsAt);
+  const budgetedEventIds = new Set(allBudgets.map((budget) => budget.eventId));
+
+  return NextResponse.json({
+    budgets: allBudgets,
+    events: eventOptions,
+    availableBudgetEvents: eventOptions.filter((event) => !budgetedEventIds.has(event.id)),
+  });
 }, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
     
     
-const session = await requireRole(["finance_lead", "admin", "owner"]);
+const session = await requireRole(BUDGET_ADMIN_ROLES);
 const body = await req.json();
-const parsed = createBudgetSchema.safeParse(body);
-
-if (!parsed.success) {
-  return NextResponse.json(
-    { error: "Invalid budget data", details: parsed.error.flatten() },
-    { status: 400 }
-  );
-}
-
-const { eventId, allocated } = parsed.data;
-
-// Check if event exists
-const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
-if (!event) {
-  return NextResponse.json({ error: "Event not found" }, { status: 404 });
-}
-
-const budgetId = crypto.randomUUID();
-
-await db.insert(budgets).values({
-  id: budgetId,
-  eventId,
-  allocated: String(allocated),
-});
-
-await logAuditEvent({
-  actorId: session.user.id,
-  action: "budget_create",
-  entity: "budget",
-  entityId: budgetId,
-  details: `Created budget of ₹${allocated} for event ${event.title}`,
-});
-
-return NextResponse.json({ success: true, id: budgetId }, { status: 201 });
+const result = await allocateBudget(session, body.eventId, body.allocated);
+return NextResponse.json(result, { status: 201 });
 
 });

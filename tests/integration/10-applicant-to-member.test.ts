@@ -102,16 +102,18 @@ describe("Workflow 1: Applicant → Member", () => {
     expect(saved?.userId).toBe(applicantId);
   });
 
-  it("1.2 submitting again for same cycle is idempotent (upsert, not duplicate)", async () => {
+  it("1.2 retrying the same submission is idempotent; changed answers cannot overwrite a submitted application", async () => {
     const session = getMockSession(applicantId, "applicant");
     const result = await submitApplication(session, {
       applicationCycle: TEST_CYCLE,
-      answers: { why: "Updated answer" },
-      whyJoin: "Updated reason with more than 20 characters for validation.",
+      answers: { why: "I love tech" },
+      whyJoin: "I want to build cool things with the club community here.",
+      skills: ["typescript", "react"],
       isDraft: false,
     });
     // Should return the same applicationId
     expect(result.applicationId).toBe(applicationId);
+    await expect(submitApplication(session, { applicationCycle: TEST_CYCLE, answers: { why: "Changed after submission" } })).rejects.toThrow("Cannot modify");
 
     // Only one record should exist for this user/cycle
     const allApps = await db

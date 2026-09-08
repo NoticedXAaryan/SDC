@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/dal/auth";
 import { db } from "@/lib/db";
 import { expenses, budgets, user } from "@/lib/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { createExpenseSchema } from "@/lib/validators/finance";
-import { logAuditEvent } from "@/lib/services/audit";
-import { withApiHandler, AuthorizationError, ValidationError } from "@/lib/api-wrapper";
-import crypto from "crypto";
+import { withApiHandler, ValidationError } from "@/lib/api-wrapper";
+import { addExpense, EXPENSE_SUBMITTER_ROLES } from "@/lib/services/finance";
+import { FINANCE_READ_ROLES } from "@/lib/dal/finance";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * Requires lead, co_lead, finance_lead, admin, or owner.
  */
 export const GET = withApiHandler(async () => {
-  await requireRole(["lead", "co_lead", "finance_lead", "admin", "owner"]);
+  await requireRole(FINANCE_READ_ROLES);
 
   const allExpenses = await db.select({
     id: expenses.id,
@@ -36,7 +36,7 @@ export const GET = withApiHandler(async () => {
 }, { requireRateLimit: false });
 
 export const POST = withApiHandler(async (req: NextRequest) => {
-const session = await requireRole(["co_lead", "lead", "finance_lead", "admin", "owner"]);
+const session = await requireRole(EXPENSE_SUBMITTER_ROLES);
 const { checkEmergencyFreeze } = await import("@/lib/dal/auth");
 await checkEmergencyFreeze(session.user.role as string);
 const body = await req.json();
@@ -51,42 +51,18 @@ if (!parsed.success) {
 
 const { budgetId, amount, category, receiptUrl } = parsed.data;
 
-const expenseId = crypto.randomUUID();
-
-await db.transaction(async (tx) => {
-  const res = await tx.execute(sql`SELECT * FROM budgets WHERE id=${budgetId} FOR UPDATE`);
-  const budget = (res as any).rows ? (res as any).rows[0] : (res as any)[0];
-  if (!budget) {
-    throw new Error("Budget not found");
-  }
-
-  await tx.insert(expenses).values({
-    id: expenseId,
-    budgetId,
-    amount: String(amount),
-    category,
-    receiptUrl: receiptUrl || null,
-    status: "pending",
-    createdBy: session.user.id,
-  });
-});
-
-await logAuditEvent({
-  actorId: session.user.id,
-  action: "expense_create",
-  entity: "expense",
-  entityId: expenseId,
-  details: `Submitted expense of ₹${amount} for category ${category}`,
-});
+const [budget] = await db.select({ eventId: budgets.eventId }).from(budgets).where(eq(budgets.id, budgetId)).limit(1);
+if (!budget?.eventId) throw new ValidationError("Budget not found");
+const result = await addExpense(session, budget.eventId, { amount, category, receiptUrl });
 
 const { NotificationService } = await import("@/lib/services/notifications");
 await NotificationService.notifyLeads("finance_lead", {
   type: "approval_needed",
   title: "New Expense Approval",
   message: `A new expense of ${amount} requires your approval.`,
-  link: `/dashboard/finance/expenses/${expenseId}`
+  link: `/finance?tab=expenses`
 });
 
-return NextResponse.json({ success: true, id: expenseId }, { status: 201 });
+return NextResponse.json(result, { status: 201 });
 
 });

@@ -6,40 +6,27 @@ import { eq } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { getStorageService } from "@/lib/services/storage";
 import { z } from "zod";
-
-const patchSchema = z.object({
-  status: z.enum(["approved", "rejected", "pending"]),
-});
+import { PROJECT_DELETE_ROLES, PROJECT_REVIEW_ROLES } from "@/lib/domain/projects";
+import { reviewProject } from "@/lib/services/projects";
+import { reviewProjectSchema } from "@/lib/validators/projects";
 
 export const PATCH = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    
-    
-  await requireRole(["admin", "owner", "tech_lead", "co_lead"]);
-  
+  const session = await requireRole([...PROJECT_REVIEW_ROLES]);
+  await checkEmergencyFreeze(session.user.role as string);
   const { id } = await params;
-  const body = await req.json();
-  const parsed = patchSchema.safeParse(body);
-  
+  const parsed = reviewProjectSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload", details: parsed.error }, { status: 400 });
+    return NextResponse.json({ error: "Invalid review", details: parsed.error.flatten() }, { status: 400 });
   }
-
-  const [updated] = await db.update(projects)
-    .set({ status: parsed.data.status })
-    .where(eq(projects.id, id))
-    .returning();
-
-  if (!updated) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
-
+  const updated = await reviewProject(session, id, parsed.data);
   return NextResponse.json({ success: true, project: updated });
 });
 
 export const DELETE = withApiHandler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     
     
-  await requireRole(["admin", "owner"]);
+  const session = await requireRole([...PROJECT_DELETE_ROLES]);
+  await checkEmergencyFreeze(session.user.role as string);
   
   const { id } = await params;
 

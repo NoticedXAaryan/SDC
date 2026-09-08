@@ -1,0 +1,91 @@
+name: sdc-local
+
+x-app-environment: &app-environment
+  DATABASE_URL: ${DATABASE_URL:-postgresql://sdc:sdc_local_password@postgres:5432/sdc_local}
+  REDIS_URL: ${REDIS_URL:-redis://:sdc_local_redis@redis:6379}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-sdc_local_redis}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-local_only_change_before_deploying_32_chars}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+  NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+  PASS_SECRET: ${PASS_SECRET:-local_pass_secret_change_before_deploying}
+  CRON_SECRET: ${CRON_SECRET:-local_cron_secret_change_before_deploying}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-owner@example.test}
+  ADMIN_NAME: ${ADMIN_NAME:-Local Owner}
+  STORAGE_DRIVER: local
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: sdc_local
+      POSTGRES_USER: sdc
+      POSTGRES_PASSWORD: sdc_local_password
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - local_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sdc -d sdc_local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-sdc_local_redis}", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - local_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-sdc_local_redis}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrator:
+    build:
+      context: .
+      target: migrator-runner
+    environment: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    environment: *app-environment
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - local_app_uploads:/app/public/uploads
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      target: worker-runner
+    environment: *app-environment
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    volumes:
+      - local_app_uploads:/app/public/uploads
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  local_postgres_data:
+  local_redis_data:
+  local_app_uploads:

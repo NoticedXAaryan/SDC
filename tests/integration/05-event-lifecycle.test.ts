@@ -76,7 +76,7 @@ describe("Event Lifecycle Integration Tests", () => {
   });
 
   it("4.6 should register for event as member and generate passCode", async () => {
-    const regRes = await registerForEvent(memberSession, eventId, { answers: {} });
+    const regRes = await registerForEvent(memberSession, eventId, {});
     expect(regRes.success).toBe(true);
 
     const reg = await db.query.registrations.findFirst({
@@ -98,7 +98,7 @@ describe("Event Lifecycle Integration Tests", () => {
   it("4.8 should test capacity and waitlisting", async () => {
     // Capacity was set to 1. Member1 registered, so it's full.
     // Member2 should be waitlisted.
-    const regRes = await registerForEvent(member2Session, eventId, { answers: {} });
+    const regRes = await registerForEvent(member2Session, eventId, {});
     expect(regRes.success).toBe(true);
 
     const reg = await db.query.registrations.findFirst({

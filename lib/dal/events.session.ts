@@ -5,11 +5,12 @@ import { db } from "@/lib/db";
 import { events, eventSessions, notifications, registrations, sessionAttendance, user } from "@/lib/db/schema";
 import { logAuditEvent } from "@/lib/services/audit";
 import crypto from "crypto";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, inArray, or } from "drizzle-orm";
+import { assertCanManageEvent } from "@/lib/dal/event-access";
 
 export async function scheduleMeeting(sessionAuth: AuthSession, eventId: string, data: { title: string; description?: string; startTime: string; endTime: string; meetingLink: string }) {
   const role = sessionAuth.user.role as string;
-  if (!["lead", "co_lead", "admin", "owner"].includes(role)) {
+  if (!["lead", "co_lead", "event_lead", "admin", "owner"].includes(role)) {
     throw new AuthorizationError("Unauthorized");
   }
 
@@ -27,13 +28,7 @@ export async function scheduleMeeting(sessionAuth: AuthSession, eventId: string,
     throw new ValidationError("Event not found");
   }
 
-  const isAdmin = ["admin", "owner"].includes(role);
-  if (!isAdmin) {
-    const userDomain = await getUserDomain(sessionAuth.user.id, role);
-    if (event.domain !== userDomain) {
-      throw new AuthorizationError("Forbidden: Event is outside your domain");
-    }
-  }
+  await assertCanManageEvent(sessionAuth, event);
 
   const sessionId = crypto.randomUUID();
   await db.insert(eventSessions).values({
@@ -62,7 +57,7 @@ export async function scheduleMeeting(sessionAuth: AuthSession, eventId: string,
     type: "internal_meeting",
     title: `Internal Meeting: ${title}`,
     message: `A new internal meeting has been scheduled for ${event.title}. Link: ${meetingLink}`,
-    link: `/events/${event.slug}/management`,
+    link: `/events/${event.slug}/manage?tab=sessions`,
   }));
 
   if (notifs.length > 0) {
@@ -83,7 +78,19 @@ export async function scheduleMeeting(sessionAuth: AuthSession, eventId: string,
   return { success: true, sessionId };
 }
 
-export async function getSessions(eventId: string) {
+export async function getSessions(sessionAuth: AuthSession, eventId: string) {
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+
+  if (event.status !== "published") {
+    const role = sessionAuth.user.role as string;
+    const isAdmin = ["admin", "owner"].includes(role);
+    const userDomain = isAdmin ? null : await getUserDomain(sessionAuth.user.id, role);
+    if (!isAdmin && event.createdBy !== sessionAuth.user.id && event.domain !== userDomain) {
+      throw new AuthorizationError("You cannot view sessions for this event");
+    }
+  }
+
   const sessions = await db.select()
     .from(eventSessions)
     .where(eq(eventSessions.eventId, eventId))
@@ -103,13 +110,25 @@ export async function createSession(sessionAuth: AuthSession, eventId: string, d
 
   const { title, description, startTime, endTime, location } = data;
 
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+
+  await assertCanManageEvent(sessionAuth, event);
+
+  const sessionStart = new Date(startTime);
+  const sessionEnd = new Date(endTime);
+  if (sessionEnd <= sessionStart) throw new ValidationError("Session end time must be after its start time");
+  if (sessionStart < new Date(event.startsAt) || (event.endsAt && sessionEnd > new Date(event.endsAt))) {
+    throw new ValidationError("Session must be scheduled within the event timeframe");
+  }
+
   const [newSession] = await db.insert(eventSessions).values({
     id: crypto.randomUUID(),
     eventId,
     title,
     description,
-    startTime: new Date(startTime),
-    endTime: new Date(endTime),
+    startTime: sessionStart,
+    endTime: sessionEnd,
     location,
     createdAt: new Date(),
   }).returning();
@@ -119,9 +138,21 @@ export async function createSession(sessionAuth: AuthSession, eventId: string, d
 
 export async function markAttendance(sessionAuth: AuthSession, eventId: string, sessionId: string, passCode: string) {
   const role = sessionAuth.user.role as string;
-  const adminRoles = ["admin", "owner"];
-  if (!adminRoles.includes(role)) {
+  const allowedRoles = ["admin", "owner", "lead", "event_lead", "co_lead", "faculty_coordinator", "volunteer_lead"];
+  if (!allowedRoles.includes(role)) {
     throw new AuthorizationError("You do not have permission to mark attendance.");
+  }
+
+  const [eventSession] = await db.select().from(eventSessions).where(and(
+    eq(eventSessions.id, sessionId),
+    eq(eventSessions.eventId, eventId),
+  )).limit(1);
+  if (!eventSession) throw new ValidationError("Session does not belong to this event");
+
+  const [event] = await db.select().from(events).where(eq(events.id, eventId)).limit(1);
+  if (!event) throw new ValidationError("Event not found");
+  if (!["admin", "owner", "faculty_coordinator", "event_lead", "volunteer_lead"].includes(role)) {
+    await assertCanManageEvent(sessionAuth, event);
   }
 
   // Find registration
@@ -131,7 +162,7 @@ export async function markAttendance(sessionAuth: AuthSession, eventId: string, 
       and(
         eq(registrations.eventId, eventId),
         eq(registrations.passCode, passCode),
-        eq(registrations.status, "confirmed")
+        inArray(registrations.status, ["confirmed", "checked_in"])
       )
     );
 
@@ -139,25 +170,24 @@ export async function markAttendance(sessionAuth: AuthSession, eventId: string, 
     throw new ValidationError("Invalid or inactive pass code");
   }
 
-  // Check if already attended
-  const [existing] = await db.select().from(sessionAttendance).where(
-    and(
-      eq(sessionAttendance.sessionId, sessionId),
-      eq(sessionAttendance.userId, registration.userId!)
-    )
-  );
-
-  if (existing) {
-    throw new ValidationError("Already checked in");
-  }
-
-  // Mark attendance
-  await db.insert(sessionAttendance).values({
+  const [attendance] = await db.insert(sessionAttendance).values({
     id: crypto.randomUUID(),
     sessionId,
     userId: registration.userId!,
     checkedInAt: new Date(),
-  });
+  }).onConflictDoNothing().returning({ id: sessionAttendance.id });
 
-  return { success: true, message: "Checked in successfully" };
+  if (!attendance) {
+    return { success: true, message: "Already checked in", alreadyCheckedIn: true };
+  }
+
+  if (registration.status === "confirmed") {
+    await db.update(registrations).set({
+      status: "checked_in",
+      checkedInAt: new Date(),
+      attendanceMethod: "qr",
+    }).where(and(eq(registrations.id, registration.id), eq(registrations.status, "confirmed")));
+  }
+
+  return { success: true, message: "Checked in successfully", alreadyCheckedIn: false };
 }

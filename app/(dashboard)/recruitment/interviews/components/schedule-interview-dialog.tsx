@@ -8,6 +8,9 @@ import { Selector } from "@astryxdesign/core/Selector";
 import { FormLayout } from "@astryxdesign/core/FormLayout";
 import { useToast } from "@/components/astryx/toast-provider";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button as TriggerButton } from "@/components/ui/button";
 
 type Applicant = {
   id: string;
@@ -15,13 +18,23 @@ type Applicant = {
   email: string;
 };
 
-export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[] }) {
+export function ScheduleInterviewDialog({
+  applicants,
+  initialApplicantId,
+  triggerLabel = "Schedule Interview",
+  onScheduled,
+}: {
+  applicants: Applicant[];
+  initialApplicantId?: string;
+  triggerLabel?: string;
+  onScheduled?: (applicationId: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { success, error } = useToast();
 
-  const [applicantId, setApplicantId] = useState("");
+  const [applicantId, setApplicantId] = useState(initialApplicantId || "");
   const [scheduledAt, setScheduledAt] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
 
@@ -53,10 +66,11 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
       }
 
       success("Interview scheduled successfully");
+      onScheduled?.(applicantId);
       setOpen(false);
       
       // Reset form
-      setApplicantId("");
+      setApplicantId(initialApplicantId || "");
       setScheduledAt("");
       setMeetingLink("");
       
@@ -75,8 +89,8 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button label="Schedule Interview" variant="primary" />
+      <DialogTrigger render={<TriggerButton disabled={applicants.length === 0} />}>
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -87,25 +101,29 @@ export function ScheduleInterviewDialog({ applicants }: { applicants: Applicant[
         </DialogHeader>
         <form onSubmit={handleSubmit} className="pt-4">
           <FormLayout>
-            <Selector
-              htmlName="applicant"
-              label="Applicant"
-              options={applicantOptions}
-              value={applicantId}
-              onChange={(val) => setApplicantId(val || "")}
-              isRequired
-              isDisabled={applicants.length === 0}
-            />
+            {!initialApplicantId && (
+              <Selector
+                htmlName="applicant"
+                label="Applicant"
+                options={applicantOptions}
+                value={applicantId}
+                onChange={(val) => setApplicantId(val || "")}
+                isRequired
+                isDisabled={applicants.length === 0}
+              />
+            )}
             
-            <TextInput
-              htmlName="datetime"
-              label="Date & Time"
-              type="text"
-              value={scheduledAt}
-              onChange={setScheduledAt}
-              isRequired
-              placeholder="YYYY-MM-DDTHH:MM"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="interview-datetime">Date &amp; time</Label>
+              <Input
+                id="interview-datetime"
+                name="datetime"
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(event) => setScheduledAt(event.target.value)}
+                required
+              />
+            </div>
             
             <TextInput
               htmlName="link"
