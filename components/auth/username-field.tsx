@@ -25,7 +25,7 @@ export function UsernameField({ value, onChange, currentValue = "", disabled = f
   return <div className="club-field">
     <label htmlFor="account-username">Username</label>
     <div className="club-username-input"><span aria-hidden="true">@</span><input id="account-username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={3} maxLength={20} pattern="[a-zA-Z0-9_]{3,20}" disabled={disabled} value={value} onChange={event => onChange(event.target.value.toLowerCase())} aria-describedby="username-help username-result" aria-invalid={!!validation} /></div>
-    <p id="username-help" className="club-field-help">3–20 letters, numbers, or underscores. Other people can see your username only if they are club members.</p>
-    <p id="username-result" className="club-field-help" role="status">{validation || (changed && value ? result?.value === value ? result.message : "Checking availability…" : "You can always see your own username in Settings.")}</p>
+    <p id="username-help" className="club-field-help">3–20 letters, numbers, or underscores. Approval makes this your permanent member username. Availability does not reserve it.</p>
+    <p id="username-result" className="club-field-help" role="status">{validation || (changed && value ? result?.value === value ? result.message : "Checking availability…" : "Choose carefully: an approved username cannot be changed.")}</p>
   </div>;
 }

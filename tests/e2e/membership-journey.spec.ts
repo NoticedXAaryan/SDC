@@ -34,14 +34,14 @@ test("participants apply, admins approve, and membership is welcomed once", asyn
     const username = "member_" + crypto.randomUUID().replaceAll("-", "").slice(0, 10);
     const email = username + "@example.com";
     const forged = await request.post("/api/auth/sign-up/email", {
-      data: { name, email, password, username, role: "owner", onboardingCompleted: true, membershipWelcomeSeen: true },
+      data: { name, email, password, role: "owner", onboardingCompleted: true, membershipWelcomeSeen: true },
     });
     expect(forged.status()).toBe(400);
-    const response = await request.post("/api/auth/sign-up/email", { data: { name, email, password, username } });
+    const response = await request.post("/api/auth/sign-up/email", { data: { name, email, password } });
     expect(response.ok(), response.ok() ? "" : await response.text()).toBe(true);
     const body = await response.json();
     ids.push(body.user.id);
-    expect(body.user).toMatchObject({ role: "outsider", emailVerified: false, onboardingCompleted: false, username });
+    expect(body.user).toMatchObject({ role: "outsider", emailVerified: false, onboardingCompleted: false, username: null });
     return { id: body.user.id as string, username, email };
   }
   try {
@@ -68,9 +68,24 @@ test("participants apply, admins approve, and membership is welcomed once", asyn
     await expect(page).toHaveURL(/\/setup$/);
     await page.getByRole("button", { name: "Apply for membership" }).click();
     await expect(page).toHaveURL(/\/recruitment\/apply$/);
-    await expect(page.getByText("4 questions, one at a time")).toBeVisible();
+    await expect(page.getByText("5 questions, one at a time")).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath("questionnaire-intro.png"), fullPage: true });
     await page.getByRole("button", { name: "I'm ready" }).click();
+    const collegeEmail = `${participant.username}@goa.paruluniversity.ac.in`;
+    await page.getByLabel("College email", { exact: true }).fill(collegeEmail);
+    await page.getByLabel("Enrollment number").fill("TEST-2026-" + participant.id.slice(-8));
+    await page.getByRole("button", { name: "Send verification code" }).click();
+    await expect(page.getByLabel("Verification code", { exact: true })).toBeVisible();
+    let mailId = "";
+    await expect.poll(async () => {
+      const messages = await (await page.request.get("http://127.0.0.1:58025/api/v1/search", { params: { query: `to:${collegeEmail}` } })).json();
+      mailId = messages.messages?.[0]?.ID || ""; return !!mailId;
+    }).toBe(true);
+    const collegeMessage = await (await page.request.get(`http://127.0.0.1:58025/api/v1/message/${mailId}`)).json();
+    const collegeCode = String(collegeMessage.HTML).match(/<strong>(\d{6})<\/strong>/)?.[1];
+    expect(collegeCode).toBeDefined();
+    await page.getByLabel("Verification code", { exact: true }).fill(collegeCode!);
+    await page.getByRole("button", { name: "Verify and continue" }).click();
     await expect(page.getByRole("textbox", { name: "Your full name" })).toHaveValue("Membership Test Participant");
     await expect(page.getByLabel("Why would you like to join?")).toHaveCount(0);
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -85,7 +100,7 @@ test("participants apply, admins approve, and membership is welcomed once", asyn
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByLabel("Team interest", { exact: true }).selectOption("Development");
     await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByRole("button", { name: "Review my answers" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.locator("#application-error")).toContainText("Complete");
     await page.getByLabel("Add your résumé").setInputFiles({ name: "resume.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF") });
     await expect(page.getByText("Attached:", { exact: false })).toBeVisible();
@@ -102,6 +117,8 @@ test("participants apply, admins approve, and membership is welcomed once", asyn
     await page.getByRole("button", { name: "Continue my application" }).click();
     for (let index = 0; index < 3; index++) await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText("Attached:", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByLabel("Username", { exact: true }).fill(participant.username);
     await page.getByRole("button", { name: "Review my answers" }).click();
     await page.getByRole("button", { name: "Edit: Team interest", exact: true }).click();
     await page.getByLabel("Team interest", { exact: true }).selectOption("Design");
@@ -135,9 +152,10 @@ test("participants apply, admins approve, and membership is welcomed once", asyn
     await expect(page.getByText("Congratulations! You are a member now.", { exact: true })).toHaveCount(0);
     await page.goto("/settings");
     await expect(page.getByLabel("Username", { exact: true })).toHaveValue(participant.username);
-    await page.getByLabel("Username", { exact: true }).fill(participant.username + "x");
-    await page.getByRole("button", { name: "Save username" }).click();
-    await expect(page.locator("#username").getByRole("alert")).toContainText("30 days");
+    await expect(page.getByLabel("Username", { exact: true })).toHaveAttribute("readonly", "");
+    const rename = await page.request.patch("/api/users/me/username", { data: { username: participant.username + "x" } });
+    expect(rename.status()).toBe(400);
+    expect((await rename.json()).error).toContain("permanent");
     await page.screenshot({ path: testInfo.outputPath("settings.png"), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally {

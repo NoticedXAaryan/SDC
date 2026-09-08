@@ -6,14 +6,15 @@ Updated: 8 September 2026. This is the working product plan, not a release sign-
 
 SDC should feel like one club: discover it, attend events, apply for membership, collaborate, and help run it. Keep the current footer. Repair the existing application in place. Use real club content, one visual system, and purposeful motion. Existing core operations remain in scope; new decorative features do not.
 
-The latest user request supersedes earlier username and enrollment requirements. Signup must no longer issue usernames. Membership applicants propose a username; approval assigns it permanently. A CV becomes required. College verification and face setup are added to enrollment. These changes are PLANNED, not yet implemented.
+The latest user request supersedes earlier username and enrollment requirements. Signup no longer issues usernames. Membership applicants propose a username; approval assigns it permanently. A CV and verified college email are required for new application submissions. Face setup in enrollment remains planned.
 
 ## What exists today
 
 | Area | Actual state |
 | --- | --- |
-| Accounts | Local signup, email verification/resend, password recovery, first-login guidance and role badges have passed browser checks. Signup currently still offers a username and settings still allows controlled changes; both conflict with the latest policy and must change. |
-| Membership | Guided intro, one question per screen, back/next, saved drafts, review/edit, private PDF upload, submission, reviewer answer page, approval and one-time congratulations are implemented. Desktop/mobile journeys passed. Current default has 14 questions and an optional CV; the revised shorter questionnaire and mandatory CV are still to do. |
+| Accounts | Signup creates a participant without a username. Enrollment requests a handle; approval assigns it atomically with membership. Approved handles cannot be edited, including through direct database updates. Settings reads fresh membership identity after approval. |
+| Membership | Focused intro, one question per screen, saved drafts, review/edit, required private PDF upload, college email verification, username request, reviewer answers, approval and one-time congratulations pass desktop/mobile journeys. The current default becomes 15 questions including the mandatory username; shortening the question set remains to do. |
+| College verification | The exact goa.paruluniversity.ac.in domain is enforced. A verified primary college email skips the code step; other accounts verify a college address with a six-digit code. Expiry, attempt limits, resend limits and unique college identity ownership are checked. Enrollment number/college details are applicant-provided, not independently verified university records. |
 | Local form activation | The exact old two-question browser fixture was retired without deleting its records. The default 14-question membership form is now active locally. |
 | UI | Shared palette/control improvements, settings, notifications, membership surfaces, bottom navigation, themed search and branded loading are implemented. Mobile search positioning was repaired and covered by a regression test. Many older pages still need individual visual/accessibility review. |
 | Landing | Existing section-based page and admired footer exist. The new creative direction and interactions are not implemented. |
@@ -27,11 +28,13 @@ The latest user request supersedes earlier username and enrollment requirements.
 
 - Before the questionnaire extension: production build passed; combined desktop/mobile account and membership suite passed 16 tests; database integration passed 100 tests.
 - Questionnaire extension: four desktop/mobile membership/bot checks passed, including navigation, draft persistence, private CV attachment, review editing, submission and approval.
-- Most recent completed unit run: 124 passing tests, including the default-questionnaire assertion.
-- Most recent completed integration run: all 105 tests passed across 18 files, including immutable submissions, safe retries, draft validation and résumé ownership.
+- Most recent completed unit run: 125 passing tests, including mandatory enrollment fields and legacy form ID collisions.
+- Integration: all 111 tests across 19 files passed, followed by one additional passing deletion test. Coverage includes permanent username approval races, college verification expiry/attempts/identity uniqueness, immutable submissions, safe retries and private résumé ownership.
 - Combined browser regression: all 16 desktop/mobile account, authentication and membership checks passed. The additional mobile search bounds regression also passed within the complete account journey.
 - Typecheck, quiet lint and the production build passed after the navigation and notification changes.
+- The enrollment-policy checkpoint also passes typecheck, quiet lint, production build and all 16 combined desktop/mobile account, auth and membership journeys. Desktop settings and mobile enrollment screenshots were inspected; the mobile intro was shortened.
 - Migrations 0023 and 0024 were applied locally. 0024 stores one private PDF per account/recruitment round, capped at 2 MB, outside the public upload store.
+- Migration 0025 was applied locally: college verification records, pending username requests, legacy participant username conversion, and database enforcement of approved username permanence. Account deletion removes CVs and college identity and anonymizes approved usernames.
 - The earlier usage-limit block cleared. Local questionnaire activation, admin provisioning and the pending integration rerun completed successfully.
 
 ## A glimpse of the finished experience

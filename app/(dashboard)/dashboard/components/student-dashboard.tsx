@@ -112,7 +112,7 @@ export function StudentDashboard({
         {(application || canApply) && <section className="club-team-note" aria-labelledby="team-heading">
           <p className="club-eyebrow">Club membership</p><h2 id="team-heading">{application ? "Your membership application" : "Become a member."}</h2>
           {application ? <><span className="club-status">{application.label}</span><p>{application.description}</p><Link href="/notifications" className="club-text-link">Check updates<ArrowRight size={16} aria-hidden="true" /></Link></> :
-            <><p>Tell us your interests and how you'd like to contribute. The club reviews your application before granting membership.</p><Link href="/recruitment/apply" className="club-text-link">Apply for membership<ArrowRight size={16} aria-hidden="true" /></Link><p className="club-footnote">Participants can attend public events while waiting for approval.</p></>}
+            <><p>Tell us your interests and how you'd like to contribute. The club reviews your application before granting membership.</p><Link href="/recruitment/apply" className="club-text-link">Enroll as a Member<ArrowRight size={16} aria-hidden="true" /></Link><p className="club-footnote">Participants can attend public events while waiting for approval.</p></>}
         </section>}
       </aside>
     </div>

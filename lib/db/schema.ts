@@ -30,6 +30,7 @@ export const user = pgTable("user", {
 					
 					// SDC specific fields
 					username: text("username").unique(),
+                    requestedUsername: text("requested_username"),
                     onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
                     membershipWelcomeSeen: boolean("membership_welcome_seen").default(false).notNull(),
 					usernameLower: text("username_lower").unique(),
@@ -49,6 +50,21 @@ export const user = pgTable("user", {
 }, (table) => [
 	drizzleCheck("role_check", sql`${table.role} IN ('owner', 'admin', 'lead', 'vice_lead', 'event_lead', 'content_lead', 'marketing_lead', 'tech_lead', 'finance_lead', 'volunteer_lead', 'co_lead', 'faculty_coordinator', 'member', 'alumni', 'applicant', 'outsider', 'user')`)
 ]);
+
+export const collegeIdentities = pgTable("college_identities", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  collegeEmail: text("college_email").unique(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  enrollmentNumber: text("enrollment_number"),
+  collegeName: text("college_name"),
+  pendingEmail: text("pending_email"),
+  codeHash: text("code_hash"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  attempts: integer("attempts").notNull().default(0),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+  sendWindowAt: timestamp("send_window_at", { withTimezone: true }),
+  sendCount: integer("send_count").notNull().default(0),
+});
 
 export const session = pgTable("session", {
 					id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

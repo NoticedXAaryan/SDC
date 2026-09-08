@@ -1,14 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { usernameError, normalizeUsername } from "@/lib/username-policy";
 import { isClubMember, membershipLabel } from "@/lib/membership";
-import { recruitmentFieldsSchema, validateRecruitmentAnswers } from "@/lib/recruitment-form";
+import { enrollmentFields, recruitmentFieldsSchema, validateRecruitmentAnswers } from "@/lib/recruitment-form";
 import { membershipQuestions } from "@/lib/constants/membership-questions";
 describe("Account and membership policies", () => {
-  it("provides a complete beginner-friendly questionnaire with private optional résumé upload", () => {
+  it("provides a complete beginner-friendly questionnaire with required private résumé upload", () => {
     expect(recruitmentFieldsSchema.safeParse(membershipQuestions).success).toBe(true);
     expect(membershipQuestions.map(field => field.id)).toEqual(expect.arrayContaining(["fullName", "email", "course", "priorExperience", "teamwork", "availability", "resume", "confirmation"]));
     expect(membershipQuestions.find(field => field.id === "resume")).toMatchObject({ type: "file" });
-    expect(membershipQuestions.filter(field => field.type === "url" || field.type === "file").every(field => !field.required)).toBe(true);
+    const fields = enrollmentFields(membershipQuestions);
+    expect(fields.find(field => field.type === "file")?.required).toBe(true);
+    expect(fields.find(field => field.type === "username")?.required).toBe(true);
+    expect(fields.filter(field => field.type === "url").every(field => !field.required)).toBe(true);
+  });
+  it("adds mandatory enrollment steps without colliding with legacy question IDs", () => {
+    const fields = enrollmentFields([{ id: "resume", label: "Experience summary", type: "textarea" }, { id: "resume_file", label: "Portfolio", type: "url" }]);
+    expect(recruitmentFieldsSchema.safeParse(fields).success).toBe(true);
+    expect(fields.find(field => field.type === "file")?.id).toBe("resume_file_file");
+    expect(enrollmentFields(fields)).toEqual(fields);
+    expect(validateRecruitmentAnswers(fields, { requestedUsername: "valid_handle" })).toContain("CV");
   });
   it("normalizes handles and rejects reserved or malformed input", () => {
     expect(normalizeUsername(" Test_Name ")).toBe("test_name");

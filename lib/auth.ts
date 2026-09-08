@@ -83,9 +83,8 @@ export const auth = betterAuth({
     disabledPaths: ["/is-username-available", "/sign-in/username", "/admin/set-role", "/admin/update-user"],
     hooks: {
         before: createAuthMiddleware(async (ctx) => {
-            // Profile edits must use the audited endpoint with its cooldown and row lock.
-            if (ctx.path === "/update-user" && ctx.body && "username" in ctx.body) {
-                throw new APIError("BAD_REQUEST", { message: "Change your username in Settings." });
+            if (ctx.body && "username" in ctx.body && ["/update-user", "/sign-up/email"].includes(ctx.path)) {
+                throw new APIError("BAD_REQUEST", { message: "Usernames are requested during membership enrollment and become permanent after approval." });
             }
         }),
     },
@@ -114,8 +113,9 @@ export const auth = betterAuth({
                         data: {
                             ...user,
                             email,
-                            ...("username" in user && typeof user.username === "string"
-                                ? { usernameLower: normalizeUsername(user.username), handleChangedAt: new Date() } : {}),
+                            username: null,
+                            usernameLower: null,
+                            requestedUsername: null,
                             role: SIGNUP_ROLE,
                             points: 0,
                             level: 1,
@@ -153,6 +153,7 @@ export const auth = betterAuth({
     user: {
         additionalFields: {
             usernameLower: { type: "string", required: false, input: false, returned: false },
+            requestedUsername: { type: "string", required: false, input: false },
             handleChangedAt: { type: "date", required: false, input: false, returned: false },
             onboardingCompleted: { type: "boolean", defaultValue: false, input: false },
             membershipWelcomeSeen: { type: "boolean", defaultValue: false, input: false, returned: false },

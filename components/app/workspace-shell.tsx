@@ -18,17 +18,19 @@ export function WorkspaceShell({ user, children }: {
   const [searchOpen, setSearchOpen] = useState(false);
   const hydrated = useHydrated();
   const pathname = usePathname();
+  const enrollment = pathname === "/recruitment/apply";
   const primary = [
     { href: "/dashboard", label: "Home", icon: House },
     { href: "/events", label: "Events", icon: CalendarDays },
     { href: "/notifications", label: "Notifications", icon: Bell },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  return <div className="club-workspace">
+  return <div className={`club-workspace${enrollment ? " club-enrollment-workspace" : ""}`}>
     <a href="#main-content" className="club-skip-link">Skip to content</a>
     <aside className="club-desktop-nav"><AppSideNav role={user.role} user={user} /></aside>
     <div className="club-workspace-body">
       <header className="club-topbar">
+        {enrollment && <Link href="/dashboard" className="club-enrollment-back club-text-link">← Back to home</Link>}
         <Link href="/dashboard" className="club-mobile-brand" aria-label="SDC home">sdc<span>.</span></Link>
         <MembershipBadge role={user.role} />
         <CommandMenu role={user.role} open={searchOpen} onOpenChange={setSearchOpen} />

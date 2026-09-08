@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { type RecruitmentField, resumeAnswerSchema } from "@/lib/recruitment-form";
+import { UsernameField } from "@/components/auth/username-field";
 
 export function QuestionInput({ field, answer, cycle, disabled, onChange, onBusy, onError, invalid }: {
   field: RecruitmentField; answer: unknown; cycle: string; disabled: boolean; invalid: boolean;
@@ -11,6 +12,7 @@ export function QuestionInput({ field, answer, cycle, disabled, onChange, onBusy
   const value = typeof answer === "string" ? answer : "";
   const shared = { id, disabled, "aria-labelledby": "question-title", "aria-describedby": invalid ? "question-help application-error" : "question-help", "aria-invalid": invalid, required: !!field.required };
   const options = (field.options || []).map(option => typeof option === "string" ? { label: option, value: option } : option);
+  if (field.type === "username") return <UsernameField value={value} onChange={onChange} disabled={disabled} />;
   if (field.type === "file") {
     const resume = resumeAnswerSchema.safeParse(answer);
     return <div className="club-resume-upload">

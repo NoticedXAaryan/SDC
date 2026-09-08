@@ -6,7 +6,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { eq, desc } from "drizzle-orm";
 import { withApiHandler } from "@/lib/api-wrapper";
 import { submitApplication } from "@/lib/services/applications";
-import { recruitmentFieldsSchema, validateRecruitmentAnswers } from "@/lib/recruitment-form";
+import { enrollmentFields, recruitmentFieldsSchema, validateRecruitmentAnswers } from "@/lib/recruitment-form";
+import { requireCollegeVerification } from "@/lib/services/college-verification";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const rl = await checkRateLimit(req, "apply");
@@ -47,10 +48,12 @@ export const POST = withApiHandler(async (req: NextRequest) => {
     const parsed = recruitmentFieldsSchema.safeParse(activeForm.fields);
     if (!parsed.success) return NextResponse.json({ error: "This form needs an update. Contact a club admin." }, { status: 503 });
     if (!body.answers || typeof body.answers !== "object" || Array.isArray(body.answers)) return NextResponse.json({ error: "Complete the application questions." }, { status: 400 });
-    const error = validateRecruitmentAnswers(body.status === "draft" ? parsed.data.map(field => ({ ...field, required: false })) : parsed.data, body.answers);
+    const fields = enrollmentFields(parsed.data);
+    const error = validateRecruitmentAnswers(body.status === "draft" ? fields.map(field => ({ ...field, required: false })) : fields, body.answers);
     if (error) return NextResponse.json({ error }, { status: 400 });
     // Store only configured questions, not arbitrary client-supplied metadata.
-    body.answers = Object.fromEntries(parsed.data.filter(field => body.answers[field.id] !== undefined).map(field => [field.id, body.answers[field.id]]));
+    body.answers = Object.fromEntries(fields.filter(field => body.answers[field.id] !== undefined).map(field => [field.id, body.answers[field.id]]));
+    if (body.status !== "draft") await requireCollegeVerification(session.user.id);
   }
 
   try {

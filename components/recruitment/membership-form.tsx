@@ -6,12 +6,14 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { type RecruitmentField, validateRecruitmentAnswers } from "@/lib/recruitment-form";
 import { useHydrated } from "@/lib/use-hydrated";
 import { AnswerSummary, QuestionInput } from "./question-input";
+import { CollegeVerification } from "./college-verification";
 
-export function MembershipForm({ fields, cycle, initialAnswers = {}, hasDraft = false }: { fields: RecruitmentField[]; cycle: string; initialAnswers?: Record<string, unknown>; hasDraft?: boolean }) {
+export function MembershipForm({ fields, cycle, initialAnswers = {}, hasDraft = false, collegeVerified = false }: { fields: RecruitmentField[]; cycle: string; initialAnswers?: Record<string, unknown>; hasDraft?: boolean; collegeVerified?: boolean }) {
   const router = useRouter();
   const hydrated = useHydrated();
   const [answers, setAnswers] = useState(initialAnswers);
   const [step, setStep] = useState(-1);
+  const [verifiedCollege, setVerifiedCollege] = useState(collegeVerified);
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -58,6 +60,7 @@ export function MembershipForm({ fields, cycle, initialAnswers = {}, hasDraft = 
       setToken(""); setChallenge(value => value + 1);
     } finally { setPending(false); }
   }
+  if (step === -2) return <CollegeVerification onVerified={() => { setVerifiedCollege(true); go(0); }} onBack={() => go(-1)} />;
   if (step > fields.length) return <section className="club-questionnaire club-question-intro">
     <span className="club-question-icon"><Check aria-hidden="true" /></span>
     <h2 ref={heading} tabIndex={-1}>Your application is with the club.</h2>
@@ -67,12 +70,12 @@ export function MembershipForm({ fields, cycle, initialAnswers = {}, hasDraft = 
   </section>;
   if (step === -1) return <section className="club-questionnaire club-question-intro">
     <span className="club-eyebrow">SDC / MEMBERSHIP</span>
-    <h2>Let's get to know you.</h2>
-    <p>This is a conversation about your interests, your experience, and what you'd like to do with the club. You don't need an impressive portfolio to start.</p>
+    <h2>Welcome to the journey.</h2>
+    <p>Tell us what you enjoy and what you'd like to build with us. Beginners are welcome—just be yourself.</p>
     <div className="club-question-facts"><span><Clock3 size={18} aria-hidden="true" />About {minutes}–{minutes + 3} minutes</span><span><FileText size={18} aria-hidden="true" />{fields.length} questions, one at a time</span></div>
-    <div className="club-question-note"><strong>Before you begin</strong><p>Have any project or profile links ready{fields.some(item => item.type === "file") ? ", plus your résumé as a PDF if you have one" : ""}. You can go back, skip optional questions, and review everything before sending.</p><p>Use “Save and exit” to keep a draft in your account. Your application reaches the reviewers when you submit it.</p></div>
-    <button type="button" className="club-button" disabled={disabled} onClick={() => go(0)}>{hasDraft ? "Continue my application" : "I'm ready"}<ArrowRight size={17} aria-hidden="true" /></button>
-    <span className="club-field-help">Submitting starts a review; it doesn't automatically grant membership.</span>
+    <div className="club-question-note"><strong>Have your CV ready</strong><p>A PDF up to 2 MB. {verifiedCollege ? "Your college email is already verified." : "Keep your college inbox handy for a verification code."}</p></div>
+    <button type="button" className="club-button" disabled={disabled} onClick={() => go(verifiedCollege ? 0 : -2)}>{hasDraft ? "Continue my application" : "I'm ready"}<ArrowRight size={17} aria-hidden="true" /></button>
+    <span className="club-field-help">Save and return anytime. Review your answers before submitting for membership approval.</span>
   </section>;
   return <form noValidate className="club-questionnaire" onSubmit={event => { event.preventDefault(); if (!disabled) { if (review) { if (!siteKey || token) void save(false); } else next(); } }}>
     <div className="club-honeypot" aria-hidden="true"><label>Website<input value={honeypot} onChange={event => setHoneypot(event.target.value)} tabIndex={-1} autoComplete="off" /></label></div>

@@ -21,18 +21,21 @@ describe("Username and membership boundaries", () => {
     expect(await response.json()).toEqual({ available: true, message: expect.any(String) });
   });
   it("atomically claims one normalized handle even when two accounts race", async () => {
-    const { saveUsername } = await import("@/lib/services/usernames");
-    const results = await Promise.allSettled([saveUsername(ids[0], handle.toUpperCase()), saveUsername(ids[1], handle)]);
+    const { approveRequestedUsername } = await import("@/lib/services/usernames");
+    await db.update(user).set({ requestedUsername: handle.toUpperCase() }).where(eq(user.id, ids[0]));
+    await db.update(user).set({ requestedUsername: handle }).where(eq(user.id, ids[1]));
+    const results = await Promise.allSettled([db.transaction(tx => approveRequestedUsername(tx, ids[0])), db.transaction(tx => approveRequestedUsername(tx, ids[1]))]);
     expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
     const [owner] = await db.select().from(user).where(eq(user.username, handle));
     expect(owner.usernameLower).toBe(handle);
     await db.update(user).set({ role: "member" }).where(eq(user.id, owner.id));
   });
-  it("rejects malformed input and direct edit attempts during the cooldown", async () => {
+  it("rejects malformed input and permanent username edits, including direct database updates", async () => {
     const [owner] = await db.select().from(user).where(eq(user.username, handle));
     const { saveUsername } = await import("@/lib/services/usernames");
     await expect(saveUsername(owner.id, { username: "object" })).rejects.toThrow("3–20");
-    await expect(saveUsername(owner.id, handle + "x")).rejects.toThrow("30 days");
+    await expect(saveUsername(owner.id, handle + "x")).rejects.toThrow("permanent");
+    await expect(db.update(user).set({ username: handle + "x" }).where(eq(user.id, owner.id))).rejects.toThrow();
   });
   it("includes usernames only for approved member viewers, using the current database role", async () => {
     const { GET } = await import("@/app/api/members/directory/route");

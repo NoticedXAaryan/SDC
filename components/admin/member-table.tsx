@@ -39,6 +39,7 @@ export type ManagedMember = {
   email: string;
   role: string | null;
   username: string | null;
+  requestedUsername?: string | null;
   year: number | null;
   branch: string | null;
   points: number | null;
@@ -91,7 +92,6 @@ export function MemberTable({
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(total);
   const [editName, setEditName] = useState("");
-  const [editUsername, setEditUsername] = useState("");
   const [editYear, setEditYear] = useState("");
   const [editBranch, setEditBranch] = useState("");
   const [roleDraft, setRoleDraft] = useState("member");
@@ -117,7 +117,6 @@ export function MemberTable({
   function openManager(member: ManagedMember) {
     setSelectedMember(member);
     setEditName(member.name);
-    setEditUsername(member.username ?? "");
     setEditYear(member.year ? String(member.year) : "");
     setEditBranch(member.branch ?? "");
     setRoleDraft(member.role ?? "member");
@@ -184,14 +183,13 @@ export function MemberTable({
     await runLifecycleAction({
       action: "update",
       name: editName,
-      username: editUsername.trim() || null,
       year: editYear ? Number(editYear) : null,
       branch: editBranch.trim() || null,
     });
   }
 
   async function saveRole() {
-    if (!selectedMember || roleDraft === selectedMember.role) return;
+    if (!selectedMember || roleDraft === selectedMember.role && !selectedMember.requestedUsername) return;
     setActionPending(true);
     try {
       const res = await fetch("/api/admin/members", {
@@ -274,6 +272,7 @@ export function MemberTable({
           <VStack gap={0}>
             <Text weight="medium">{member.name}</Text>
             {member.username && <Text type="supporting">@{member.username}</Text>}
+            {!member.username && member.requestedUsername && <Text type="supporting">Requested: @{member.requestedUsername}</Text>}
           </VStack>
         );
       },
@@ -404,7 +403,7 @@ export function MemberTable({
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <TextInput label="Name" value={editName} onChange={setEditName} isRequired />
-                <TextInput label="Username" value={editUsername} onChange={setEditUsername} isOptional />
+                <p className="club-field-help">Approved usernames are permanent and cannot be edited here.</p>
                 <TextInput label="Year" value={editYear} onChange={setEditYear} isOptional />
                 <TextInput label="Branch" value={editBranch} onChange={setEditBranch} isOptional />
               </div>
@@ -432,10 +431,10 @@ export function MemberTable({
                   isDisabled={actionPending}
                 />
                 <Button
-                  label="Update role"
+                  label={roleDraft === selectedMember.role && !!selectedMember.requestedUsername ? "Approve requested username" : "Update role"}
                   variant="secondary"
                   isLoading={actionPending}
-                  isDisabled={roleDraft === selectedMember.role}
+                  isDisabled={roleDraft === selectedMember.role && (!selectedMember.requestedUsername || ["outsider", "user", "applicant"].includes(roleDraft))}
                   clickAction={saveRole}
                 />
               </div>

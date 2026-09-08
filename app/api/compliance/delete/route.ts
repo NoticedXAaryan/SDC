@@ -5,6 +5,8 @@ import {
   account,
   achievementSubmissions,
   applications,
+  applicationDocuments,
+  collegeIdentities,
   certificates,
   eventInvites,
   formResponses,
@@ -35,6 +37,8 @@ export const DELETE = withApiHandler(async () => {
 
   await db.transaction(async (tx) => {
     await tx.delete(applications).where(eq(applications.userId, userId));
+    await tx.delete(applicationDocuments).where(eq(applicationDocuments.userId, userId));
+    await tx.delete(collegeIdentities).where(eq(collegeIdentities.userId, userId));
     await tx.delete(certificates).where(eq(certificates.userId, userId));
     await tx.delete(registrations).where(eq(registrations.userId, userId));
     await tx.delete(sessionAttendance).where(eq(sessionAttendance.userId, userId));
@@ -60,6 +64,7 @@ export const DELETE = withApiHandler(async () => {
       banReason: "Account deleted by user",
       username: null,
       usernameLower: null,
+      requestedUsername: null,
       displayName: null,
       year: null,
       branch: null,

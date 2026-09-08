@@ -2,7 +2,7 @@
 export function describeApplicationStatus(status: string | null) {
   switch (status) {
     case "draft": return { label: "Draft", description: "Your application has not been submitted yet." };
-    case "applied": return { label: "Submitted", description: "Your application is with the recruitment team. No action is needed right now." };
+    case "applied": return { label: "Under review", description: "Your application is with the recruitment team. No action is needed right now." };
     case "ai_graded":
     case "needs_manual_review": return { label: "Under review", description: "Your application is awaiting a decision from the recruitment team." };
     case "interviewing": return { label: "Interview stage", description: "The team will share the interview details with you. Check your notifications for updates." };

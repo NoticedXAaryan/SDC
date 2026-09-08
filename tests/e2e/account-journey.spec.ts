@@ -27,15 +27,14 @@ test("signup, verification, onboarding and password recovery work together", asy
   const newPassword = "New-local-password-456!";
 
   await page.goto("/register?callbackUrl=%2Fevents");
-  const username = "journey_" + crypto.randomUUID().replaceAll("-", "").slice(0, 10);
-  await page.getByLabel("Username", { exact: true }).fill(username);
+  await expect(page.getByLabel("Username", { exact: true })).toHaveCount(0);
   await page.getByLabel("Full name", { exact: true }).fill("Journey Test Member");
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Verify your email", exact: true })).toBeVisible();
   const before = await (await page.request.get("/api/auth/get-session", { params: { disableCookieCache: true } })).json();
-  expect(before.user).toMatchObject({ email, username, emailVerified: false, role: "outsider", points: 0 });
+  expect(before.user).toMatchObject({ email, username: null, emailVerified: false, role: "outsider", points: 0 });
   const blocked = await page.request.post("/api/events/missing/register", { data: {} });
   expect(blocked.status()).toBe(403);
   expect(await blocked.json()).toMatchObject({ code: "EMAIL_NOT_VERIFIED" });

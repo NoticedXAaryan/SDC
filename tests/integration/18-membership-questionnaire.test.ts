@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { applications, applicationDocuments, formTemplates } from "@/lib/db/schema";
+import { applications, applicationDocuments, formTemplates, collegeIdentities } from "@/lib/db/schema";
 import { createTestUser, cleanupTestUser, getMockSession } from "./test-utils";
 const { activeSession } = vi.hoisted(() => ({ activeSession: { current: null as any } }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
@@ -16,6 +16,7 @@ describe("Private questionnaire documents and draft submission", () => {
   let resume: { id: string; name: string; size: number };
   beforeAll(async () => {
     for (const role of ["outsider", "outsider", "admin"]) ids.push(await createTestUser(role));
+    for (const id of ids.slice(0, 2)) await db.insert(collegeIdentities).values({ userId: id, collegeEmail: `${id}@goa.paruluniversity.ac.in`, verifiedAt: new Date() });
     await db.insert(formTemplates).values({ cycleName: cycle, isActive: true, fields: [{ id: "why", label: "Why join?", type: "textarea", required: true }, { id: "resume", label: "Résumé", type: "file", required: true }] });
   });
   afterAll(async () => {
@@ -34,7 +35,8 @@ describe("Private questionnaire documents and draft submission", () => {
   }
   async function submit(answers: Record<string, unknown>, status = "applied") {
     const { POST } = await import("@/app/api/applications/route");
-    return POST(new NextRequest("http://localhost/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers, status, applicationCycle: cycle }) }), {});
+    const requestedUsername = `test_${activeSession.current.user.id.slice(-7).replace(/[^a-z0-9_]/gi, "_")}`;
+    return POST(new NextRequest("http://localhost/api/applications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: { requestedUsername, ...answers }, status, applicationCycle: cycle }) }), {});
   }
   it("requires verification and validates PDF contents and the size limit", async () => {
     activeSession.current = null;
@@ -62,7 +64,8 @@ describe("Private questionnaire documents and draft submission", () => {
   });
   it("saves incomplete drafts, validates final answers, and makes submission immutable but retryable", async () => {
     activeSession.current = getMockSession(ids[0], "outsider");
-    expect((await submit({ resume }, "draft")).status).toBe(200);
+    const draft = await submit({ resume }, "draft");
+    expect(draft.status, await draft.text()).toBe(200);
     expect((await submit({ resume })).status).toBe(400);
     const answers = { why: "I want to learn with other students", resume };
     const first = await submit(answers); expect(first.status).toBe(200);

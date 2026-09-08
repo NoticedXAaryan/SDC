@@ -11,6 +11,7 @@ import { NotFoundError, ValidationError } from "@/lib/api-wrapper";
 import { makeAuditRecord } from "@/lib/services/audit";
 import { normalizeUsername, usernameError } from "@/lib/username-policy";
 import { isClubMember } from "@/lib/membership";
+import { approveRequestedUsername } from "@/lib/services/usernames";
 import type {
   MemberDeleteInput,
   MemberLifecycleInput,
@@ -31,6 +32,7 @@ const memberSelection = {
   email: user.email,
   role: user.role,
   username: user.username,
+  requestedUsername: user.requestedUsername,
   year: user.year,
   branch: user.branch,
   points: user.points,
@@ -152,7 +154,7 @@ export async function changeMemberRole(session: AuthSession, input: RoleChangeIn
   assertAdmin(session);
   const target = await getTargetMember(input.userId);
 
-  if (target.role === input.role) {
+  if (target.role === input.role && !target.requestedUsername) {
     return { member: target, previousRole: target.role, newRole: input.role };
   }
 
@@ -165,6 +167,7 @@ export async function changeMemberRole(session: AuthSession, input: RoleChangeIn
   await assertOwnerWillRemain(target.role, input.role);
 
   const [updated] = await db.transaction(async (tx) => {
+    if (isClubMember(input.role)) await approveRequestedUsername(tx, input.userId);
     const changed = await tx.update(user)
       .set({ role: input.role, ...(!isClubMember(target.role) && isClubMember(input.role) ? { membershipWelcomeSeen: false } : {}), updatedAt: new Date() })
       .where(eq(user.id, input.userId))
@@ -193,6 +196,7 @@ export async function applyMemberLifecycleAction(
   assertCanManageTarget(session, target);
 
   if (input.action === "update") {
+    if (input.username !== undefined && input.username !== target.username) throw new ValidationError("Approved usernames are permanent. Approve a pending username request through membership management.");
     const username = input.username === undefined
       ? undefined
       : input.username ? normalizeUsername(input.username) : null;

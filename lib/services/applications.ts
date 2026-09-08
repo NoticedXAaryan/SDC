@@ -13,6 +13,7 @@
 import { db } from "@/lib/db";
 import { applications, applicationDocuments, user, interviews, applicationReviews, auditLogs, notifications } from "@/lib/db/schema";
 import { resumeAnswerSchema } from "@/lib/recruitment-form";
+import { approveRequestedUsername, assertUsernameAvailable } from "@/lib/services/usernames";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { createTransactionalEmailJob, getEmailQueue } from "@/lib/queues/email";
 import { getGradingQueue } from "@/lib/queues/grading";
@@ -99,6 +100,13 @@ export async function submitApplication(
 
   await db.transaction(async (tx) => {
     await tx.execute(sql`select id from ${user} where id = ${userId} for update`);
+    if (data.answers.requestedUsername) {
+      const [account] = await tx.select({ username: user.username }).from(user).where(eq(user.id, userId));
+      if (!account.username) {
+        const requestedUsername = await assertUsernameAvailable(tx, userId, data.answers.requestedUsername);
+        await tx.update(user).set({ requestedUsername }).where(eq(user.id, userId));
+      }
+    }
     for (const answer of Object.values(data.answers)) {
       const resume = resumeAnswerSchema.safeParse(answer);
       if (!resume.success) continue;
@@ -237,6 +245,7 @@ export async function updateApplicationStatus(
 
   // Atomic transaction: status + potential role upgrade + audit
   await db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, existing.userId)).for("update");
     await tx
       .update(applications)
       .set({
@@ -250,6 +259,7 @@ export async function updateApplicationStatus(
 
     // ACCEPTANCE: atomically upgrade user role to "member"
     if (data.status === "accepted") {
+      await approveRequestedUsername(tx, existing.userId);
       await tx
         .update(user)
         .set({ role: "member", membershipWelcomeSeen: false, updatedAt: new Date() })

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { applicationDocuments, applications, formTemplates, user } from "@/lib/db/schema";
 import { requireSession } from "@/lib/dal/auth";
 import { withApiHandler, ValidationError } from "@/lib/api-wrapper";
-import { recruitmentFieldsSchema } from "@/lib/recruitment-form";
+import { enrollmentFields, recruitmentFieldsSchema } from "@/lib/recruitment-form";
 
 export const POST = withApiHandler(async (req: NextRequest) => {
   const session = await requireSession();
@@ -16,7 +16,7 @@ export const POST = withApiHandler(async (req: NextRequest) => {
   if (!(file instanceof File) || !file.size || file.size > 2 * 1024 * 1024) throw new ValidationError("Choose a PDF smaller than 2 MB.");
   const [form] = await db.select().from(formTemplates).where(eq(formTemplates.isActive, true)).orderBy(desc(formTemplates.updatedAt)).limit(1);
   const fields = recruitmentFieldsSchema.safeParse(form?.fields);
-  if (!form || form.cycleName !== cycle || !fields.success || !fields.data.some(field => field.type === "file")) throw new ValidationError("This recruitment round isn't accepting résumés. Reload the application.");
+  if (!form || form.cycleName !== cycle || !fields.success || !enrollmentFields(fields.data).some(field => field.type === "file")) throw new ValidationError("This recruitment round isn't accepting résumés. Reload the application.");
   const buffer = Buffer.from(await file.arrayBuffer());
   if ((await fileTypeFromBuffer(buffer))?.mime !== "application/pdf") throw new ValidationError("This file isn't a PDF. Export your résumé as a PDF and try again.");
   const name = file.name.replace(/[^\p{L}\p{N} ._()-]/gu, "_").slice(0, 140) || "resume.pdf";

@@ -350,3 +350,11 @@
 @media (min-width: 1024px) { .club-bottom-nav, .club-mobile-brand { display: none; } }
 @media (max-width: 600px) { .club-loading-columns { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .club-matrix i { animation: none !important; background: var(--club-accent); } }
+.club-enrollment-workspace .club-desktop-nav, .club-enrollment-workspace .club-bottom-nav, .club-enrollment-workspace .club-desktop-search, .club-enrollment-workspace .club-mobile-brand { display: none; }
+.club-enrollment-workspace .club-workspace-body { margin-left: 0; }
+.club-enrollment-workspace .club-enrollment-back { margin-right: auto; }
+.club-enrollment-workspace .club-main { max-width: 920px; padding-block: 40px 70px; }
+.club-enrollment-workspace .club-questionnaire { background: transparent; border: 0; padding-inline: 0; }
+.club-enrollment-workspace .club-page-heading { margin-bottom: 24px; }
+.club-enrollment-workspace .club-question-intro { padding-top: 30px; }
+.club-enrollment-workspace .club-question-intro h2 { font-size: clamp(34px, 5vw, 48px); }
