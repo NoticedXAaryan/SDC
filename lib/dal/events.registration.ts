@@ -298,7 +298,10 @@ export async function deregisterEvent(session: AuthSession, eventId: string) {
         });
 
         await logAuditEvent({
-          actorId: "system",
+          // The person who freed the seat is a real user. "system" is not in
+          // the user table, so that actor id fails the audit-log foreign key
+          // and the promotion is never recorded.
+          actorId: session.user.id,
           action: "waitlist_promotion",
           entity: "registration",
           entityId: nextInLine[0].id,

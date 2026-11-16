@@ -46,7 +46,8 @@ export const session = pgTable("session", {
 					ipAddress: text("ipAddress"),
 					userAgent: text("userAgent"),
 					userId: text("userId").notNull().references(() => user.id, { onDelete: "cascade" }),
-					impersonatedBy: text("impersonatedBy")
+					impersonatedBy: text("impersonatedBy"),
+					activeOrganizationId: text("activeOrganizationId").references(() => organization.id, { onDelete: "set null" })
 				}, (table) => [index("session_user_id_idx").on(table.userId)]);
 
 export const account = pgTable("account", {
@@ -106,7 +107,8 @@ export const invitation = pgTable("invitation", {
 					role: text("role"),
 					status: text("status").notNull(),
 					expiresAt: timestamp("expiresAt", { withTimezone: true }).notNull(),
-					inviterId: text("inviterId").notNull().references(() => user.id, { onDelete: "cascade" })
+					inviterId: text("inviterId").notNull().references(() => user.id, { onDelete: "cascade" }),
+					createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull()
 				});
 
 export const eventTypeEnum = pgEnum("event_type", ["hackathon", "workshop", "seminar", "social", "competition"]);

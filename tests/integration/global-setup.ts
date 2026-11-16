@@ -39,7 +39,12 @@ export default async function setup() {
   }
 
   console.log("Cleaning database...");
-  await pool.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+  // Drizzle records applied SQL in the drizzle schema, outside public.
+  // Dropping only public leaves that history behind, so the next migrate
+  // skips every file and the test database has no tables.
+  await pool.query(`DROP SCHEMA IF EXISTS drizzle CASCADE;`);
+  await pool.query(`DROP SCHEMA IF EXISTS public CASCADE;`);
+  await pool.query(`CREATE SCHEMA public;`);
   await pool.query(`GRANT ALL ON SCHEMA public TO public;`);
   
   console.log("Running migrations...");

@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+
+# generated uploads (certificates and other runtime files)
+/public/uploads/**
+!/public/uploads/.gitkeep
 
 # next.js
 /.next/

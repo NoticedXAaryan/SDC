@@ -56,7 +56,8 @@ export default defineConfig({
     environment: 'node',
     exclude: [
       '**/node_modules/**', 
-      '**/dist/**', 
+      '**/dist/**',
+      '**/.next/**',
       'tests/e2e/**',
       ...(dbIsUp ? [] : ['tests/integration/**'])
     ],

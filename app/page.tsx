@@ -75,7 +75,7 @@ export default async function Page() {
                       </div>
                       <h3 className="mt-6 text-xl font-bold text-white">Still have questions?</h3>
                       <p className="mt-2 text-slate-400">
-                        Can&apos;t find the answer you&apos;re looking for? Please chat to our friendly Core Team.
+                        Can&apos;t find the answer you&apos;re looking for? Email the core team.
                       </p>
                       <a href="mailto:hello@sdc.paruluniversity.ac.in" className="group mt-6 inline-flex items-center gap-2 font-semibold text-indigo-400 transition-colors hover:text-indigo-300">
                         Contact Us 
