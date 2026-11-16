@@ -1,155 +1,124 @@
-# Student Developer Club (SDC) Platform
+# SDC Platform
 
-> An all-in-one management solution for college-level educational institute clubs, handling everything from public presence and membership to event scanners, certificates, recruitment, finance, inventory, and communications.
+The website and operating system for [Parul University](https://paruluniversity.ac.in)'s Student Developer Club.
 
----
+The public site introduces the club, publishes events, and verifies certificates. Behind login, members, leads, and faculty run the club: attendance, recruitment, finance, inventory, projects, and communications.
 
-## 📖 Overview
+## Highlights
 
-The SDC Platform is designed for hierarchical institute structures, supporting the complete operational lifecycle of a student club. It serves a **dual purpose**:
-1. **Public Website:** Landing page, event promotion, project showcase, and public certificate verification for prospective members and the general public.
-2. **Authenticated Operations:** A secure, role-based dashboard for members, leads, admins, and faculty coordinators to manage day-to-day operations behind a login.
+- **Public presence.** A dark, space-themed landing page, event listings, and a public certificate check at `/verify`.
+- **Events and attendance.** Draft, approval, capacity, waitlist, multi-session events, QR passes, and a camera scanner with an offline queue.
+- **Certificates.** Template design, bulk generation, email delivery, public verification, and revocation.
+- **Recruitment.** Applications, interviews, and review. AI grading runs when an OpenRouter key is configured.
+- **Club operations.** Budgets, expenses, procurement, inventory, forms, projects, announcements, and in-app notifications.
+- **Access control.** Seventeen roles, from `applicant` and `user` through domain leads to `owner`, enforced in the data layer. University emails are promoted to `member` on signup.
+- **Background work.** Redis queues for email, certificates, reminders, weekly reports, and grading.
+- **Deployable as one stack.** Docker Compose runs the app, worker, Redis, and migrations. Uploads can stay on a volume or move to S3-compatible storage.
 
-### 🌟 Core Modules
-- **Identity & Access:** 14-role RBAC, disposable email blocking, university email auto-promotion, password resets.
-- **Members & Directory:** Directory search, role management, org chart, gamification (points & levels).
-- **Events & Attendance:** Full CRUD with lifecycle management, waitlists, multi-session support, camera-based QR check-ins, and offline scanning capabilities.
-- **Certificates:** Template designer, bulk generation via BullMQ, public verification, and revocation.
-- **Recruitment:** Dynamic application forms, AI application grading, interview scheduling, and automated approval workflows.
-- **Finance & Procurement:** Budgets, expense workflows, income tracking, and vendor directory.
-- **Inventory:** Item tracking, check-in/out audit logs, low-stock alerts.
-- **Forms:** Dynamic form builder with 9+ field types, visibility logic, and response collection.
-- **Projects & Engagement:** Project submissions, achievement tracking, and leaderboards.
-- **Communications:** Event email blasts, system announcements, in-app notifications, and React Email templates.
+## Stack
 
----
+| Layer | Choice |
+| --- | --- |
+| App | Next.js 16.4 (App Router), React 19, TypeScript |
+| UI | Tailwind CSS 4, `@astryxdesign/core` |
+| Data | PostgreSQL, Drizzle ORM |
+| Auth | Better Auth, club role hierarchy |
+| Jobs | BullMQ, Redis |
+| Email | Resend, React Email |
+| Observability | Sentry, PostHog |
+| Deploy | Docker, standalone Next.js output |
 
-## 🛠 Tech Stack
+## Status
 
-The architecture is built for performance, security, and scalability using a modern layered approach:
+This is a working club platform, not a signed production launch.
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS 4, `@astryxdesign/core` |
-| **Backend** | Next.js API Routes, Drizzle ORM, PostgreSQL |
-| **Auth** | Better Auth with custom 14-role RBAC hierarchy |
-| **Background Jobs** | BullMQ + Redis (email blasts, certificates, AI grading) |
-| **Email** | Resend + React Email |
-| **Monitoring** | Sentry (errors), PostHog (analytics) |
-| **Deployment** | Docker (standalone), Docker Compose |
+Checked on 16 November 2026:
 
----
+| Check | Result |
+| --- | --- |
+| `npm run lint` | Pass |
+| `npm run typecheck` | Pass |
+| `npm run test` | Pass with PostgreSQL: 152 tests, including a second run on the same database. Integration files are skipped if the database is down. |
+| `npm run build` | Pass on Next.js 16.4.6 |
+| GitHub Actions on `main` | Last run succeeded on 26 August 2026 |
 
-## 🚀 Quick Start & Development Setup
+Still open:
 
-Follow these steps to get the platform running locally.
+- Launch sign-off in `docs/MAINTENANCE_STATUS.md` is **NO-GO**. Faculty approval, backup rehearsal, and the signed release record are not done.
+- [Draft pull request #1](https://github.com/NoticedXAaryan/SDC/pull/1) (`codex/project-recovery`) continues account and membership work. It is not merged. Syncing it is a product decision, not a fast-forward.
+- AI grading, email, Turnstile, Sentry, and PostHog stay idle until their keys are set.
+- Social posting and WhatsApp are not connected. Face enrollment exists in settings; biometrics are out of scope and QR check-in is the supported path.
+- Playwright specs exist under `tests/e2e`, but there is no npm script and CI does not run them. The visual snapshots were captured on Windows.
 
-### 1. Prerequisites
-- **Node.js:** ≥ 22
-- **PostgreSQL:** A running PostgreSQL instance (or use Neon/Supabase).
-- **Redis:** A running Redis instance (required for BullMQ and rate limiting).
+## Setup
 
-### 2. Installation
-Clone the repository and install dependencies:
+Requirements: Node.js 22 or newer, PostgreSQL, and Redis.
+
 ```bash
-git clone <repository-url>
-cd sdc-platform
 npm install
-```
-
-### 3. Environment Configuration
-Copy the example environment file:
-```bash
 cp .env.example .env.local
 ```
-Fill in the required variables in `.env.local`:
-- `DATABASE_URL`: Your PostgreSQL connection string.
-- `BETTER_AUTH_SECRET`: Generate a secure random string.
-- `BETTER_AUTH_URL`: e.g., `http://localhost:3000`.
-- `PASS_SECRET`: Secure string for QR generation.
-- `REDIS_URL`: Your Redis connection string.
-- `REDIS_PASSWORD`: Required by the bundled Docker Redis service; keep it in sync with `REDIS_URL`.
-- `ADMIN_EMAIL`: Email address that will be auto-promoted to `owner`.
 
-### 4. Database Setup
-Push the schema to your database and optionally seed it:
+Set at least:
+
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`
+- `PASS_SECRET` (QR passes)
+- `REDIS_URL` and `REDIS_PASSWORD`
+- `ADMIN_EMAIL` (this address becomes `owner` on signup)
+
+Then:
+
 ```bash
-npm run db:push       # Or use npm run db:migrate if you have migrations generated
-npm run db:seed       # (Optional) Seed with development data
-```
-To view your data during development, you can use Drizzle Studio:
-```bash
-npm run db:studio
+npm run db:push      # or npm run db:migrate
+npm run db:seed      # optional development data
+npm run dev          # http://localhost:3000
+npm run worker       # second terminal, background jobs
 ```
 
-### 5. Running the Application
-You need to run both the web app and the background worker process.
+Docker Compose is the production-shaped path. Copy `.env.example` to `.env`, point `DATABASE_URL` at a persistent Postgres instance, and run:
 
-**Terminal 1 (Web App):**
 ```bash
-npm run dev
-```
-*The app will be available at `http://localhost:3000`.*
-
-**Terminal 2 (Background Workers):**
-```bash
-npm run worker
-```
-
-*Alternatively, use Docker Compose to spin everything up:*
-```bash
+docker compose config --quiet
 docker compose up --build
 ```
 
-### Production deployment
+The migrator finishes before the app and worker start. Back up an existing database before the first migration. The migration script refuses to wipe a schema that has no Drizzle history.
 
-1. Copy `.env.example` to `.env` and replace every placeholder secret. Docker Compose reads `.env`; local npm commands may continue to use `.env.local`.
-2. Point `DATABASE_URL` at a persistent PostgreSQL database and set the public URL variables before building. Next.js compiles `NEXT_PUBLIC_*` values into the browser bundle.
-3. Run `docker compose config --quiet` to validate the resolved deployment, then deploy the Compose stack. The `migrator` must finish before the app and worker start.
-4. Back up an existing database before the first migration. The migration script deliberately refuses to erase a schema that has no Drizzle migration history.
+`/api/health` is liveness. `/api/ready` checks the database and Redis. The worker exposes its own health endpoint on port 8080 inside Compose.
 
-Uploads default to the shared Docker volume (`STORAGE_DRIVER=local`), which is suitable for a single VPS. For stateless or multi-instance hosting, set `STORAGE_DRIVER=s3` and configure the `S3_*` variables for Amazon S3, Cloudflare R2, MinIO, or another S3-compatible provider.
+Local uploads (`STORAGE_DRIVER=local`) use the shared Compose volume. For more than one app instance, set `STORAGE_DRIVER=s3` and the `S3_*` variables.
 
-The web container exposes `/api/health` for liveness and `/api/ready` for database/Redis readiness. The worker exposes its own health endpoint on port 8080 inside the Compose network.
+## Checks
 
----
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-## 🏗 Architecture & Codebase Guidelines
+Integration tests only run against a database whose name contains `test`. The default local URL is `postgresql://postgres:password@127.0.0.1:5432/sdc_test`. CI uses `club_test` on Postgres 16.
 
-The codebase strictly follows a **layered architecture** to keep logic clean and maintainable. All new code must adhere to this structure:
+## Layout
 
-1. **UI Layer** (`app/`, `components/`): Renders data. Uses `@astryxdesign/core`. No direct DB access.
-2. **API Layer** (`app/api/`): Thin wrappers that use `withApiHandler` for rate limiting, enforce Zod validation, and call DAL functions.
-3. **DAL (Data Access Layer)** (`lib/dal/`): Contains all business logic, queries, and role-based access checks.
-4. **Service Layer** (`lib/services/`): Third-party integrations (Resend, Storage, AI).
-5. **Worker Layer** (`lib/workers/`): BullMQ asynchronous jobs.
-6. **Data Layer** (`lib/db/`): Drizzle ORM schemas.
+| Path | Role |
+| --- | --- |
+| `app/` | Pages and thin API routes |
+| `proxy.ts` | Auth redirect and request gates. Data access is checked again in the DAL. |
+| `lib/dal/` | Business rules and queries |
+| `lib/services/` | Mail, storage, certificates, audit |
+| `lib/workers/` | BullMQ jobs |
+| `lib/db/` | Drizzle schema |
+| `drizzle/` | SQL migrations |
+| `worker.ts` | Worker process entry |
+| `docs/` | Specification, architecture, and the launch checklist |
 
-### Anti-Patterns to Avoid
-- 🚫 **Inline SQL in Route Handlers:** Always extract DB queries to `lib/dal/`.
-- 🚫 **Skipping Audit Logs:** Call `logAuditEvent()` in every mutating operation.
-- 🚫 **Shadcn UI for new components:** Use `@astryxdesign/core` components instead.
-- 🚫 **Direct UI Role Checks:** Ensure role gates are enforced in the DAL and API, not just by hiding UI elements.
+New UI should use `@astryxdesign/core`. New queries belong in `lib/dal/`, and mutating actions should write an audit log.
 
----
+## Documentation
 
-## 📚 Documentation
-
-For an in-depth understanding of the system, refer to the following documents in the `docs/` folder:
-
-1. **`docs/SPECIFICATION.md`**: The master development specification detailing the core features, out-of-scope features, gap analysis, and the 4-phase implementation cycle.
-2. **`docs/ARCHITECTURE.md`**: Technical reference containing Data Flow Diagrams, full database schema maps (30+ tables), API route inventory, and the complete role hierarchy.
-3. **`docs/EXECUTION_ROADMAP.md`**: Step-by-step verification checklist for QA.
-4. **`docs/MAINTENANCE_STATUS.md`**: Dated validation evidence, current release decision, and ordered blockers.
-
----
-
-## 🔒 Security
-
-Security is deeply integrated at multiple layers:
-- **Route Protection:** Handled via `proxy.ts` and DAL-level authorization.
-- **RBAC:** Strict 14-role hierarchy enforced before any data access.
-- **Rate Limiting:** Redis-backed protection on all mutating routes via `withApiHandler`.
-- **Validation:** 100% Zod schema coverage for API inputs.
-- **Audit Trails:** Comprehensive tracking of all changes in the `audit_logs` table.
-- **Bot Protection & Headers:** Cloudflare Turnstile integration, HSTS, CSP, and X-Frame-Options DENY.
+- `docs/SPECIFICATION.md` — feature scope and what is explicitly out of scope
+- `docs/ARCHITECTURE.md` — data flow, schema, and routes
+- `docs/MAINTENANCE_STATUS.md` — launch decision and remaining blockers
+- `docs/EXECUTION_ROADMAP.md` — verification checklist

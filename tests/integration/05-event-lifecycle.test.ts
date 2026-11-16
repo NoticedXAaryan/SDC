@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getMockSession, createTestUser, cleanupTestUser } from "./test-utils";
 import { db } from "@/lib/db";
-import { events, registrations, tasks } from "@/lib/db/schema";
-import { eq, like, inArray } from "drizzle-orm";
+import { auditLogs, events, registrations, tasks } from "@/lib/db/schema";
+import { and, eq, like, inArray } from "drizzle-orm";
 import { createEvent, approveEvent, archiveEvent, duplicateEvent, getEventById } from "@/lib/dal/events";
 import { registerForEvent, deregisterEvent } from "@/lib/dal/events.registration";
 
@@ -113,6 +113,17 @@ describe("Event Lifecycle Integration Tests", () => {
       where: eq(registrations.userId, memberId)
     });
     expect(reg?.status).toBe("cancelled");
+
+    const promoted = await db.query.registrations.findFirst({
+      where: eq(registrations.userId, member2Id)
+    });
+    expect(promoted?.status).toBe("confirmed");
+
+    const [promotionAudit] = await db.select().from(auditLogs).where(and(
+      eq(auditLogs.action, "waitlist_promotion"),
+      eq(auditLogs.entityId, promoted!.id),
+    ));
+    expect(promotionAudit?.actorId).toBe(memberId);
   });
 
   it("4.13 should test event duplication", async () => {

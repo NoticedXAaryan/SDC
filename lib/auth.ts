@@ -8,18 +8,14 @@ import * as schema from "./db/schema";
 import { Mailer } from "./services/mailer";
 
 /**
- * SDC roles (ordered by privilege):
- * - owner: Full system control, cannot be demoted if last owner
- * - admin: Near-full access, can manage members/events/finance
- * - lead: Domain lead, can manage own domain's events/members
- * - co_lead: Assists lead, can draft events
- * - finance_lead: Budget/expense/inventory management
- * - member: Standard authenticated user
- * - alumni: Graduated member, read-only + certificates
+ * Club roles stored on the user row. The database check allows:
+ * owner, admin, lead, vice_lead, event_lead, content_lead, marketing_lead,
+ * tech_lead, finance_lead, volunteer_lead, co_lead, faculty_coordinator,
+ * member, alumni, applicant, outsider, and user.
  *
- * Better Auth's admin plugin manages the `role` column on the user table.
- * The `defaultRole` is "member" — every new signup gets this.
- * The `adminRoles` are ["owner", "admin"] — these can access admin endpoints.
+ * University emails are promoted to member on signup. Everyone else starts
+ * as user. ADMIN_EMAIL is promoted to owner. The admin plugin's defaultRole
+ * is applicant; the user-create hook overrides it.
  */
 
 // Define SDC-specific role permissions using Better Auth's access control system.
